@@ -1,0 +1,32 @@
+---
+layout: page
+# A readable alphabetical tag index.
+---
+
+{% assign sorted = site.tags | sort %}
+
+{% if sorted.size > 0 %}
+  <ul id="tags-index" class="list-unstyled">
+    {% for t in sorted %}
+      <li>
+        <a class="tag-link" href="{{ t[0] | slugify | url_encode | prepend: '/tags/' | append: '/' | relative_url }}">{{ t[0] }}</a>
+        <span class="text-muted">({{ t[1].size }})</span>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No tags yet.</p>
+{% endif %}
+
+<style>
+  #tags-index {
+    column-width: 13rem;
+    column-gap: 2.5rem;
+    margin-top: 1rem;
+  }
+  #tags-index li {
+    line-height: 1.9;
+    break-inside: avoid;
+  }
+  #tags-index a.tag-link { font-weight: 600; }
+</style>

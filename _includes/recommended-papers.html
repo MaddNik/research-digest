@@ -1,0 +1,36 @@
+{%- comment -%}
+  Page-aware recommendations:
+  - On a topic/category context: recent papers from that same category.
+  - Otherwise (home, etc.): recently updated papers.
+  Always excludes the current page.
+{%- endcomment -%}
+
+{% assign cur = page.category | default: page.categories[0] %}
+
+{% if cur and cur != 'Meta' %}
+  {% assign pool = site.categories[cur] %}
+  {% assign heading = 'More in ' | append: cur %}
+{% else %}
+  {% assign pool = site.posts | where_exp: 'p', 'p.link' %}
+  {% assign heading = 'Recently updated' %}
+{% endif %}
+
+{% assign rec = '' | split: '' %}
+{% for p in pool %}
+  {% if p.link and p.url != page.url %}
+    {% assign rec = rec | push: p %}
+  {% endif %}
+{% endfor %}
+
+{% if rec.size > 0 %}
+  <section id="access-recommended">
+    <h2 class="panel-heading">{{ heading }}</h2>
+    <ul class="content list-unstyled ps-0 pb-1 ms-1 mt-2">
+      {% for post in rec limit: 5 %}
+        <li class="text-truncate lh-lg">
+          <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endif %}

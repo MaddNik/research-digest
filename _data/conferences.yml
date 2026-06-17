@@ -1,9 +1,10 @@
 # Conferences to track (semiconductor and/or photonics).
 # Refreshed monthly by automation/run-conferences.sh.
-# Fields: name, domain, location, dates, start (YYYY-MM-DD for sorting), about, url.
+# Fields: name, domain, continent, location, dates, start (YYYY-MM-DD for sorting), about, url.
 
 - name: "DAC: ACM/IEEE Design Automation Conference"
   domain: Semiconductor
+  continent: North America
   location: "Long Beach, USA"
   dates: "July 26 to 29, 2026"
   start: 2026-07-26
@@ -12,6 +13,7 @@
 
 - name: "Hot Chips: A Symposium on High-Performance Chips"
   domain: Semiconductor
+  continent: North America
   location: "Palo Alto, USA"
   dates: "August 23 to 25, 2026"
   start: 2026-08-23
@@ -20,6 +22,7 @@
 
 - name: "ESSERC: European Solid-State Electronics Research Conference"
   domain: Semiconductor
+  continent: Europe
   location: "Palma de Mallorca, Spain"
   dates: "September 7 to 10, 2026"
   start: 2026-09-07
@@ -28,6 +31,7 @@
 
 - name: "FPL: International Conference on Field-Programmable Logic and Applications"
   domain: Semiconductor
+  continent: Europe
   location: "Ghent, Belgium"
   dates: "September 7 to 11, 2026"
   start: 2026-09-07
@@ -36,6 +40,7 @@
 
 - name: "ECOC: European Conference on Optical Communication"
   domain: Photonics
+  continent: Europe
   location: "Malaga, Spain"
   dates: "September 20 to 24, 2026"
   start: 2026-09-20
@@ -44,6 +49,7 @@
 
 - name: "ICCAD: IEEE/ACM International Conference on Computer-Aided Design"
   domain: Semiconductor
+  continent: North America
   location: "San Jose, USA"
   dates: "November 8 to 12, 2026"
   start: 2026-11-08
@@ -52,6 +58,7 @@
 
 - name: "IPC: IEEE Photonics Conference"
   domain: Photonics
+  continent: North America
   location: "Denver, USA"
   dates: "November 8 to 12, 2026"
   start: 2026-11-08
@@ -60,6 +67,7 @@
 
 - name: "SPIE Photonics West"
   domain: Photonics
+  continent: North America
   location: "San Francisco, USA"
   dates: "January 30 to February 4, 2027"
   start: 2027-01-30
@@ -68,6 +76,7 @@
 
 - name: "ISSCC: IEEE International Solid-State Circuits Conference"
   domain: Semiconductor
+  continent: North America
   location: "San Francisco, USA"
   dates: "February 14 to 18, 2027"
   start: 2027-02-14
@@ -76,6 +85,7 @@
 
 - name: "OFC: Optical Fiber Communication Conference and Exhibition"
   domain: Photonics
+  continent: North America
   location: "Los Angeles, USA"
   dates: "March 7 to 11, 2027"
   start: 2027-03-07
@@ -84,6 +94,7 @@
 
 - name: "ISFPGA: ACM/SIGDA International Symposium on Field-Programmable Gate Arrays"
   domain: Semiconductor
+  continent: North America
   location: "Monterey, USA"
   dates: "March 14 to 16, 2027"
   start: 2027-03-14
@@ -92,6 +103,7 @@
 
 - name: "DATE: Design, Automation and Test in Europe Conference"
   domain: Semiconductor
+  continent: Europe
   location: "Dresden, Germany"
   dates: "March 22 to 24, 2027"
   start: 2027-03-22
@@ -100,6 +112,7 @@
 
 - name: "CLEO: Conference on Lasers and Electro-Optics"
   domain: Photonics
+  continent: North America
   location: "Long Beach, USA"
   dates: "May 2 to 7, 2027"
   start: 2027-05-02

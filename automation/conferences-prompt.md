@@ -29,6 +29,7 @@ this shape, one entry per conference:
 ```yaml
 - name: "<full name, with acronym>"
   domain: <Semiconductor | Photonics>
+  continent: <Europe | North America | Asia | South America | Africa | Oceania | Online>
   location: "<City, Country>"
   dates: "<human readable dates, for example September 1 to 4, 2026>"
   start: <YYYY-MM-DD start date, for sorting>
@@ -39,6 +40,8 @@ this shape, one entry per conference:
 Rules:
 - Only include conferences whose `start` date is in the future.
 - `start` must be a valid YYYY-MM-DD date (used for sorting on the page).
+- `continent` is the continent of the host city (the page groups conferences by it).
+  Use "Online" only for fully virtual events.
 - Prefer the official site for `url`; if you cannot find a reliable one, set `url: ""`.
 - Keep the explanatory comment lines at the top of the file.
 - No em dashes, no emojis.
