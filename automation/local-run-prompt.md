@@ -1,4 +1,4 @@
-You are producing this week's batch of "Frontier Research Digest" papers and
+You are producing this week's batch of "Research Tracker" papers and
 publishing them to a Jekyll/Chirpy GitHub Pages blog. You are running
 non-interactively (headless) in the local git checkout at
 `/home/nik/research-digest`, which is already authenticated to push to GitHub.
@@ -57,7 +57,7 @@ Do not create a single combined digest post; one file per paper only.
 ## 5. Publish
 ```
 git add _posts/
-git commit -m "Frontier Digest papers, <today's date>"
+git commit -m "Research Tracker papers, <today's date>"
 git push origin main
 ```
 The GitHub Actions workflow builds and deploys automatically on push. Do not
