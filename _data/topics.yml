@@ -1,0 +1,12 @@
+# Canonical research topics: category key (used in post front matter and
+# category pages) mapped to the full display name. Drives the home page sections.
+- key: Photonics
+  name: Photonics
+- key: PQC
+  name: "Post-Quantum Cryptography (PQC)"
+- key: FHE
+  name: "Fully Homomorphic Encryption (FHE)"
+- key: Cryptography
+  name: Cryptography
+- key: Hardware Security
+  name: "Hardware Security"

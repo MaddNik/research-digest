@@ -18,7 +18,17 @@ layout: default
     Browse earlier papers by topic or in the <a href="{{ '/archives/' | relative_url }}">archive</a>.
   </p>
 
-  {% include paper-cards.html posts=batch %}
+  {% for topic in site.data.topics %}
+    {% assign group = '' | split: '' %}
+    {% for p in batch %}
+      {% if p.categories[0] == topic.key %}{% assign group = group | push: p %}{% endif %}
+    {% endfor %}
+    {% if group.size > 0 %}
+      <h2 class="home-topic px-xl-1">{{ topic.name }}</h2>
+      {% assign pfx = topic.key | slugify | append: '-' %}
+      {% include paper-cards.html posts=group idprefix=pfx %}
+    {% endif %}
+  {% endfor %}
 {% else %}
   <div class="px-xl-1">
     <p>No papers yet. The first digest will appear after the next run.</p>
