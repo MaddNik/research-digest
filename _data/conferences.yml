@@ -1,0 +1,27 @@
+# Conferences to track (semiconductor and/or photonics).
+# Refreshed monthly by automation/run-conferences.sh.
+# Fields: name, domain, location, dates, start (YYYY-MM-DD for sorting), about, url.
+
+- name: "FPL: International Conference on Field-Programmable Logic and Applications"
+  domain: Semiconductor
+  location: "Europe (host city varies by year)"
+  dates: "Typically late August or September"
+  start: 2026-09-01
+  about: "Premier European conference on FPGAs, reconfigurable computing, and their applications."
+  url: ""
+
+- name: "ECOC: European Conference on Optical Communication"
+  domain: Photonics
+  location: "Europe (host city varies by year)"
+  dates: "Typically late September"
+  start: 2026-09-28
+  about: "Leading European conference on optical communication and photonic technologies."
+  url: ""
+
+- name: "ISSCC: International Solid-State Circuits Conference"
+  domain: Semiconductor
+  location: "San Francisco, USA"
+  dates: "Typically February"
+  start: 2027-02-01
+  about: "Foremost forum for advances in solid-state circuits and systems-on-chip."
+  url: "https://www.isscc.org/"

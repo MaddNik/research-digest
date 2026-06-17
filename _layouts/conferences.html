@@ -1,0 +1,52 @@
+---
+layout: page
+---
+
+{% assign confs = site.data.conferences | sort: 'start' %}
+
+{% if confs and confs.size > 0 %}
+  <ul class="conf-list list-unstyled">
+    {% for c in confs %}
+      <li class="conf-card card-wrapper card">
+        <div class="card-body">
+          <h2 class="conf-name">
+            {% if c.url and c.url != '' %}
+              <a href="{{ c.url }}" target="_blank" rel="noopener noreferrer">{{ c.name }}</a>
+            {% else %}
+              {{ c.name }}
+            {% endif %}
+          </h2>
+          <div class="conf-meta mb-2">
+            {% if c.domain %}<span class="paper-topic">{{ c.domain }}</span>{% endif %}
+            {% if c.location %}<span class="conf-bit"><i class="fas fa-location-dot fa-fw"></i> {{ c.location }}</span>{% endif %}
+            {% if c.dates %}<span class="conf-bit"><i class="far fa-calendar fa-fw"></i> {{ c.dates }}</span>{% endif %}
+          </div>
+          {% if c.about %}<p class="conf-about mb-0">{{ c.about }}</p>{% endif %}
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No conferences listed yet.</p>
+{% endif %}
+
+<style>
+  .conf-list { margin-top: 1rem; }
+  .conf-card { margin-bottom: 1rem; }
+  .conf-name { font-size: 1.15rem; margin: 0 0 .5rem; }
+  .conf-meta { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; font-size: .9rem; }
+  .conf-bit { color: var(--text-muted-color); }
+  .conf-about { color: var(--text-muted-color); line-height: 1.6; }
+  .paper-topic {
+    display: inline-block;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+    padding: .12rem .6rem;
+    border-radius: 1rem;
+    background: transparent;
+    border: 1px solid var(--btn-border-color, rgba(128,128,128,.35));
+    color: var(--text-muted-highlight-color) !important;
+    text-decoration: none;
+  }
+</style>

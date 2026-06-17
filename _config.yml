@@ -16,12 +16,13 @@ timezone: Europe/Berlin
 
 title: Frontier Research Digest # the main title
 
-tagline: Weekly papers on photonics, PQC, FHE, cryptography & hardware security # subtitle
+tagline: A personal site for tracking research topics and conferences # subtitle
 
 description: >- # used by seo meta and the atom feed
-  An automatically curated weekly digest of new research papers in photonics,
-  post-quantum cryptography (PQC), fully homomorphic encryption (FHE),
-  cryptography, and hardware security. Updated every Friday.
+  A personal site for keeping track of research in photonics, post-quantum
+  cryptography (PQC), fully homomorphic encryption (FHE), cryptography, and
+  hardware security, along with the semiconductor and photonics conferences
+  worth watching.
 
 # Fill in the protocol & hostname for your site.
 # E.g. 'https://username.github.io', note that it does not end with a '/'.
