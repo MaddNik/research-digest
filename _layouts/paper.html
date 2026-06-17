@@ -1,0 +1,11 @@
+---
+layout: post
+---
+
+{{ content }}
+
+{% if page.link %}
+  <hr>
+  {% if page.byline %}<p class="text-muted">{{ page.byline }}</p>{% endif %}
+  <p><a class="paper-source-link" href="{{ page.link }}" target="_blank" rel="noopener noreferrer">Read the paper &rarr;</a></p>
+{% endif %}
