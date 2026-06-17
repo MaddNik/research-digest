@@ -5,7 +5,20 @@ layout: default
 {% assign papers = site.posts | where_exp: 'p', 'p.link' %}
 
 {% if papers.size > 0 %}
-  {% include paper-cards.html posts=papers %}
+  {% assign newest = papers | first %}
+  {% assign latest_day = newest.date | date: '%Y-%m-%d' %}
+  {% assign batch = '' | split: '' %}
+  {% for p in papers %}
+    {% assign d = p.date | date: '%Y-%m-%d' %}
+    {% if d == latest_day %}{% assign batch = batch | push: p %}{% endif %}
+  {% endfor %}
+
+  <p class="text-muted px-xl-1">
+    Latest papers from {{ newest.date | date: '%B %-d, %Y' }} ({{ batch.size }}).
+    Browse earlier papers by topic or in the <a href="{{ '/archives/' | relative_url }}">archive</a>.
+  </p>
+
+  {% include paper-cards.html posts=batch %}
 {% else %}
   <div class="px-xl-1">
     <p>No papers yet. The first digest will appear after the next run.</p>

@@ -36,7 +36,12 @@ layout: page
     border-bottom: 1px solid var(--main-border-color, rgba(128,128,128,.25));
   }
   .conf-list { margin-top: 1rem; }
-  .conf-card { margin-bottom: 1rem; }
+  .conf-card.card {
+    margin-bottom: 1rem;
+    background: var(--card-bg);
+    box-shadow: var(--card-shadow);
+    border: 0;
+  }
   .conf-name { font-size: 1.15rem; margin: 0 0 .5rem; }
   .conf-name a { color: inherit; text-decoration: none; }
   .conf-name a:hover { text-decoration: underline; }
