@@ -1,0 +1,108 @@
+{%- comment -%} The single modal overlay + its styles + behavior. Include once per page. {%- endcomment -%}
+<div id="paper-modal" class="paper-modal" hidden>
+  <div class="paper-modal__backdrop" data-close></div>
+  <div class="paper-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="paper-modal-title">
+    <button type="button" class="paper-modal__close" data-close aria-label="Close">&times;</button>
+    <h2 id="paper-modal-title" class="paper-modal__title"></h2>
+    <div class="paper-modal__meta text-muted small"></div>
+    <div class="paper-modal__body content"></div>
+    <a class="paper-modal__link" target="_blank" rel="noopener noreferrer">Read the paper &rarr;</a>
+  </div>
+</div>
+
+<style>
+  .paper-card__more {
+    align-self: flex-start;
+    border: 1px solid var(--btn-border-color, #d3d3d3);
+    background: transparent;
+    color: var(--link-color, #2a408e);
+    border-radius: .5rem;
+    padding: .25rem .75rem;
+    font-size: .85rem;
+    cursor: pointer;
+  }
+  .paper-card__more:hover { background: var(--btn-backtotop-color, rgba(0,0,0,.04)); }
+  .paper-card__title { cursor: pointer; }
+  .paper-card__tags a { font-size: .8rem; margin-right: .35rem; white-space: nowrap; }
+  .paper-cat { font-weight: 600; }
+  body.paper-modal-open { overflow: hidden; }
+  .paper-modal[hidden] { display: none; }
+  .paper-modal {
+    position: fixed; inset: 0; z-index: 2000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
+  }
+  .paper-modal__backdrop {
+    position: absolute; inset: 0; background: rgba(0,0,0,.5);
+  }
+  .paper-modal__dialog {
+    position: relative; z-index: 1;
+    width: min(680px, 100%); max-height: 85vh; overflow-y: auto;
+    background: var(--card-bg, #fff); color: var(--text-color, #1b1b1e);
+    border-radius: .75rem; padding: 1.5rem 1.75rem;
+    box-shadow: 0 10px 40px rgba(0,0,0,.35);
+  }
+  .paper-modal__close {
+    position: absolute; top: .5rem; right: .75rem;
+    border: 0; background: transparent; font-size: 1.6rem; line-height: 1;
+    color: var(--text-muted-color, #828282); cursor: pointer;
+  }
+  .paper-modal__title { margin-top: 0; margin-right: 1.5rem; font-size: 1.3rem; }
+  .paper-modal__meta { margin-bottom: 1rem; }
+  .paper-modal__body { margin-bottom: 1.25rem; }
+  .paper-modal__link {
+    display: inline-block; font-weight: 600;
+    padding: .4rem .9rem; border-radius: .5rem;
+    background: var(--link-color, #2a408e); color: #fff !important; text-decoration: none;
+  }
+  .paper-modal__link:hover { opacity: .9; }
+</style>
+
+<script>
+  (function () {
+    var modal = document.getElementById('paper-modal');
+    if (!modal) return;
+    var titleEl = modal.querySelector('.paper-modal__title');
+    var metaEl = modal.querySelector('.paper-modal__meta');
+    var bodyEl = modal.querySelector('.paper-modal__body');
+    var linkEl = modal.querySelector('.paper-modal__link');
+
+    function pick(frag, sel) {
+      var el = frag.querySelector(sel);
+      return el ? el : null;
+    }
+
+    function openFor(id) {
+      var tpl = document.getElementById(id);
+      if (!tpl || !tpl.content) return;
+      var frag = tpl.content.cloneNode(true);
+      var t = pick(frag, '.pf-title'); titleEl.textContent = t ? t.textContent.trim() : '';
+      var m = pick(frag, '.pf-meta'); metaEl.innerHTML = m ? m.innerHTML : '';
+      var b = pick(frag, '.pf-body'); bodyEl.innerHTML = b ? b.innerHTML : '';
+      var l = pick(frag, '.pf-link'); var href = l ? l.textContent.trim() : '';
+      if (href) { linkEl.href = href; linkEl.style.display = ''; } else { linkEl.style.display = 'none'; }
+      modal.hidden = false;
+      document.body.classList.add('paper-modal-open');
+    }
+
+    function close() {
+      modal.hidden = true;
+      document.body.classList.remove('paper-modal-open');
+    }
+
+    document.addEventListener('click', function (e) {
+      var trigger = e.target.closest('.paper-card__more, .paper-card__title');
+      if (trigger) {
+        var card = trigger.closest('.paper-card');
+        var id = trigger.getAttribute('data-target') || (card ? card.getAttribute('data-paper-id') : null);
+        if (id) { e.preventDefault(); openFor(id); }
+        return;
+      }
+      if (e.target.closest('[data-close]')) close();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !modal.hidden) close();
+    });
+  })();
+</script>

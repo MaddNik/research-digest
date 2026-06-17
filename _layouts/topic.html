@@ -1,0 +1,14 @@
+---
+layout: page
+---
+
+{% assign papers = site.categories[page.category] %}
+
+{% if papers and papers.size > 0 %}
+  <p class="text-muted">{{ papers.size }} paper{% if papers.size != 1 %}s{% endif %} in {{ page.category }}.</p>
+  {% include paper-cards.html posts=papers %}
+{% else %}
+  <p>No papers in this category yet.</p>
+{% endif %}
+
+{% include paper-modal.html %}

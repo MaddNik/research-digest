@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Weekly Frontier Digest runner — invoked by cron every Friday.
+# Weekly Frontier Digest runner - invoked by cron every Friday.
 # Runs the headless Claude Code CLI to research, verify, and publish the digest.
 set -uo pipefail
 

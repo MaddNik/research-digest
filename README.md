@@ -47,13 +47,16 @@ Repo → **Settings → Pages → Build and deployment → Source = GitHub Actio
 The included workflow (`.github/workflows/pages-deploy.yml`) builds on every push
 to `main`. Watch the first run under the **Actions** tab.
 
-### 4. Wire up the weekly agent
+### 4. The weekly agent
 
-The autonomous run is driven by `automation/weekly-research-prompt.md` and runs
-as a scheduled claude.ai routine (set up separately). It needs a **fine-grained
-Personal Access Token** scoped to *only this repo* with **Contents: Read and
-write** permission, so it can push the weekly post. The token is stored in the
-routine config — **never commit a real token to this repo.**
+The weekly run is a local cron job (`crontab -l` shows it) that fires every
+Friday and invokes `automation/run-weekly.sh`. That script runs the headless
+Claude CLI with `automation/local-run-prompt.md`: research, verify against the
+source, write one post per paper, commit, and push. Git auth uses the global
+credential helper (`~/.git-credentials`), so no token is stored in the repo.
+
+To run it on demand: `./automation/run-weekly.sh` (logs land in
+`automation/logs/`).
 
 ## Local preview (optional)
 

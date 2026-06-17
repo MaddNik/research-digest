@@ -1,58 +1,66 @@
-You are producing this week's "Frontier Research Digest" and publishing it to a
-Jekyll/Chirpy GitHub Pages blog. You are running non-interactively (headless) in
-the local git checkout at `/home/nik/research-digest`, which is already
-authenticated to push to GitHub. Work entirely within this directory.
+You are producing this week's batch of "Frontier Research Digest" papers and
+publishing them to a Jekyll/Chirpy GitHub Pages blog. You are running
+non-interactively (headless) in the local git checkout at
+`/home/nik/research-digest`, which is already authenticated to push to GitHub.
+Work entirely within this directory.
+
+Important style rules for everything you write: do NOT use em dashes, do NOT use
+emojis, and spell out math symbols in prose (for example "O(n squared)",
+"microseconds", "3.1 square mm").
 
 ## 1. Sync the repo
 Run `git pull --rebase` first so you are building on the latest state.
 
 ## 2. Research this week's notable papers
-Cover these five topics. For each, find the most notable papers **posted or
-published in the last 7 days**. If a topic genuinely has nothing new this week,
-say so in that section rather than padding it.
+Cover these five topics. For each, find the most notable papers posted or
+published in the last 7 days. If a topic genuinely has nothing new this week,
+skip it rather than padding.
 
-1. **Photonics** — integrated/silicon photonics, photonic computing, optical interconnects, quantum photonics
-2. **Post-Quantum Cryptography (PQC)** — lattice/code/hash/isogeny schemes, NIST standardization, implementations
-3. **Fully Homomorphic Encryption (FHE)** — schemes, accelerators, libraries, applications
-4. **Cryptography** — protocols, primitives, cryptanalysis, zero-knowledge, MPC
-5. **Hardware security** — side-channel & fault attacks, secure/trusted hardware, TEEs, supply chain
+1. Photonics: integrated and silicon photonics, photonic computing, optical interconnects, quantum photonics
+2. Post-Quantum Cryptography (PQC): lattice, code, hash, isogeny schemes, NIST standardization, implementations
+3. Fully Homomorphic Encryption (FHE): schemes, accelerators, libraries, applications
+4. Cryptography: protocols, primitives, cryptanalysis, zero-knowledge, MPC
+5. Hardware security: side-channel and fault attacks, secure and trusted hardware, TEEs, supply chain
 
 Search these primary sources with WebSearch, and open the actual abstract pages
 with WebFetch:
-- arXiv recent listings/search: physics.optics, quant-ph, cs.CR
-- IACR ePrint: https://eprint.iacr.org/ (recent feed) for PQC/FHE/crypto/hardware
+- arXiv recent listings and search: physics.optics, quant-ph, cs.CR
+- IACR ePrint: https://eprint.iacr.org/ (recent feed) for PQC, FHE, crypto, hardware
 - Venue announcements where relevant (TCHES/CHES, Eurocrypt, Crypto, Optica, Nature Photonics)
 
-Aim for ~5–8 strong papers per topic. Prefer substance over volume; skip
+Aim for about 5 to 8 strong papers per topic. Prefer substance over volume; skip
 incremental or off-topic results.
 
 ## 3. Verify every summary (mandatory)
 For each paper you include:
-1. Open the actual abstract/paper page (WebFetch the URL).
-2. Write a 2–4 sentence summary grounded **only** in the abstract — no claims the
-   source does not make, no hype.
-3. Re-check that the title, authors, date, venue, and every factual claim in your
-   summary match the source. If you cannot verify a paper or its link, **drop it.**
+1. Open the actual abstract or paper page (WebFetch the URL).
+2. Write the summaries grounded only in the abstract. No claims the source does
+   not make, no hype.
+3. Confirm that the title, authors, date, venue, and every factual claim match
+   the source. If you cannot verify a paper or its link, drop it.
 4. Use the canonical permanent link (arXiv `abs` page or ePrint page), not a PDF
    mirror or a search-result URL.
 
-## 4. Write the post
-Create `_posts/YYYY-MM-DD-frontier-digest-YYYY-MM-DD.md` using today's date.
-Follow `automation/POST_TEMPLATE.md` exactly:
-- YAML front matter: `title: "Frontier Digest — <Mon DD, YYYY>"`, `date: <today> 08:00:00 +0200`,
-  `categories: [Digest]`, `tags: [photonics, pqc, fhe, cryptography, hardware-security]`.
-- One `##` section per topic; each paper as `### [Title](url)`, then an italic
-  byline `*Authors · Venue/arXiv id · date*`, then the verified summary.
-- Keep the leading `.prompt-info` callout noting summaries are AI-generated and verified.
-Use lowercase-hyphenated tags exactly as above.
+## 4. Write one post PER PAPER
+For each verified paper, create a separate file
+`_posts/YYYY-MM-DD-<short-slug>.md` using today's date and a short hyphenated
+slug from the title. Follow `automation/POST_TEMPLATE.md` exactly:
+- `categories` is exactly ONE canonical topic: `Photonics`, `PQC`, `FHE`,
+  `Cryptography`, or `Hardware Security`.
+- `tags` are 2 to 4 paper-specific lowercase hyphenated keywords (not the topic name).
+- `description` is a one-sentence SHORT summary (shown on the card).
+- The body is the LONGER summary, 4 to 6 sentences (shown in the popup).
+- `byline` and `link` as in the template.
+- Stagger the `date` minutes (08:01, 08:02, ...) so ordering is stable.
+Do not create a single combined digest post; one file per paper only.
 
 ## 5. Publish
 ```
 git add _posts/
-git commit -m "Frontier Digest — <today's date>"
+git commit -m "Frontier Digest papers, <today's date>"
 git push origin main
 ```
-The GitHub Actions workflow builds and deploys automatically on push — do **not**
+The GitHub Actions workflow builds and deploys automatically on push. Do not
 build Jekyll yourself. After pushing, confirm with `git log -1 --oneline`, then
-report: papers per topic, the post filename, and the commit hash. If the push
-fails, retry once; if it still fails, print the exact error.
+report: the number of papers per topic, the new post filenames, and the commit
+hash. If the push fails, retry once; if it still fails, print the exact error.

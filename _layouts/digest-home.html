@@ -1,0 +1,15 @@
+---
+layout: default
+---
+
+{% assign papers = site.posts | where_exp: 'p', 'p.link' %}
+
+{% if papers.size > 0 %}
+  {% include paper-cards.html posts=papers %}
+{% else %}
+  <div class="px-xl-1">
+    <p>No papers yet. The first digest will appear after the next run.</p>
+  </div>
+{% endif %}
+
+{% include paper-modal.html %}
