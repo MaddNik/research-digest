@@ -2,26 +2,106 @@
 # Refreshed monthly by automation/run-conferences.sh.
 # Fields: name, domain, location, dates, start (YYYY-MM-DD for sorting), about, url.
 
+- name: "DAC: ACM/IEEE Design Automation Conference"
+  domain: Semiconductor
+  location: "Long Beach, USA"
+  dates: "July 26 to 29, 2026"
+  start: 2026-07-26
+  about: "Premier conference for the design and automation of electronic chips and systems, spanning EDA, hardware, embedded and AI design."
+  url: "https://www.dac.com/"
+
+- name: "Hot Chips: A Symposium on High-Performance Chips"
+  domain: Semiconductor
+  location: "Palo Alto, USA"
+  dates: "August 23 to 25, 2026"
+  start: 2026-08-23
+  about: "Leading industry symposium where companies present the latest high-performance processor, accelerator and chip architectures."
+  url: "https://hotchips.org/"
+
+- name: "ESSERC: European Solid-State Electronics Research Conference"
+  domain: Semiconductor
+  location: "Palma de Mallorca, Spain"
+  dates: "September 7 to 10, 2026"
+  start: 2026-09-07
+  about: "Europe's flagship event on solid-state devices and circuits, formed from the merger of ESSDERC and ESSCIRC, covering semiconductor processes and circuit design."
+  url: "https://www.esserc2026.org/"
+
 - name: "FPL: International Conference on Field-Programmable Logic and Applications"
   domain: Semiconductor
-  location: "Europe (host city varies by year)"
-  dates: "Typically late August or September"
-  start: 2026-09-01
-  about: "Premier European conference on FPGAs, reconfigurable computing, and their applications."
-  url: ""
+  location: "Ghent, Belgium"
+  dates: "September 7 to 11, 2026"
+  start: 2026-09-07
+  about: "Premier European conference on FPGAs, reconfigurable computing and their applications."
+  url: "https://2026.fpl.org/"
 
 - name: "ECOC: European Conference on Optical Communication"
   domain: Photonics
-  location: "Europe (host city varies by year)"
-  dates: "Typically late September"
-  start: 2026-09-28
-  about: "Leading European conference on optical communication and photonic technologies."
-  url: ""
+  location: "Malaga, Spain"
+  dates: "September 20 to 24, 2026"
+  start: 2026-09-20
+  about: "The largest and most prestigious European event on optical communication and photonic technologies."
+  url: "https://www.ecoc2026.org/"
 
-- name: "ISSCC: International Solid-State Circuits Conference"
+- name: "ICCAD: IEEE/ACM International Conference on Computer-Aided Design"
+  domain: Semiconductor
+  location: "San Jose, USA"
+  dates: "November 8 to 12, 2026"
+  start: 2026-11-08
+  about: "Premier forum for research and innovation in electronic design automation, from algorithms to design tools and methodologies."
+  url: "https://www.iccad.com/"
+
+- name: "IPC: IEEE Photonics Conference"
+  domain: Photonics
+  location: "Denver, USA"
+  dates: "November 8 to 12, 2026"
+  start: 2026-11-08
+  about: "Annual flagship conference of the IEEE Photonics Society, covering photonic devices, integrated photonics and applications."
+  url: "https://ieee-ipc.org/"
+
+- name: "SPIE Photonics West"
+  domain: Photonics
+  location: "San Francisco, USA"
+  dates: "January 30 to February 4, 2027"
+  start: 2027-01-30
+  about: "The world's largest photonics technologies event, covering lasers, biomedical optics, optoelectronics and quantum technologies."
+  url: "https://spie.org/conferences-and-exhibitions/photonics-west"
+
+- name: "ISSCC: IEEE International Solid-State Circuits Conference"
   domain: Semiconductor
   location: "San Francisco, USA"
-  dates: "Typically February"
-  start: 2027-02-01
-  about: "Foremost forum for advances in solid-state circuits and systems-on-chip."
+  dates: "February 14 to 18, 2027"
+  start: 2027-02-14
+  about: "Foremost global forum for advances in solid-state circuits and systems-on-chip."
   url: "https://www.isscc.org/"
+
+- name: "OFC: Optical Fiber Communication Conference and Exhibition"
+  domain: Photonics
+  location: "Los Angeles, USA"
+  dates: "March 7 to 11, 2027"
+  start: 2027-03-07
+  about: "The largest global conference and exhibition for optical communications and networking, spanning components, systems and networks."
+  url: "https://www.ofcconference.org/"
+
+- name: "ISFPGA: ACM/SIGDA International Symposium on Field-Programmable Gate Arrays"
+  domain: Semiconductor
+  location: "Monterey, USA"
+  dates: "March 14 to 16, 2027"
+  start: 2027-03-14
+  about: "The premier conference for research on FPGA technology, architecture, design tools and applications."
+  url: "https://www.isfpga.org/"
+
+- name: "DATE: Design, Automation and Test in Europe Conference"
+  domain: Semiconductor
+  location: "Dresden, Germany"
+  dates: "March 22 to 24, 2027"
+  start: 2027-03-22
+  about: "The main European event bringing together designers and design automation users, researchers and vendors in electronic systems design and test."
+  url: "https://www.date-conference.com/"
+
+- name: "CLEO: Conference on Lasers and Electro-Optics"
+  domain: Photonics
+  location: "Long Beach, USA"
+  dates: "May 2 to 7, 2027"
+  start: 2027-05-02
+  about: "The premier international forum uniting laser science, photonic technologies and their applications across research and industry."
+  url: "https://cleoconference.org/"
