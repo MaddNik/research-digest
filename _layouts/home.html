@@ -18,17 +18,20 @@ layout: default
     Browse earlier papers by topic or in the <a href="{{ '/archives/' | relative_url }}">archive</a>.
   </p>
 
-  {% for topic in site.data.topics %}
-    {% assign group = '' | split: '' %}
-    {% for p in batch %}
-      {% if p.categories[0] == topic.key %}{% assign group = group | push: p %}{% endif %}
+  <div class="topic-filter px-xl-1">
+    <button type="button" class="topic-tile active" data-filter="all">All <span class="n">{{ batch.size }}</span></button>
+    {% for topic in site.data.topics %}
+      {% assign cnt = 0 %}
+      {% for p in batch %}{% if p.categories[0] == topic.key %}{% assign cnt = cnt | plus: 1 %}{% endif %}{% endfor %}
+      {% if cnt > 0 %}
+        <button type="button" class="topic-tile" data-filter="{{ topic.key | slugify }}">{{ topic.key }} <span class="n">{{ cnt }}</span></button>
+      {% endif %}
     {% endfor %}
-    {% if group.size > 0 %}
-      <h2 class="home-topic px-xl-1">{{ topic.name }}</h2>
-      {% assign pfx = topic.key | slugify | append: '-' %}
-      {% include paper-cards.html posts=group idprefix=pfx %}
-    {% endif %}
-  {% endfor %}
+  </div>
+
+  <div id="home-papers">
+    {% include paper-cards.html posts=batch %}
+  </div>
 {% else %}
   <div class="px-xl-1">
     <p>No papers yet. The first digest will appear after the next run.</p>
@@ -36,3 +39,46 @@ layout: default
 {% endif %}
 
 {% include paper-modal.html %}
+
+<style>
+  .topic-filter { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 1.5rem; }
+  .topic-tile {
+    border: 1px solid var(--btn-border-color, rgba(128,128,128,.35));
+    background: var(--card-bg);
+    color: var(--text-color);
+    border-radius: .6rem;
+    padding: .45rem .85rem;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .topic-tile .n { color: var(--text-muted-color); font-weight: 400; margin-left: .3rem; }
+  .topic-tile:hover { border-color: var(--link-color); }
+  .topic-tile.active {
+    background: var(--link-color);
+    color: #fff;
+    border-color: var(--link-color);
+  }
+  .topic-tile.active .n { color: rgba(255, 255, 255, .85); }
+</style>
+
+<script>
+  (function () {
+    var tiles = document.querySelectorAll('.topic-tile');
+    var wrap = document.getElementById('home-papers');
+    if (!tiles.length || !wrap) return;
+    var cards = wrap.querySelectorAll('.paper-card');
+    tiles.forEach(function (t) {
+      t.addEventListener('click', function () {
+        tiles.forEach(function (x) { x.classList.remove('active'); });
+        t.classList.add('active');
+        var f = t.getAttribute('data-filter');
+        cards.forEach(function (c) {
+          var show = (f === 'all') || (c.getAttribute('data-category') === f);
+          c.style.display = show ? '' : 'none';
+        });
+      });
+    });
+  })();
+</script>
