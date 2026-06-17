@@ -23,8 +23,23 @@
   }
   .paper-card__more:hover { background: var(--btn-backtotop-color, rgba(0,0,0,.04)); }
   .paper-card__title { cursor: pointer; }
-  .paper-card__tags a { font-size: .8rem; margin-right: .35rem; white-space: nowrap; }
-  .paper-cat { font-weight: 600; }
+  .paper-card__short {
+    color: var(--text-muted-color);
+    line-height: 1.65;
+    font-size: .95rem;
+  }
+  .paper-topic {
+    display: inline-block;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+    padding: .12rem .6rem;
+    border-radius: 1rem;
+    background: var(--btn-backtotop-color, rgba(0,0,0,.06));
+    color: var(--text-muted-highlight-color) !important;
+    text-decoration: none;
+  }
+  .paper-topic:hover { text-decoration: none; opacity: .85; }
   body.paper-modal-open { overflow: hidden; }
   .paper-modal[hidden] { display: none; }
   .paper-modal {
