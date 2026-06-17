@@ -1,35 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" shape-rendering="crispEdges" role="img" aria-label="Research Tracker logo">
-  <rect x="0" y="0" width="100" height="100" fill="#22223b"/>
+  <!-- head: hair band on top, skin below -->
+  <rect x="0" y="0" width="100" height="25" fill="#1a535c"/>
+  <rect x="0" y="25" width="100" height="75" fill="#4ecdc4"/>
 
-  <!-- red buddy -->
-  <rect x="6" y="6" width="41" height="41" fill="#ff5a5f"/>
-  <rect x="14" y="18" width="9" height="9" fill="#ffffff"/>
-  <rect x="30" y="18" width="9" height="9" fill="#ffffff"/>
-  <rect x="16" y="20" width="5" height="5" fill="#22223b"/>
-  <rect x="32" y="20" width="5" height="5" fill="#22223b"/>
-  <rect x="21" y="34" width="11" height="3" fill="#22223b"/>
+  <!-- subtle hair sideburns -->
+  <rect x="0" y="25" width="12.5" height="12.5" fill="#1a535c"/>
+  <rect x="87.5" y="25" width="12.5" height="12.5" fill="#1a535c"/>
 
-  <!-- blue buddy -->
-  <rect x="53" y="6" width="41" height="41" fill="#3a86ff"/>
-  <rect x="61" y="18" width="9" height="9" fill="#ffffff"/>
-  <rect x="77" y="18" width="9" height="9" fill="#ffffff"/>
-  <rect x="63" y="20" width="5" height="5" fill="#22223b"/>
-  <rect x="79" y="20" width="5" height="5" fill="#22223b"/>
-  <rect x="68" y="34" width="11" height="3" fill="#22223b"/>
+  <!-- left eye (white outer, dark pupil inner) -->
+  <rect x="12.5" y="37.5" width="12.5" height="25" fill="#ffffff"/>
+  <rect x="25" y="37.5" width="12.5" height="25" fill="#14213d"/>
 
-  <!-- yellow buddy -->
-  <rect x="6" y="53" width="41" height="41" fill="#ffbe0b"/>
-  <rect x="14" y="65" width="9" height="9" fill="#ffffff"/>
-  <rect x="30" y="65" width="9" height="9" fill="#ffffff"/>
-  <rect x="16" y="67" width="5" height="5" fill="#22223b"/>
-  <rect x="32" y="67" width="5" height="5" fill="#22223b"/>
-  <rect x="21" y="81" width="11" height="3" fill="#22223b"/>
-
-  <!-- green buddy -->
-  <rect x="53" y="53" width="41" height="41" fill="#38b000"/>
-  <rect x="61" y="65" width="9" height="9" fill="#ffffff"/>
-  <rect x="77" y="65" width="9" height="9" fill="#ffffff"/>
-  <rect x="63" y="67" width="5" height="5" fill="#22223b"/>
-  <rect x="79" y="67" width="5" height="5" fill="#22223b"/>
-  <rect x="68" y="81" width="11" height="3" fill="#22223b"/>
+  <!-- right eye (dark pupil inner, white outer) -->
+  <rect x="62.5" y="37.5" width="12.5" height="25" fill="#14213d"/>
+  <rect x="75" y="37.5" width="12.5" height="25" fill="#ffffff"/>
 </svg>
