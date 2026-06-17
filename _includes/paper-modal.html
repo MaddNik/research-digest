@@ -33,7 +33,12 @@
     padding-bottom: .3rem;
     border-bottom: 1px solid var(--main-border-color, rgba(128,128,128,.25));
   }
-  .paper-card__title { cursor: pointer; }
+  .paper-card__title {
+    color: var(--heading-color);
+    font-size: 1.25rem;
+    cursor: pointer;
+  }
+  .paper-card__title:hover { color: var(--link-color); }
   .paper-card__short {
     color: var(--text-muted-color);
     line-height: 1.65;
