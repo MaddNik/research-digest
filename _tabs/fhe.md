@@ -1,5 +1,5 @@
 ---
-layout: topic
+layout: fhe
 title: FHE
 category: FHE
 heading: "Fully Homomorphic Encryption (FHE)"

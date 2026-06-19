@@ -1,0 +1,114 @@
+---
+layout: page
+---
+
+{% assign resources = site.data.tfhe_resources %}
+{% assign papers = site.categories['FHE'] %}
+
+{% assign all_n = resources.size | plus: papers.size %}
+{% assign tfhe_n = 0 %}
+{% assign fpga_n = 0 %}
+{% assign both_n = 0 %}
+{% for r in resources %}
+  {% if r.tags contains 'tfhe' %}{% assign tfhe_n = tfhe_n | plus: 1 %}{% endif %}
+  {% if r.tags contains 'fhe-fpga' %}{% assign fpga_n = fpga_n | plus: 1 %}{% endif %}
+  {% if r.tags contains 'tfhe' and r.tags contains 'fhe-fpga' %}{% assign both_n = both_n | plus: 1 %}{% endif %}
+{% endfor %}
+{% for p in papers %}
+  {% if p.tags contains 'tfhe' %}{% assign tfhe_n = tfhe_n | plus: 1 %}{% endif %}
+  {% if p.tags contains 'fhe-fpga' %}{% assign fpga_n = fpga_n | plus: 1 %}{% endif %}
+  {% if p.tags contains 'tfhe' and p.tags contains 'fhe-fpga' %}{% assign both_n = both_n | plus: 1 %}{% endif %}
+{% endfor %}
+
+<p class="text-muted px-xl-1">
+  Fully homomorphic encryption, with sub-sections for TFHE, FPGA implementations of FHE,
+  and TFHE on FPGA. Use the tiles to filter. "TFHE on FPGA" shows items that are both.
+</p>
+
+<div class="topic-filter px-xl-1">
+  <button type="button" class="topic-tile active" data-filter="all">All <span class="n">{{ all_n }}</span></button>
+  <button type="button" class="topic-tile" data-filter="tfhe">TFHE <span class="n">{{ tfhe_n }}</span></button>
+  <button type="button" class="topic-tile" data-filter="fhe-fpga">FPGA implementations <span class="n">{{ fpga_n }}</span></button>
+  <button type="button" class="topic-tile" data-filter="tfhe+fhe-fpga">TFHE on FPGA <span class="n">{{ both_n }}</span></button>
+</div>
+
+<div id="fhe-content">
+  <h2 class="fhe-section px-xl-1">Resources</h2>
+  {% include resource-cards.html items=resources %}
+
+  {% if papers and papers.size > 0 %}
+    <h2 class="fhe-section px-xl-1">Recent FHE papers</h2>
+    {% include paper-cards.html posts=papers idprefix="fhe-" %}
+  {% endif %}
+</div>
+
+{% include paper-modal.html %}
+
+<style>
+  .topic-filter { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 1.5rem; }
+  .topic-tile {
+    border: 1px solid var(--btn-border-color, rgba(128,128,128,.35));
+    background: var(--card-bg);
+    color: var(--text-color);
+    border-radius: .6rem;
+    padding: .45rem .85rem;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .topic-tile .n { color: var(--text-muted-color); font-weight: 400; margin-left: .3rem; }
+  .topic-tile:hover { border-color: var(--link-color); }
+  .topic-tile.active { background: var(--link-color); color: #fff; border-color: var(--link-color); }
+  .topic-tile.active .n { color: rgba(255, 255, 255, .85); }
+  .fhe-section {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    padding-bottom: .3rem;
+    border-bottom: 1px solid var(--main-border-color, rgba(128,128,128,.25));
+  }
+  .resource-card .paper-card__title a { color: var(--heading-color); text-decoration: none; }
+  .resource-card .paper-card__title a:hover { text-decoration: underline; }
+</style>
+
+<script>
+  (function () {
+    var tiles = document.querySelectorAll('.topic-tile');
+    var content = document.getElementById('fhe-content');
+    if (!tiles.length || !content) return;
+    var items = content.querySelectorAll('[data-tags]');
+    var sections = content.querySelectorAll('.fhe-section');
+
+    function applyFilter(f) {
+      items.forEach(function (el) {
+        var tags = (el.getAttribute('data-tags') || '').split(/\s+/);
+        var show;
+        if (f === 'all') {
+          show = true;
+        } else if (f.indexOf('+') >= 0) {
+          show = f.split('+').every(function (t) { return tags.indexOf(t) >= 0; });
+        } else {
+          show = tags.indexOf(f) >= 0;
+        }
+        el.style.display = show ? '' : 'none';
+      });
+      // hide a section heading if its list has no visible items
+      sections.forEach(function (h) {
+        var list = h.nextElementSibling;
+        if (!list) return;
+        var anyVisible = Array.prototype.some.call(list.querySelectorAll('[data-tags]'), function (el) {
+          return el.style.display !== 'none';
+        });
+        h.style.display = anyVisible ? '' : 'none';
+      });
+    }
+
+    tiles.forEach(function (t) {
+      t.addEventListener('click', function () {
+        tiles.forEach(function (x) { x.classList.remove('active'); });
+        t.classList.add('active');
+        applyFilter(t.getAttribute('data-filter'));
+      });
+    });
+  })();
+</script>

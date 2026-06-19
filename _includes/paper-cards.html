@@ -8,7 +8,7 @@
   {% for post in include.posts %}
     {% assign cat = post.categories[0] %}
     {% assign cat_slug = cat | downcase | replace: ' ', '-' %}
-    <article class="card-wrapper card paper-card" data-paper-id="{{ pfx }}pf-{{ forloop.index }}" data-category="{{ cat_slug }}">
+    <article class="card-wrapper card paper-card" data-paper-id="{{ pfx }}pf-{{ forloop.index }}" data-category="{{ cat_slug }}" data-tags="{{ post.tags | join: ' ' }}">
       <div class="card-body">
         <h2 class="card-title paper-card__title">{{ post.title }}</h2>
         <div class="paper-card__meta text-muted small mb-2">

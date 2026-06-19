@@ -1,0 +1,24 @@
+{%- comment -%}
+  Renders curated resources as filterable cards (no modal; titles link out).
+  Argument: include.items (list with name, kind, year, tags, url, about).
+{%- endcomment -%}
+<div class="paper-list flex-grow-1 px-xl-1">
+  {% for r in include.items %}
+    <article class="card-wrapper card paper-card resource-card" data-tags="{{ r.tags | join: ' ' }}">
+      <div class="card-body">
+        <h2 class="card-title paper-card__title">
+          {% if r.url and r.url != '' %}
+            <a href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{{ r.name }}</a>
+          {% else %}
+            {{ r.name }}
+          {% endif %}
+        </h2>
+        <div class="paper-card__meta text-muted small mb-2">
+          {% if r.kind %}<span class="paper-topic">{{ r.kind }}</span>{% endif %}
+          {% if r.year %}<span class="px-1">&middot;</span>{{ r.year }}{% endif %}
+        </div>
+        {% if r.about %}<p class="paper-card__short mb-0">{{ r.about }}</p>{% endif %}
+      </div>
+    </article>
+  {% endfor %}
+</div>

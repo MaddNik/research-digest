@@ -48,6 +48,10 @@ slug from the title. Follow `automation/POST_TEMPLATE.md` exactly:
 - `categories` is exactly ONE canonical topic: `Photonics`, `PQC`, `FHE`,
   `Cryptography`, or `Hardware Security`.
 - `tags` are 2 to 4 paper-specific lowercase hyphenated keywords (not the topic name).
+- For FHE papers, also add sub-section tags so they appear under the FHE page filters:
+  add `tfhe` if the paper is about TFHE (torus FHE, CGGI, programmable bootstrapping);
+  add `fhe-fpga` if it is an FPGA implementation or FPGA acceleration of any FHE scheme;
+  add both if it is a TFHE implementation on FPGA.
 - `description` is a one-sentence SHORT summary (shown on the card).
 - The body is the LONGER summary, 4 to 6 sentences (shown in the popup).
 - `byline` and `link` as in the template.

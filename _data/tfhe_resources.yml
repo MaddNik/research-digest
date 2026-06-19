@@ -1,0 +1,156 @@
+# Curated TFHE resources rendered on the FHE page (/fhe/), filterable by the
+# sub-section tiles. tags drive the filter: use "tfhe", "fhe-fpga", or both
+# (both = the "TFHE on FPGA" sub-category). Refreshed/extended over time.
+# Fields: name, kind, year, tags (list), url, about.
+
+# --- Foundational papers (TFHE / FHEW / GSW lineage) ---
+- name: "Homomorphic Encryption from Learning with Errors (GSW)"
+  kind: Foundational paper
+  year: 2013
+  tags: [tfhe]
+  url: "https://eprint.iacr.org/2013/340"
+  about: "Introduces the GSW scheme and the approximate-eigenvector method, the third-generation FHE foundation underlying FHEW and TFHE."
+
+- name: "FHEW: Bootstrapping Homomorphic Encryption in Less Than a Second"
+  kind: Foundational paper
+  year: 2014
+  tags: [tfhe]
+  url: "https://eprint.iacr.org/2014/816"
+  about: "Homomorphically evaluates bit operations and bootstraps in about half a second, the direct GSW-based predecessor to TFHE."
+
+- name: "Faster FHE: Bootstrapping in Less Than 0.1 Seconds (first TFHE paper)"
+  kind: Foundational paper
+  year: 2016
+  tags: [tfhe]
+  url: "https://eprint.iacr.org/2016/870"
+  about: "The first TFHE paper. Replaces the GSW internal product with an external product, cutting gate bootstrapping below 0.1 seconds."
+
+- name: "TFHE: Fast Fully Homomorphic Encryption over the Torus"
+  kind: Foundational paper
+  year: 2020
+  tags: [tfhe]
+  url: "https://eprint.iacr.org/2018/421"
+  about: "The canonical consolidated TFHE reference, reporting gate bootstrapping around 13 ms single core with a compact key."
+
+- name: "Improved Programmable Bootstrapping with Larger Precision (WoP-PBS)"
+  kind: Foundational paper
+  year: 2021
+  tags: [tfhe]
+  url: "https://eprint.iacr.org/2021/729"
+  about: "Programmable bootstrapping without padding, evaluating larger-precision look-up tables without losing a plaintext bit."
+
+- name: "Programmable Bootstrapping Enables Efficient Homomorphic Inference of Deep Neural Networks"
+  kind: Foundational paper
+  year: 2021
+  tags: [tfhe]
+  url: "https://eprint.iacr.org/2021/091"
+  about: "Applies TFHE programmable bootstrapping to neural network inference, evaluating activations as look-up tables during the bootstrap."
+
+# --- Libraries and tools ---
+- name: "tfhe (original C/C++ library)"
+  kind: Library
+  year: 2016
+  tags: [tfhe]
+  url: "https://github.com/tfhe/tfhe"
+  about: "The original open-source C/C++ TFHE implementation with gate-by-gate bootstrapping."
+
+- name: "TFHE-rs (Zama)"
+  kind: Library
+  year: 2022
+  tags: [tfhe]
+  url: "https://github.com/zama-ai/tfhe-rs"
+  about: "Actively maintained pure-Rust implementation of an enhanced TFHE variant for boolean and integer arithmetic, with Rust, C, and WASM APIs."
+
+- name: "Concrete (Zama)"
+  kind: Library
+  year: 2021
+  tags: [tfhe]
+  url: "https://github.com/zama-ai/concrete"
+  about: "An MLIR-based TFHE compiler that converts Python programs into FHE circuits with automatic parameter selection."
+
+- name: "Concrete ML (Zama)"
+  kind: Library
+  year: 2022
+  tags: [tfhe]
+  url: "https://github.com/zama-ai/concrete-ml"
+  about: "A privacy-preserving machine learning framework on Concrete that converts scikit-learn and PyTorch models to FHE."
+
+- name: "OpenFHE"
+  kind: Library
+  year: 2022
+  tags: [tfhe]
+  url: "https://github.com/openfheorg/openfhe-development"
+  about: "A broad FHE library supporting BGV, BFV, CKKS, and DM/CGGI (FHEW/TFHE), including CKKS to FHEW/TFHE scheme switching."
+
+- name: "cuFHE"
+  kind: Library
+  year: 2018
+  tags: [tfhe]
+  url: "https://github.com/vernamlab/cuFHE"
+  about: "A CUDA library implementing TFHE gate bootstrapping on NVIDIA GPUs."
+
+# --- Surveys, tutorials, indexes ---
+- name: "TFHE Deep Dive (Zama blog series)"
+  kind: Tutorial
+  year: 2022
+  tags: [tfhe]
+  url: "https://www.zama.ai/post/tfhe-deep-dive-part-4"
+  about: "A blog series walking through TFHE ciphertext types, key switching, CMux, modulus switching, blind rotation, and programmable bootstrapping."
+
+- name: "awesome-zama"
+  kind: Index
+  year: 2024
+  tags: [tfhe]
+  url: "https://github.com/zama-ai/awesome-zama"
+  about: "A curated, regularly updated index of FHE papers, talks, and tools."
+
+- name: "Bootstrapping in FHEW-like Cryptosystems"
+  kind: Survey
+  year: 2021
+  tags: [tfhe]
+  url: "https://eprint.iacr.org/2020/086"
+  about: "A unified treatment comparing FHEW (DM) and TFHE (CGGI) bootstrapping, underpinning OpenFHE binary FHE."
+
+- name: "SoK: Fully Homomorphic Encryption Accelerators"
+  kind: Survey
+  year: 2024
+  tags: [fhe-fpga]
+  url: "https://arxiv.org/abs/2212.01713"
+  about: "Surveys FHE hardware accelerators across GPU, FPGA, and ASIC with comparisons and future directions. A good single entry point."
+
+# --- FPGA implementations of FHE ---
+- name: "HEAX: An Architecture for Computing on Encrypted Data"
+  kind: Paper
+  year: 2020
+  tags: [fhe-fpga]
+  url: "https://arxiv.org/abs/1909.09731"
+  about: "An FPGA architecture accelerating CKKS, including key switching, via multi-level NTT parallelism."
+
+- name: "FAB: An FPGA-based Accelerator for Bootstrappable FHE"
+  kind: Paper
+  year: 2023
+  tags: [fhe-fpga]
+  url: "https://arxiv.org/abs/2207.11872"
+  about: "The first FPGA accelerator for bootstrappable CKKS at practical parameters, reporting large speedups over CPU and GPU."
+
+# --- TFHE on FPGA (intersection: tagged both) ---
+- name: "MATCHA: A Fast and Energy-Efficient Accelerator for FHE over the Torus"
+  kind: Paper
+  year: 2022
+  tags: [tfhe, fhe-fpga]
+  url: "https://arxiv.org/abs/2202.08814"
+  about: "A TFHE gate accelerator (FPGA and ASIC) using key unrolling and multiplication-less integer FFTs to raise throughput and efficiency."
+
+- name: "FPT: a Fixed-Point Accelerator for Torus FHE"
+  kind: Paper
+  year: 2023
+  tags: [tfhe, fhe-fpga]
+  url: "https://arxiv.org/abs/2211.13696"
+  about: "The first accelerator performing TFHE bootstrapping entirely in approximate fixed-point arithmetic, reaching roughly one bootstrap per 35 microseconds on an Alveo U280."
+
+- name: "Towards a Functionally Complete and Parameterizable TFHE Processor"
+  kind: Paper
+  year: 2025
+  tags: [tfhe, fhe-fpga]
+  url: "https://arxiv.org/abs/2510.23483"
+  about: "An FPGA TFHE processor for homomorphic circuits, with a bootstrapping module reported to be several times faster than prior state of the art."
