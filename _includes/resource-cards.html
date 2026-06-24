@@ -18,9 +18,14 @@
           {% if r.year %}<span class="px-1">&middot;</span>{{ r.year }}{% endif %}
         </div>
         {% if r.about %}<p class="paper-card__short mb-0">{{ r.about }}</p>{% endif %}
-        <button type="button" class="bm-btn" aria-label="Bookmark" aria-pressed="false"
-          data-bm-id="{{ r.url }}" data-bm-title="{{ r.name | escape }}"
-          data-bm-url="{{ r.url }}" data-bm-cat="FHE" data-bm-kind="{{ r.kind | escape }}"><i class="fas fa-bookmark"></i></button>
+        <span class="card-actions">
+          <button type="button" class="rt-btn" data-rt-list="toread" aria-label="Add to read list" title="To read"
+            data-rt-id="{{ r.url }}" data-rt-title="{{ r.name | escape }}"
+            data-rt-url="{{ r.url }}" data-rt-cat="FHE" data-rt-kind="{{ r.kind | escape }}"><i class="fas fa-book-open"></i></button>
+          <button type="button" class="rt-btn" data-rt-list="saved" aria-label="Save" title="Save"
+            data-rt-id="{{ r.url }}" data-rt-title="{{ r.name | escape }}"
+            data-rt-url="{{ r.url }}" data-rt-cat="FHE" data-rt-kind="{{ r.kind | escape }}"><i class="fas fa-bookmark"></i></button>
+        </span>
       </div>
     </article>
   {% endfor %}

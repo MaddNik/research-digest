@@ -1,29 +1,28 @@
-{%- comment -%} Client-side bookmarks: card buttons, full Bookmarks page, right-side panel, floating button, count badges. Stored in localStorage. {%- endcomment -%}
+{%- comment -%} Personal research lists (Saved + To read), stored in localStorage. Card buttons, My Research page, right panel, floating button, counts. {%- endcomment -%}
 
-<a href="{{ '/bookmarks/' | relative_url }}" id="bm-float" aria-label="Bookmarks" title="Bookmarks">
-  <i class="fas fa-bookmark"></i><span class="bm-count" hidden></span>
+<a href="{{ '/my-research/' | relative_url }}" id="bm-float" aria-label="My Research" title="My Research">
+  <i class="fas fa-bookmark"></i><span class="rt-count" data-rt-count="all" hidden></span>
 </a>
 
 <style>
   .paper-card .card-body { position: relative; }
-  .paper-card__title { padding-right: 1.7rem; }
-  .bm-btn {
+  .paper-card__title { padding-right: 3.3rem; }
+  .card-actions { position: absolute; top: .8rem; right: .8rem; display: inline-flex; gap: .15rem; }
+  .rt-btn {
     border: 0; background: transparent; cursor: pointer;
     color: var(--text-muted-color); font-size: 1rem; line-height: 1; padding: .15rem .2rem;
   }
-  .paper-card .bm-btn { position: absolute; top: .8rem; right: .8rem; }
-  .bm-btn:hover { color: var(--link-color); }
-  .bm-btn.is-bookmarked { color: #f0a500; }
-  #bookmarks-list .bm-group { margin-top: 1.5rem; }
-  #bookmarks-list .bm-empty, #bookmarks-panel .bm-empty { color: var(--text-muted-color); }
-  #bookmarks-list li .bm-btn { font-size: .9rem; }
-  /* count badges */
-  .bm-count {
+  .rt-btn:hover { color: var(--link-color); }
+  .rt-btn.is-on[data-rt-list="saved"] { color: #f0a500; }
+  .rt-btn.is-on[data-rt-list="toread"] { color: #4ea1d3; }
+  .rt-list .rt-group { margin-top: 1.2rem; }
+  .rt-list .rt-empty { color: var(--text-muted-color); }
+  .rt-list li .rt-btn { font-size: .9rem; }
+  .rt-count {
     display: inline-block; min-width: 1.1em; padding: 0 .35em;
     font-size: .7rem; font-weight: 700; line-height: 1.4;
-    color: #fff; background: #f0a500; border-radius: 1rem; vertical-align: top;
+    color: #fff; background: #f0a500; border-radius: 1rem; vertical-align: middle;
   }
-  /* floating button */
   #bm-float {
     position: fixed; left: 1.2rem; bottom: 1.2rem; z-index: 1000;
     width: 2.8rem; height: 2.8rem; border-radius: 50%;
@@ -32,20 +31,23 @@
     box-shadow: var(--card-shadow); text-decoration: none;
   }
   #bm-float:hover { color: var(--link-color); }
-  #bm-float .bm-count { position: absolute; top: -.2rem; right: -.2rem; }
-  /* topbar icon badge spacing */
-  #bm-topbar .bm-count { margin-left: -.4rem; }
+  #bm-float .rt-count { position: absolute; top: -.2rem; right: -.2rem; }
+  #bm-topbar .rt-count { margin-left: -.4rem; }
 </style>
 
 <script>
   (function () {
-    var KEY = 'rt_bookmarks';
-    var BM_URL = '{{ "/bookmarks/" | relative_url }}';
+    var KEY = 'rt_lists';
+    var MR_URL = '{{ "/my-research/" | relative_url }}';
     var TOPICS = {{ site.data.topics | jsonify }};
+    var LISTS = ['toread', 'saved'];
 
     function load() {
-      try { return JSON.parse(localStorage.getItem(KEY) || '{}'); }
-      catch (e) { return {}; }
+      try {
+        var o = JSON.parse(localStorage.getItem(KEY) || '{}');
+        LISTS.forEach(function (l) { if (!o[l]) o[l] = {}; });
+        return o;
+      } catch (e) { return { toread: {}, saved: {} }; }
     }
     function save(o) { localStorage.setItem(KEY, JSON.stringify(o)); }
     var store = load();
@@ -55,33 +57,38 @@
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
       });
     }
-
-    function count() { return Object.keys(store).length; }
+    function size(l) { return Object.keys(store[l] || {}).length; }
 
     function updateCounts() {
-      var n = count();
-      document.querySelectorAll('.bm-count').forEach(function (el) {
+      document.querySelectorAll('.rt-count').forEach(function (el) {
+        var which = el.getAttribute('data-rt-count');
+        var n = which === 'all' ? (size('saved') + size('toread')) : size(which);
         el.textContent = n;
         if (n > 0) { el.removeAttribute('hidden'); } else { el.setAttribute('hidden', ''); }
       });
     }
 
     function refreshButtons() {
-      document.querySelectorAll('.bm-btn').forEach(function (b) {
-        var id = b.getAttribute('data-bm-id');
-        var on = !!store[id];
-        b.classList.toggle('is-bookmarked', on);
-        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      document.querySelectorAll('.rt-btn').forEach(function (b) {
+        var l = b.getAttribute('data-rt-list');
+        var id = b.getAttribute('data-rt-id');
+        b.classList.toggle('is-on', !!(store[l] && store[l][id]));
       });
     }
 
-    function grouped() {
+    function groupedHtml(list) {
+      var items = store[list] || {};
+      var ids = Object.keys(items);
+      if (!ids.length) {
+        return '<p class="rt-empty">Nothing here yet. Use the ' +
+          (list === 'saved' ? 'bookmark' : 'book') + ' icon on a card.</p>';
+      }
       var order = TOPICS.map(function (t) { return t.key; });
       var names = {};
       TOPICS.forEach(function (t) { names[t.key] = t.name; });
       var groups = {};
-      Object.keys(store).forEach(function (id) {
-        var it = store[id];
+      ids.forEach(function (id) {
+        var it = items[id];
         var c = it.cat || 'Other';
         (groups[c] = groups[c] || []).push(it);
       });
@@ -91,73 +98,59 @@
         if (ib < 0) ib = 999;
         return (ia - ib) || a.localeCompare(b);
       });
-      return { groups: groups, cats: cats, names: names };
-    }
-
-    function renderList() {
-      var wrap = document.getElementById('bookmarks-list');
-      if (!wrap) return;
-      if (!count()) {
-        wrap.innerHTML = '<p class="bm-empty">No bookmarks yet. Click the bookmark icon on any paper or resource to save it here. Bookmarks are kept in this browser.</p>';
-        return;
-      }
-      var g = grouped();
       var html = '';
-      g.cats.forEach(function (c) {
-        html += '<section class="bm-group"><h2 class="fhe-section">' + esc(g.names[c] || c) + '</h2><ul class="content list-unstyled ps-0">';
-        g.groups[c].forEach(function (it) {
+      cats.forEach(function (c) {
+        html += '<div class="rt-group"><h3>' + esc(names[c] || c) + '</h3><ul class="content list-unstyled ps-0">';
+        groups[c].forEach(function (it) {
           html += '<li class="lh-lg"><a href="' + esc(it.url) + '">' + esc(it.title) + '</a>' +
             (it.kind ? ' <span class="text-muted small">' + esc(it.kind) + '</span>' : '') +
-            ' <button type="button" class="bm-btn is-bookmarked" aria-label="Remove bookmark" data-bm-id="' + esc(it.url) +
-            '" data-bm-title="' + esc(it.title) + '" data-bm-url="' + esc(it.url) +
-            '" data-bm-cat="' + esc(it.cat) + '" data-bm-kind="' + esc(it.kind || '') +
-            '"><i class="fas fa-bookmark"></i></button></li>';
+            ' <button type="button" class="rt-btn is-on" data-rt-list="' + list + '" aria-label="Remove" title="Remove" data-rt-id="' + esc(it.url) +
+            '" data-rt-title="' + esc(it.title) + '" data-rt-url="' + esc(it.url) +
+            '" data-rt-cat="' + esc(it.cat) + '" data-rt-kind="' + esc(it.kind || '') +
+            '"><i class="fas fa-' + (list === 'saved' ? 'bookmark' : 'book-open') + '"></i></button></li>';
         });
-        html += '</ul></section>';
+        html += '</ul></div>';
       });
-      wrap.innerHTML = html;
+      return html;
+    }
+
+    function renderLists() {
+      var s = document.getElementById('saved-list');
+      if (s) s.classList.add('rt-list'), s.innerHTML = groupedHtml('saved');
+      var t = document.getElementById('toread-list');
+      if (t) t.classList.add('rt-list'), t.innerHTML = groupedHtml('toread');
     }
 
     function renderPanel() {
       var body = document.querySelector('#bookmarks-panel .bm-panel-body');
       if (!body) return;
-      var n = count();
-      if (!n) {
-        body.innerHTML = '<p class="bm-empty">Nothing saved yet. Use the bookmark icon on a card.</p>';
+      var ns = size('saved'); var nt = size('toread');
+      if (!ns && !nt) {
+        body.innerHTML = '<p class="rt-empty">Nothing saved yet. Use the icons on a card.</p>';
         return;
       }
-      var ids = Object.keys(store);
-      var html = '<ul class="list-unstyled ps-0 mb-1">';
-      ids.slice(0, 6).forEach(function (id) {
-        var it = store[id];
-        html += '<li class="text-truncate lh-lg"><a href="' + esc(it.url) + '">' + esc(it.title) + '</a></li>';
-      });
-      html += '</ul>';
-      html += '<a href="' + esc(BM_URL) + '">View all (' + n + ')</a>';
-      body.innerHTML = html;
+      body.innerHTML = '<p class="mb-1">Saved: ' + ns + ' &middot; To read: ' + nt +
+        '</p><a href="' + esc(MR_URL) + '">Open My Research</a>';
     }
 
-    function renderAll() {
-      refreshButtons();
-      updateCounts();
-      renderList();
-      renderPanel();
-    }
+    function renderAll() { refreshButtons(); updateCounts(); renderLists(); renderPanel(); }
 
     document.addEventListener('click', function (e) {
-      var b = e.target.closest('.bm-btn');
+      var b = e.target.closest('.rt-btn');
       if (!b) return;
       e.preventDefault();
       e.stopPropagation();
-      var id = b.getAttribute('data-bm-id');
-      if (store[id]) {
-        delete store[id];
+      var l = b.getAttribute('data-rt-list');
+      var id = b.getAttribute('data-rt-id');
+      if (!store[l]) store[l] = {};
+      if (store[l][id]) {
+        delete store[l][id];
       } else {
-        store[id] = {
-          title: b.getAttribute('data-bm-title'),
-          url: b.getAttribute('data-bm-url'),
-          cat: b.getAttribute('data-bm-cat') || 'Other',
-          kind: b.getAttribute('data-bm-kind') || ''
+        store[l][id] = {
+          title: b.getAttribute('data-rt-title'),
+          url: b.getAttribute('data-rt-url'),
+          cat: b.getAttribute('data-rt-cat') || 'Other',
+          kind: b.getAttribute('data-rt-kind') || ''
         };
       }
       save(store);
