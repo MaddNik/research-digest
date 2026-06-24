@@ -1,7 +1,7 @@
 ---
 # the default layout is 'page'
 icon: fas fa-info-circle
-order: 10
+order: 11
 ---
 
 This is a personal site I use to keep track of research I care about, across

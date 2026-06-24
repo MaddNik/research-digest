@@ -1,0 +1,113 @@
+{%- comment -%} Client-side bookmarks: toggle buttons on cards + render on the Bookmarks page. Stored in localStorage. {%- endcomment -%}
+<style>
+  .paper-card .card-body { position: relative; }
+  .paper-card__title { padding-right: 1.7rem; }
+  .bm-btn {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-muted-color);
+    font-size: 1rem;
+    line-height: 1;
+    padding: .15rem .2rem;
+  }
+  .paper-card .bm-btn { position: absolute; top: .8rem; right: .8rem; }
+  .bm-btn:hover { color: var(--link-color); }
+  .bm-btn.is-bookmarked { color: #f0a500; }
+  #bookmarks-list .bm-group { margin-top: 1.5rem; }
+  #bookmarks-list .bm-empty { color: var(--text-muted-color); }
+  #bookmarks-list li .bm-btn { font-size: .9rem; }
+</style>
+
+<script>
+  (function () {
+    var KEY = 'rt_bookmarks';
+    var TOPICS = {{ site.data.topics | jsonify }};
+
+    function load() {
+      try { return JSON.parse(localStorage.getItem(KEY) || '{}'); }
+      catch (e) { return {}; }
+    }
+    function save(o) { localStorage.setItem(KEY, JSON.stringify(o)); }
+    var store = load();
+
+    function esc(s) {
+      return (s || '').replace(/[&<>"]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+      });
+    }
+
+    function refreshButtons() {
+      document.querySelectorAll('.bm-btn').forEach(function (b) {
+        var id = b.getAttribute('data-bm-id');
+        var on = !!store[id];
+        b.classList.toggle('is-bookmarked', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.setAttribute('title', on ? 'Remove bookmark' : 'Bookmark');
+      });
+    }
+
+    function renderList() {
+      var wrap = document.getElementById('bookmarks-list');
+      if (!wrap) return;
+      var ids = Object.keys(store);
+      if (!ids.length) {
+        wrap.innerHTML = '<p class="bm-empty">No bookmarks yet. Click the bookmark icon on any paper or resource to save it here. Bookmarks are kept in this browser.</p>';
+        return;
+      }
+      var order = TOPICS.map(function (t) { return t.key; });
+      var names = {};
+      TOPICS.forEach(function (t) { names[t.key] = t.name; });
+      var groups = {};
+      ids.forEach(function (id) {
+        var it = store[id];
+        var c = it.cat || 'Other';
+        (groups[c] = groups[c] || []).push(it);
+      });
+      var cats = Object.keys(groups).sort(function (a, b) {
+        var ia = order.indexOf(a); var ib = order.indexOf(b);
+        if (ia < 0) ia = 999;
+        if (ib < 0) ib = 999;
+        return (ia - ib) || a.localeCompare(b);
+      });
+      var html = '';
+      cats.forEach(function (c) {
+        html += '<section class="bm-group"><h2 class="fhe-section">' + esc(names[c] || c) + '</h2><ul class="content list-unstyled ps-0">';
+        groups[c].forEach(function (it) {
+          html += '<li class="lh-lg"><a href="' + esc(it.url) + '">' + esc(it.title) + '</a>' +
+            (it.kind ? ' <span class="text-muted small">' + esc(it.kind) + '</span>' : '') +
+            ' <button type="button" class="bm-btn is-bookmarked" aria-label="Remove bookmark" data-bm-id="' + esc(it.url) +
+            '" data-bm-title="' + esc(it.title) + '" data-bm-url="' + esc(it.url) +
+            '" data-bm-cat="' + esc(it.cat) + '" data-bm-kind="' + esc(it.kind || '') +
+            '"><i class="fas fa-bookmark"></i></button></li>';
+        });
+        html += '</ul></section>';
+      });
+      wrap.innerHTML = html;
+    }
+
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('.bm-btn');
+      if (!b) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var id = b.getAttribute('data-bm-id');
+      if (store[id]) {
+        delete store[id];
+      } else {
+        store[id] = {
+          title: b.getAttribute('data-bm-title'),
+          url: b.getAttribute('data-bm-url'),
+          cat: b.getAttribute('data-bm-cat') || 'Other',
+          kind: b.getAttribute('data-bm-kind') || ''
+        };
+      }
+      save(store);
+      refreshButtons();
+      renderList();
+    });
+
+    refreshButtons();
+    renderList();
+  })();
+</script>

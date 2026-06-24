@@ -22,6 +22,9 @@
         {% endif %}
         <p class="paper-card__short mb-2">{{ post.description }}</p>
         <button type="button" class="paper-card__more" data-target="{{ pfx }}pf-{{ forloop.index }}">Read summary</button>
+        <button type="button" class="bm-btn" aria-label="Bookmark" aria-pressed="false"
+          data-bm-id="{{ post.url | relative_url }}" data-bm-title="{{ post.title | escape }}"
+          data-bm-url="{{ post.url | relative_url }}" data-bm-cat="{{ cat }}" data-bm-kind="Paper"><i class="fas fa-bookmark"></i></button>
       </div>
       <template id="{{ pfx }}pf-{{ forloop.index }}">
         <div class="pf-title">{{ post.title }}</div>
