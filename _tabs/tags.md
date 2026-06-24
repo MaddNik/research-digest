@@ -1,5 +1,6 @@
 ---
 layout: tags
 icon: fas fa-tags
-order: 9
+group: Browse
+order: 7
 ---

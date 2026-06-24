@@ -1,32 +1,88 @@
 ---
 layout: page
-# A readable alphabetical tag index.
+# Tags grouped by field, as collapsible tile sections.
 ---
 
-{% assign sorted = site.tags | sort %}
+{% assign total = site.tags | size %}
+<p class="text-muted">{{ total }} tag{% if total != 1 %}s{% endif %}, grouped by field. Click a heading to collapse or expand.</p>
 
-{% if sorted.size > 0 %}
-  <ul id="tags-index" class="list-unstyled">
-    {% for t in sorted %}
-      <li>
-        <a class="tag-link" href="{{ t[0] | slugify | url_encode | prepend: '/tags/' | append: '/' | relative_url }}">{{ t[0] }}</a>
-        <span class="text-muted">({{ t[1].size }})</span>
-      </li>
+{% assign shown_tags = '' | split: '' %}
+
+{% for topic in site.data.topics %}
+  {% assign cat_posts = site.categories[topic.key] %}
+  {% if cat_posts and cat_posts.size > 0 %}
+    {% assign bag = '' | split: '' %}
+    {% for p in cat_posts %}
+      {% for t in p.tags %}{% assign bag = bag | push: t %}{% endfor %}
     {% endfor %}
-  </ul>
-{% else %}
-  <p>No tags yet.</p>
+    {% assign uniq = bag | uniq | sort_natural %}
+    {% if uniq.size > 0 %}
+      <details class="tag-group" open>
+        <summary>
+          <span class="tag-group-name">{{ topic.name }}</span>
+          <span class="tag-group-n">{{ uniq.size }}</span>
+        </summary>
+        <div class="tag-tiles">
+          {% for t in uniq %}
+            {% assign shown_tags = shown_tags | push: t %}
+            {% assign c = 0 %}
+            {% for x in bag %}{% if x == t %}{% assign c = c | plus: 1 %}{% endif %}{% endfor %}
+            <a class="tag-tile" href="{{ t | slugify | url_encode | prepend: '/tags/' | append: '/' | relative_url }}">
+              {{ t }}<span class="tag-tile-n">{{ c }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </details>
+    {% endif %}
+  {% endif %}
+{% endfor %}
+
+{%- comment -%} Any tags not covered by the topic categories above. {%- endcomment -%}
+{% assign leftover = '' | split: '' %}
+{% for t in site.tags %}
+  {% unless shown_tags contains t[0] %}{% assign leftover = leftover | push: t[0] %}{% endunless %}
+{% endfor %}
+{% if leftover.size > 0 %}
+  <details class="tag-group" open>
+    <summary>
+      <span class="tag-group-name">Other</span>
+      <span class="tag-group-n">{{ leftover.size }}</span>
+    </summary>
+    <div class="tag-tiles">
+      {% for t in leftover %}
+        <a class="tag-tile" href="{{ t | slugify | url_encode | prepend: '/tags/' | append: '/' | relative_url }}">
+          {{ t }}<span class="tag-tile-n">{{ site.tags[t].size }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </details>
 {% endif %}
 
 <style>
-  #tags-index {
-    column-width: 13rem;
-    column-gap: 2.5rem;
-    margin-top: 1rem;
+  .tag-group {
+    border-bottom: 1px solid var(--main-border-color, rgba(128, 128, 128, .2));
+    padding: .7rem 0;
   }
-  #tags-index li {
-    line-height: 1.9;
-    break-inside: avoid;
+  .tag-group > summary {
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 600;
   }
-  #tags-index a.tag-link { font-weight: 600; }
+  .tag-group-name { color: var(--heading-color); }
+  .tag-group-n {
+    color: var(--text-muted-color);
+    font-weight: 400;
+    font-size: .8rem;
+    margin-left: .35rem;
+  }
+  .tag-tiles { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .9rem; }
+  .tag-tile {
+    display: inline-flex; align-items: center; gap: .4rem;
+    border: 1px solid var(--btn-border-color, rgba(128, 128, 128, .35));
+    border-radius: 1rem; padding: .22rem .75rem;
+    font-size: .82rem; color: var(--text-color); text-decoration: none;
+    background: var(--card-bg);
+  }
+  .tag-tile:hover { border-color: var(--link-color); color: var(--link-color); }
+  .tag-tile-n { color: var(--text-muted-color); font-size: .72rem; }
 </style>

@@ -1,27 +1,46 @@
-{%- comment -%} Client-side bookmarks: toggle buttons on cards + render on the Bookmarks page. Stored in localStorage. {%- endcomment -%}
+{%- comment -%} Client-side bookmarks: card buttons, full Bookmarks page, right-side panel, floating button, count badges. Stored in localStorage. {%- endcomment -%}
+
+<a href="{{ '/bookmarks/' | relative_url }}" id="bm-float" aria-label="Bookmarks" title="Bookmarks">
+  <i class="fas fa-bookmark"></i><span class="bm-count" hidden></span>
+</a>
+
 <style>
   .paper-card .card-body { position: relative; }
   .paper-card__title { padding-right: 1.7rem; }
   .bm-btn {
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-    color: var(--text-muted-color);
-    font-size: 1rem;
-    line-height: 1;
-    padding: .15rem .2rem;
+    border: 0; background: transparent; cursor: pointer;
+    color: var(--text-muted-color); font-size: 1rem; line-height: 1; padding: .15rem .2rem;
   }
   .paper-card .bm-btn { position: absolute; top: .8rem; right: .8rem; }
   .bm-btn:hover { color: var(--link-color); }
   .bm-btn.is-bookmarked { color: #f0a500; }
   #bookmarks-list .bm-group { margin-top: 1.5rem; }
-  #bookmarks-list .bm-empty { color: var(--text-muted-color); }
+  #bookmarks-list .bm-empty, #bookmarks-panel .bm-empty { color: var(--text-muted-color); }
   #bookmarks-list li .bm-btn { font-size: .9rem; }
+  /* count badges */
+  .bm-count {
+    display: inline-block; min-width: 1.1em; padding: 0 .35em;
+    font-size: .7rem; font-weight: 700; line-height: 1.4;
+    color: #fff; background: #f0a500; border-radius: 1rem; vertical-align: top;
+  }
+  /* floating button */
+  #bm-float {
+    position: fixed; left: 1.2rem; bottom: 1.2rem; z-index: 1000;
+    width: 2.8rem; height: 2.8rem; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--card-bg); color: var(--text-color);
+    box-shadow: var(--card-shadow); text-decoration: none;
+  }
+  #bm-float:hover { color: var(--link-color); }
+  #bm-float .bm-count { position: absolute; top: -.2rem; right: -.2rem; }
+  /* topbar icon badge spacing */
+  #bm-topbar .bm-count { margin-left: -.4rem; }
 </style>
 
 <script>
   (function () {
     var KEY = 'rt_bookmarks';
+    var BM_URL = '{{ "/bookmarks/" | relative_url }}';
     var TOPICS = {{ site.data.topics | jsonify }};
 
     function load() {
@@ -37,29 +56,31 @@
       });
     }
 
+    function count() { return Object.keys(store).length; }
+
+    function updateCounts() {
+      var n = count();
+      document.querySelectorAll('.bm-count').forEach(function (el) {
+        el.textContent = n;
+        if (n > 0) { el.removeAttribute('hidden'); } else { el.setAttribute('hidden', ''); }
+      });
+    }
+
     function refreshButtons() {
       document.querySelectorAll('.bm-btn').forEach(function (b) {
         var id = b.getAttribute('data-bm-id');
         var on = !!store[id];
         b.classList.toggle('is-bookmarked', on);
         b.setAttribute('aria-pressed', on ? 'true' : 'false');
-        b.setAttribute('title', on ? 'Remove bookmark' : 'Bookmark');
       });
     }
 
-    function renderList() {
-      var wrap = document.getElementById('bookmarks-list');
-      if (!wrap) return;
-      var ids = Object.keys(store);
-      if (!ids.length) {
-        wrap.innerHTML = '<p class="bm-empty">No bookmarks yet. Click the bookmark icon on any paper or resource to save it here. Bookmarks are kept in this browser.</p>';
-        return;
-      }
+    function grouped() {
       var order = TOPICS.map(function (t) { return t.key; });
       var names = {};
       TOPICS.forEach(function (t) { names[t.key] = t.name; });
       var groups = {};
-      ids.forEach(function (id) {
+      Object.keys(store).forEach(function (id) {
         var it = store[id];
         var c = it.cat || 'Other';
         (groups[c] = groups[c] || []).push(it);
@@ -70,10 +91,21 @@
         if (ib < 0) ib = 999;
         return (ia - ib) || a.localeCompare(b);
       });
+      return { groups: groups, cats: cats, names: names };
+    }
+
+    function renderList() {
+      var wrap = document.getElementById('bookmarks-list');
+      if (!wrap) return;
+      if (!count()) {
+        wrap.innerHTML = '<p class="bm-empty">No bookmarks yet. Click the bookmark icon on any paper or resource to save it here. Bookmarks are kept in this browser.</p>';
+        return;
+      }
+      var g = grouped();
       var html = '';
-      cats.forEach(function (c) {
-        html += '<section class="bm-group"><h2 class="fhe-section">' + esc(names[c] || c) + '</h2><ul class="content list-unstyled ps-0">';
-        groups[c].forEach(function (it) {
+      g.cats.forEach(function (c) {
+        html += '<section class="bm-group"><h2 class="fhe-section">' + esc(g.names[c] || c) + '</h2><ul class="content list-unstyled ps-0">';
+        g.groups[c].forEach(function (it) {
           html += '<li class="lh-lg"><a href="' + esc(it.url) + '">' + esc(it.title) + '</a>' +
             (it.kind ? ' <span class="text-muted small">' + esc(it.kind) + '</span>' : '') +
             ' <button type="button" class="bm-btn is-bookmarked" aria-label="Remove bookmark" data-bm-id="' + esc(it.url) +
@@ -84,6 +116,32 @@
         html += '</ul></section>';
       });
       wrap.innerHTML = html;
+    }
+
+    function renderPanel() {
+      var body = document.querySelector('#bookmarks-panel .bm-panel-body');
+      if (!body) return;
+      var n = count();
+      if (!n) {
+        body.innerHTML = '<p class="bm-empty">Nothing saved yet. Use the bookmark icon on a card.</p>';
+        return;
+      }
+      var ids = Object.keys(store);
+      var html = '<ul class="list-unstyled ps-0 mb-1">';
+      ids.slice(0, 6).forEach(function (id) {
+        var it = store[id];
+        html += '<li class="text-truncate lh-lg"><a href="' + esc(it.url) + '">' + esc(it.title) + '</a></li>';
+      });
+      html += '</ul>';
+      html += '<a href="' + esc(BM_URL) + '">View all (' + n + ')</a>';
+      body.innerHTML = html;
+    }
+
+    function renderAll() {
+      refreshButtons();
+      updateCounts();
+      renderList();
+      renderPanel();
     }
 
     document.addEventListener('click', function (e) {
@@ -103,11 +161,9 @@
         };
       }
       save(store);
-      refreshButtons();
-      renderList();
+      renderAll();
     });
 
-    refreshButtons();
-    renderList();
+    renderAll();
   })();
 </script>
