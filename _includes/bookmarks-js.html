@@ -1,8 +1,4 @@
-{%- comment -%} Personal research lists (Saved + To read), stored in localStorage. Card buttons, My Research page, right panel, floating button, counts. {%- endcomment -%}
-
-<a href="{{ '/my-research/' | relative_url }}" id="bm-float" aria-label="My Research" title="My Research">
-  <i class="fas fa-bookmark"></i><span class="rt-count" data-rt-count="all" hidden></span>
-</a>
+{%- comment -%} Personal research lists (Saved + To read), stored in localStorage. Card buttons, My Research page, top-bar counts. {%- endcomment -%}
 
 <style>
   .paper-card .card-body { position: relative; }
@@ -23,16 +19,8 @@
     font-size: .7rem; font-weight: 700; line-height: 1.4;
     color: #fff; background: #f0a500; border-radius: 1rem; vertical-align: middle;
   }
-  #bm-float {
-    position: fixed; left: 1.2rem; bottom: 1.2rem; z-index: 1000;
-    width: 2.8rem; height: 2.8rem; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--card-bg); color: var(--text-color);
-    box-shadow: var(--card-shadow); text-decoration: none;
-  }
-  #bm-float:hover { color: var(--link-color); }
-  #bm-float .rt-count { position: absolute; top: -.2rem; right: -.2rem; }
-  #bm-topbar .rt-count { margin-left: -.4rem; }
+  .rt-topbar { position: relative; }
+  .rt-topbar .rt-count { position: absolute; top: .1rem; right: .05rem; }
 </style>
 
 <script>
@@ -121,19 +109,7 @@
       if (t) t.classList.add('rt-list'), t.innerHTML = groupedHtml('toread');
     }
 
-    function renderPanel() {
-      var body = document.querySelector('#bookmarks-panel .bm-panel-body');
-      if (!body) return;
-      var ns = size('saved'); var nt = size('toread');
-      if (!ns && !nt) {
-        body.innerHTML = '<p class="rt-empty">Nothing saved yet. Use the icons on a card.</p>';
-        return;
-      }
-      body.innerHTML = '<p class="mb-1">Saved: ' + ns + ' &middot; To read: ' + nt +
-        '</p><a href="' + esc(MR_URL) + '">Open My Research</a>';
-    }
-
-    function renderAll() { refreshButtons(); updateCounts(); renderLists(); renderPanel(); }
+    function renderAll() { refreshButtons(); updateCounts(); renderLists(); }
 
     document.addEventListener('click', function (e) {
       var b = e.target.closest('.rt-btn');
