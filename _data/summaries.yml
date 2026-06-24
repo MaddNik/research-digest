@@ -8,6 +8,7 @@
   source_type: "PDF (text-layer, figures rasterized from vector diagrams)  -  IACR ePrint 2018/421, retrieved via Wayback Machine"
   source_url: "https://eprint.iacr.org/2018/421"
   pdf: ""
+  tags: ["tfhe"]
 - slug: "matcha-accelerator-fhe-over-torus-2026-06-24"
   title: "MATCHA: A Fast and Energy-Efficient Accelerator for FHE over the Torus"
   url: "/summaries/matcha-accelerator-fhe-over-torus-2026-06-24/"
@@ -15,6 +16,7 @@
   source_type: "PDF (text-layer), arXiv:2202.08814"
   source_url: "https://arxiv.org/abs/2202.08814"
   pdf: ""
+  tags: ["tfhe", "fhe-fpga"]
 - slug: "parameterizable-tfhe-processor-2026-06-24"
   title: "Towards a Functionally Complete and Parameterizable TFHE Processor"
   url: "/summaries/parameterizable-tfhe-processor-2026-06-24/"
@@ -22,6 +24,7 @@
   source_type: "PDF (text-layer), arXiv:2510.23483"
   source_url: "https://arxiv.org/abs/2510.23483"
   pdf: ""
+  tags: ["tfhe", "fhe-fpga"]
 - slug: "fpt-fixed-point-accelerator-torus-fhe-2026-06-24"
   title: "FPT: a Fixed-Point Accelerator for Torus FHE"
   url: "/summaries/fpt-fixed-point-accelerator-torus-fhe-2026-06-24/"
@@ -29,3 +32,4 @@
   source_type: "PDF (text-layer), arXiv:2211.13696"
   source_url: "https://arxiv.org/abs/2211.13696"
   pdf: ""
+  tags: ["tfhe", "fhe-fpga"]
