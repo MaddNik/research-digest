@@ -1,0 +1,53 @@
+---
+layout: page
+---
+
+{% assign sums = site.data.summaries %}
+
+<p class="text-muted">Summaries I have written from sources, with a link back to each source. Published automatically from my research-material.</p>
+
+{% if sums and sums.size > 0 %}
+  <ul class="conf-list list-unstyled">
+    {% for s in sums %}
+      <li class="conf-card card-wrapper card">
+        <div class="card-body">
+          <h2 class="conf-name"><a href="{{ s.url | relative_url }}">{{ s.title }}</a></h2>
+          <div class="conf-meta mb-2">
+            <span class="paper-topic">Summary</span>
+            {% if s.date and s.date != '' %}<span class="conf-bit"><i class="far fa-calendar fa-fw"></i> {{ s.date }}</span>{% endif %}
+            {% if s.source_url and s.source_url != '' %}
+              <span class="conf-bit"><a href="{{ s.source_url }}" target="_blank" rel="noopener noreferrer">Source</a></span>
+            {% elsif s.pdf and s.pdf != '' %}
+              <span class="conf-bit"><a href="{{ s.pdf | relative_url }}" target="_blank" rel="noopener noreferrer">Source PDF</a></span>
+            {% endif %}
+          </div>
+          {% if s.source_type and s.source_type != '' %}<p class="conf-about mb-0">{{ s.source_type }}</p>{% endif %}
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No summaries published yet. Create one in your research-material directory and it will appear here.</p>
+{% endif %}
+
+<style>
+  .conf-list { margin-top: 1rem; }
+  .conf-card.card {
+    margin-bottom: 1rem;
+    background: var(--card-bg);
+    box-shadow: var(--card-shadow);
+    border: 0;
+  }
+  .conf-name { font-size: 1.15rem; margin: 0 0 .5rem; }
+  .conf-name a { color: var(--heading-color); text-decoration: none; }
+  .conf-name a:hover { text-decoration: underline; }
+  .conf-meta { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; font-size: .9rem; }
+  .conf-bit { color: var(--text-muted-color); }
+  .conf-about { color: var(--text-muted-color); line-height: 1.6; }
+  .paper-topic {
+    display: inline-block; font-size: .75rem; font-weight: 600; letter-spacing: .02em;
+    padding: .12rem .6rem; border-radius: 1rem; background: transparent;
+    border: 1px solid var(--btn-border-color, rgba(128,128,128,.35));
+    color: var(--text-muted-highlight-color) !important; text-decoration: none;
+  }
+</style>
