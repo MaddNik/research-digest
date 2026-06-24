@@ -80,9 +80,12 @@ def main():
         except Exception:
             mtime = ""
 
+        tags = meta.get("tags") or []
+        if not isinstance(tags, list):
+            tags = []
         entries.append({
             "slug": slug, "title": title, "source_type": source_type,
-            "source_url": source_url, "pdf": pdf,
+            "source_url": source_url, "pdf": pdf, "tags": tags,
             "url": "/summaries/%s/" % slug, "date": slug_date(slug, mtime),
         })
 
@@ -96,6 +99,8 @@ def main():
         for k in ("slug", "title", "url", "date", "source_type", "source_url", "pdf"):
             prefix = "- " if k == "slug" else "  "
             lines.append('%s%s: "%s"' % (prefix, k, yaml_escape(e[k])))
+        tag_items = ", ".join('"%s"' % yaml_escape(t) for t in e.get("tags", []))
+        lines.append('  tags: [%s]' % tag_items)
     open(MANIFEST, "w", encoding="utf-8").write("\n".join(lines) + "\n")
     print("published %d summaries -> %s" % (len(entries), MANIFEST))
 

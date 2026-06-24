@@ -9,6 +9,22 @@
   source_url: "https://eprint.iacr.org/2018/421"
   pdf: ""
   tags: ["tfhe"]
+- slug: "fab-fpga-accelerator-bootstrappable-fhe-2026-06-24"
+  title: "FAB: An FPGA-based Accelerator for Bootstrappable Fully Homomorphic Encryption"
+  url: "/summaries/fab-fpga-accelerator-bootstrappable-fhe-2026-06-24/"
+  date: "2026-06-24"
+  source_type: "PDF (text-layer), arXiv:2207.11872"
+  source_url: "https://arxiv.org/abs/2207.11872"
+  pdf: ""
+  tags: ["fhe-fpga"]
+- slug: "heax-architecture-encrypted-data-2026-06-24"
+  title: "HEAX: An Architecture for Computing on Encrypted Data"
+  url: "/summaries/heax-architecture-encrypted-data-2026-06-24/"
+  date: "2026-06-24"
+  source_type: "PDF (text-layer), arXiv:1909.09731"
+  source_url: "https://arxiv.org/abs/1909.09731"
+  pdf: ""
+  tags: ["fhe-fpga"]
 - slug: "matcha-accelerator-fhe-over-torus-2026-06-24"
   title: "MATCHA: A Fast and Energy-Efficient Accelerator for FHE over the Torus"
   url: "/summaries/matcha-accelerator-fhe-over-torus-2026-06-24/"
