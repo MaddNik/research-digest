@@ -17,6 +17,30 @@
   source_url: "https://eprint.iacr.org/2014/816"
   pdf: ""
   tags: ["tfhe"]
+- slug: "mk-tfhe-multi-key-2026-06-24"
+  title: "Multi-Key Homomorphic Encryption from TFHE"
+  url: "/summaries/mk-tfhe-multi-key-2026-06-24/"
+  date: "2026-06-24"
+  source_type: "PDF (text-layer; tables and matrix rasterized from the typeset PDF)  -  IACR ePrint 2019/116, retrieved via Wayback Machine"
+  source_url: "https://eprint.iacr.org/2019/116"
+  pdf: ""
+  tags: ["tfhe", "multi-key-he", "bootstrapping"]
+- slug: "lmkcdey-fhew-small-eval-keys-2026-06-24"
+  title: "Efficient FHEW Bootstrapping with Small Evaluation Keys, and Applications to Threshold Homomorphic Encryption"
+  url: "/summaries/lmkcdey-fhew-small-eval-keys-2026-06-24/"
+  date: "2026-06-24"
+  source_type: "PDF (text-layer, figures rasterized from vector diagrams)  -  IACR ePrint 2022/198, retrieved via Wayback Machine"
+  source_url: "https://eprint.iacr.org/2022/198"
+  pdf: ""
+  tags: []
+- slug: "tfhe-parameter-optimization-2026-06-24"
+  title: "Parameter Optimization and Larger Precision for (T)FHE"
+  url: "/summaries/tfhe-parameter-optimization-2026-06-24/"
+  date: "2026-06-24"
+  source_type: "PDF (text-layer, figures rasterized from vector/embedded diagrams)  -  IACR ePrint 2022/704, retrieved via Wayback Machine"
+  source_url: "https://eprint.iacr.org/2022/704"
+  pdf: ""
+  tags: ["tfhe", "fhe", "parameter-optimization", "bootstrapping", "wop-pbs", "concrete", "zama"]
 - slug: "wop-pbs-larger-precision-2026-06-24"
   title: "Improved Programmable Bootstrapping with Larger Precision and Efficient Arithmetic Circuits for TFHE"
   url: "/summaries/wop-pbs-larger-precision-2026-06-24/"
@@ -97,3 +121,11 @@
   source_url: "https://arxiv.org/abs/2211.13696"
   pdf: ""
   tags: ["tfhe", "fhe-fpga"]
+- slug: "strix-tfhe-accelerator-2026-06-24"
+  title: "Strix: An End-to-End Streaming Architecture with Two-Level Ciphertext Batching for Fully Homomorphic Encryption with Programmable Bootstrapping"
+  url: "/summaries/strix-tfhe-accelerator-2026-06-24/"
+  date: "2026-06-24"
+  source_type: "PDF (text-layer)  -  arXiv:2305.11423"
+  source_url: "https://arxiv.org/abs/2305.11423"
+  pdf: ""
+  tags: []
