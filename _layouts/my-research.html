@@ -2,25 +2,12 @@
 layout: page
 ---
 
-<p class="text-muted px-xl-1">Your personal research workspace. New papers this week, a reading queue, and saved items. Stored in this browser.</p>
+<p class="text-muted px-xl-1 rt-desktop-note">Your To read and Saved lists are in the right panel. Use the book and bookmark icons on any card to add items.</p>
 
-{% assign papers = site.posts | where_exp: 'p', 'p.link' %}
-{% if papers.size > 0 %}
-  {% assign newest = papers | first %}
-  {% assign latest_day = newest.date | date: '%Y-%m-%d' %}
-  {% assign batch = '' | split: '' %}
-  {% for p in papers %}
-    {% assign d = p.date | date: '%Y-%m-%d' %}
-    {% if d == latest_day %}{% assign batch = batch | push: p %}{% endif %}
-  {% endfor %}
-  <h2 class="fhe-section">New this week</h2>
-  {% include paper-cards.html posts=batch idprefix="new-" %}
-{% endif %}
+<div id="mr-lists">
+  <h2 class="fhe-section">To read <span class="rt-count" data-rt-count="toread" hidden></span></h2>
+  <div class="rt-render" data-rt-list-render="toread"></div>
 
-<h2 class="fhe-section">To read <span class="rt-count" data-rt-count="toread" hidden></span></h2>
-<div id="toread-list"></div>
-
-<h2 class="fhe-section">Saved <span class="rt-count" data-rt-count="saved" hidden></span></h2>
-<div id="saved-list"></div>
-
-{% include paper-modal.html %}
+  <h2 class="fhe-section">Saved <span class="rt-count" data-rt-count="saved" hidden></span></h2>
+  <div class="rt-render" data-rt-list-render="saved"></div>
+</div>

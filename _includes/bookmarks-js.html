@@ -19,8 +19,16 @@
     font-size: .7rem; font-weight: 700; line-height: 1.4;
     color: #fff; background: #f0a500; border-radius: 1rem; vertical-align: middle;
   }
-  .rt-topbar { position: relative; }
-  .rt-topbar .rt-count { position: absolute; top: .1rem; right: .05rem; }
+  .rt-topbar-group { margin-left: auto; display: inline-flex; align-items: center; gap: 0; }
+  .rt-topbar {
+    position: relative; display: inline-flex; align-items: center;
+    padding: .25rem .3rem; color: var(--topbar-text-color, var(--text-color)); text-decoration: none;
+  }
+  .rt-topbar:hover { color: var(--link-color); }
+  .rt-topbar .rt-count { position: absolute; top: -.1rem; right: -.2rem; }
+  /* On wide screens the lists live in the right panel; hide the page copy. */
+  @media (min-width: 1200px) { #mr-lists { display: none; } }
+  @media (max-width: 1199.98px) { .rt-desktop-note { display: none; } }
 </style>
 
 <script>
@@ -103,10 +111,13 @@
     }
 
     function renderLists() {
-      var s = document.getElementById('saved-list');
-      if (s) s.classList.add('rt-list'), s.innerHTML = groupedHtml('saved');
-      var t = document.getElementById('toread-list');
-      if (t) t.classList.add('rt-list'), t.innerHTML = groupedHtml('toread');
+      LISTS.forEach(function (l) {
+        var html = groupedHtml(l);
+        document.querySelectorAll('[data-rt-list-render="' + l + '"]').forEach(function (el) {
+          el.classList.add('rt-list');
+          el.innerHTML = html;
+        });
+      });
     }
 
     function renderAll() { refreshButtons(); updateCounts(); renderLists(); }
