@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faster Fully Homomorphic Encryption: Bootstrapping in Less Than 0.1 Seconds</title>
+<style>
+:root{--bg:#0f1115;--surface:#181b20;--ink:#e6e8eb;--muted:#9aa0a8;
+ --line:#2a2f37;--accent:#6ea8fe}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+code{background:#0b0d11;border:1px solid var(--line);border-radius:4px;
+ padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style></head>
+<body><main class="doc">
+<header><h1>Faster Fully Homomorphic Encryption: Bootstrapping in Less Than 0.1 Seconds</h1><p class="meta">PDF, IACR ePrint 2016/870 · full view</p></header>
+<section><h2>Motivation: improving on FHEW</h2><p>Fully homomorphic encryption (FHE) lets one compute on encrypted data. Since Gentry's 2009 breakthrough, the cost of <em>bootstrapping</em> (homomorphically evaluating the decryption function to reset accumulated noise) has been the practical bottleneck. The state of the art at the time was the FHEW scheme of Ducas and Micciancio, which bootstrapped a single NAND gate in about 0.69 seconds with a roughly 1 GB bootstrapping key.</p><p>This paper (the first TFHE paper, by Chillotti, Gama, Georgieva and Izabachene) revisits GSW-based FHE and makes a key observation: the expensive <strong>internal product</strong> of GSW (a matrix-by-matrix product, GSW times GSW) can be replaced by a much cheaper <strong>external product</strong> between a GSW ciphertext and an LWE ciphertext (a matrix-by-vector product). Because a GSW sample is just a stack of LWE samples, the external product is to the internal product roughly what a matrix-vector product is to a matrix-matrix product.</p><p>Re-expressing the whole FHEW bootstrapping purely in terms of this external product yields the headline results:</p><ul><li>Gate bootstrapping speeds up from under 1 second to <strong>under 0.1 seconds</strong> (measured 52 ms), about a 12x speedup.</li><li>The bootstrapping key shrinks from about 1 GB to about <strong>24 MB</strong> (46x smaller), at the same noise overhead.</li><li>Exact gadget decompositions are replaced with <strong>approximate</strong> ones, trading a little extra noise for speed and memory.</li><li>The external product also explains the asymmetry in GSW noise propagation and enables efficient leveled evaluation of deterministic automata (up to about 5000 transitions/second, vs. about 10/second before), with noise overhead only linear in word length.</li></ul><p>The paper also gives a self-contained practical security analysis that expresses the security parameter directly as a function of the secret entropy n and the LWE error rate alpha, with no modulus q in the picture.</p></section>
+<section><h2>Working over the torus: TLWE, TRLWE and TGSW</h2><p>Everything is defined over the <strong>real torus</strong> T = R/Z (reals mod 1). T is not a ring, but it is a Z-module, so the external product of an integer by a torus element is well defined. The ring is R = Z[X]/(X^N + 1) and T_N[X] = R[X]/(X^N+1) mod 1. This unifies LWE and RingLWE into a single family.</p><p><strong>TLWE samples.</strong> Fix an integer k &gt;= 1, N a power of 2, and noise parameter alpha. A TLWE secret key is s in B_N[X]^k (k polynomials with binary coefficients, about n = Nk bits of entropy). A fresh TLWE sample of a message mu in T_N[X] is a pair (a, b) in T_N[X]^k x T_N[X], where the mask a is uniform and b is Gaussian (parameter alpha) around mu + s . a. Choosing N large, k = 1 gives RingLWE; N = 1, k large gives plain LWE; intermediate choices interpolate between ideal-lattice and general-lattice security. The <strong>phase</strong> of a sample is phi_s(a,b) = b - s . a; it is linear and (kN+1)-Lipschitz, so samples that are close on the torus behave identically. The <strong>message</strong> msg(c) is the expectation of the phase, and the error Err(c) = phi_s(c) - msg(c). When the noise amplitude stays below 1/4, the message function is exactly linear, which makes noise analysis clean.</p><p><strong>TRLWE</strong> is simply the ring instantiation of TLWE (the paper writes everything as TLWE over T_N[X] and recovers RingLWE as the N large, k = 1 case).</p><p><strong>TGSW samples.</strong> TGSW is the scale-invariant, torus generalization of GSW. It depends on an integer decomposition depth l, and a fixed <strong>gadget matrix</strong> h in M_{d,k+1}(T_N[X]) with d = (k+1)l, whose columns hold the super-increasing sequence 1/B_g, 1/B_g^2, ..., 1/B_g^l. A fresh TGSW sample of an integer-polynomial message mu in R/h-perp is C = Z + mu . h, where every row of Z is a homogeneous (message-0) TLWE sample of noise alpha. Equivalently, a TGSW sample is a stack of (k+1)l TLWE samples, so all linear-combination, phase, message and error notions extend row-wise.</p></section>
+<section><h2>Approximate gadget decomposition</h2><p>The external product needs to decompose a TLWE sample onto the gadget h. The novelty is that this decomposition is <strong>approximate</strong>: Dec_{h,beta,epsilon}(v) returns a small integer-polynomial vector u with ||u||_inf &lt;= beta (the quality) such that ||u . h - v||_inf &lt;= epsilon (the precision), and with the approximation error being zero-mean for uniform v so the message is preserved. Replacing exact decomposition with this approximate one is what cuts both time and memory, for a controlled noise increase. With base B_g and depth l, Algorithm 1 achieves beta = B_g/2 and epsilon = 1/(2 B_g^l):</p><pre><code>Algorithm 1  Gadget Decomposition of a TLWE sample
+Input:  A TLWE sample (a, b) = (a_1, ..., a_k, b = a_{k+1}) in T_N[X]^k x T_N[X]
+Output: A combination [e_{1,1}, ..., e_{k+1,l}] in R^{(k+1)l}
+ 1: For each a_i choose the unique representative sum_{j=0..N-1} a_{i,j} X^j, with a_{i,j} in T,
+    and set abar_{i,j} the closest multiple of 1/B_g^l to a_{i,j}
+ 2: Decompose each abar_{i,j} uniquely as sum_{p=1..l} abar_{i,j,p} (1/B_g^p)
+    where each abar_{i,j,p} in [ -B_g/2, B_g/2 [
+ 3: for i = 1 to k + 1
+ 4:    for p = 1 to l
+ 5:       e_{i,p} = sum_{j=0..N-1} abar_{i,j,p} X^j  in R
+ 6: Return  (e_{i,p})_{i,p}</code></pre></section>
+<section><h2>The external product (the core idea)</h2><p>The external product maps a TGSW ciphertext (encoding an integer polynomial) and a TLWE ciphertext (encoding a torus polynomial) to a TLWE ciphertext encoding the <em>product</em> of the two messages. It is the central operation of the whole paper:</p><pre><code>External product  []  :  TGSW x TLWE  -->  TLWE
+   (A, b)  |-->  A [] b  =  Dec_{h,beta,epsilon}(b) . A</code></pre><p>Only the single TLWE vector b is decomposed (not a whole matrix), so the cost is one decomposition plus one vector-matrix product, versus the (k+1)l such operations of the GSW internal product. The worst-case noise bound (Theorem 3.14) is:</p><pre><code>If A is a valid TGSW sample of message mu_A and b a valid TLWE sample of message mu_b,
+then A [] b is a TLWE sample of message mu_A . mu_b, with
+
+  ||Err(A [] b)||_inf  &lt;=  (k+1) l N beta ||Err(A)||_inf            (gadget / key noise)
+                        +  ||mu_A||_1 (1 + kN) epsilon              (approx-decomposition noise)
+                        +  ||mu_A||_1 ||Err(b)||_inf               (input noise, scaled by mu_A)
+
+If ||Err(A [] b)||_inf &lt;= 1/4, then A [] b is guaranteed valid.</code></pre><p>Sketch: writing A = Z_A + mu_A . h and b = z_b + (0, mu_b), and u = Dec(b), one gets A [] b = u . Z_A + mu_A . epsilon_dec + mu_A . z_b + (0, mu_A mu_b). Taking expectations kills the three zero-mean terms, leaving message mu_A mu_b; bounding the three error terms gives the formula. The average-case version (Corollary 3.15), under the independence heuristic, replaces norms by variances:</p><pre><code>  Var(Err(A [] b))  &lt;=  (k+1) l N beta^2 Var(Err(A))
+                      + (1 + kN) ||mu_A||_2^2 epsilon^2
+                      + ||mu_A||_2^2 Var(Err(b)).</code></pre><p>The classical GSW <strong>internal product</strong> is recovered as (k+1)l independent external products, one per row of the right operand, which is exactly why it is a factor (k+1)l slower:</p><pre><code>Internal product  [X]  :  TGSW x TGSW  -->  TGSW
+   A [X] B  =  [ A [] b_1 ; ... ; A [] b_{(k+1)l} ]
+            =  [ Dec(b_1) . A ; ... ; Dec(b_{(k+1)l}) . A ]
+   where b_i is the i-th row of B.
+   Result is a TGSW sample of message mu_A . mu_B.</code></pre></section>
+<section><h2>Gate bootstrapping and blind rotation</h2><p>To bootstrap a noisy LWE sample (a, b) in T^{n+1} under key s in B^n, the idea (following FHEW) is to homomorphically evaluate the rounded phase. A fixed test polynomial testv in T_N[X] is the <em>phase detector</em>: its coefficients encode the value the bootstrap should output for each possible phase. testv is loaded into a (trivial, noiseless) TLWE accumulator, then the accumulator is <strong>blind-rotated</strong> by the hidden phase: each iteration multiplies the accumulator (via the external product) by a TGSW encryption of the monomial X^{-s_i abar_i}, computed on the fly from the bootstrapping key. After n rotations the accumulator holds X^{phase} . testv; extracting its constant term yields an LWE encryption of the bootstrapped bit, which is then key-switched back to the original key.</p><p>The <strong>bootstrapping key</strong> BK_{s -&gt; s'', alpha} is n TGSW samples, with BK_i a TGSW encryption of the secret bit s_i under the TRLWE key s''.</p><pre><code>Algorithm 3  Bootstrapping procedure
+Input:  A LWE sample (a, b) in LWE_{s,eta}(mu), a bootstrapping key BK_{s -&gt; s'',alpha},
+        a keyswitch key KS_{s' -&gt; s,gamma} where s' = KeyExtract(s''),
+        two fixed messages mu_0, mu_1 in T
+Output: A LWE sample LWE_s( mu_0 if phi_s(a,b) in ]-1/4, 1/4[ ; mu_1 else )
+
+ 1: Let mubar = (mu_1 + mu_0)/2  and  mubar' = mu_0 - mubar
+ 2: Let bbar = round(2N b)  and  abar_i = round(2N a_i) for each i in [1, n]
+ 3: Let testv := (1 + X + ... + X^{N-1}) * X^{-2N/4} . mubar'   in T_N[X]
+ 4: ACC &lt;- ( X^{bbar} . (0, testv) )   in T_N[X]^{k+1}
+ 5: for i = 1 to n
+ 6:    ACC &lt;- ( h + (X^{-abar_i} - 1) . BK_i ) [] ACC
+ 7: Let u := (0, mubar) + SampleExtract(ACC)
+ 8: Return  KeySwitch_KS(u)</code></pre><p>The blind-rotation step is line 6. There, h + (X^{-abar_i} - 1) . BK_i is a TGSW sample of message X^{-abar_i s_i} (check by substituting s_i = 0, giving h which is the gadget encoding of 1, i.e. X^0; and s_i = 1, giving X^{-abar_i}), with noise at most 2 ||Err(BK_i)||_inf. Multiplying the accumulator by it (one external product per loop iteration) rotates the encoded test vector by the hidden term X^{-abar_i s_i}, so after the loop the accumulator encodes X^{bbar - sum abar_i s_i} . testv = X^{phasebar} . testv.</p><p><strong>Three optimizations over FHEW</strong> are folded into this single algorithm. (1) The rescaling to mod 2N is explicit on the torus (line 2); for parameters where all coefficients are multiples of 1/(2N) the rounding error delta is zero. (2) The test vector is baked into the accumulator from the start while it is still noiseless, removing a factor sqrt(N) from the final noise (FHEW added it at the end). (3) Each X^{-abar_i s_i} TGSW is built dynamically as the tiny combination h + (X^{-abar_i} - 1) . BK_i, so there is no need to decompose abar_i in a base B_r and precompute every possibility in the key: this is the 46x key-size reduction and also removes the second per-iteration accumulator operation, giving an extra 2x speedup.</p><p>The bootstrapping theorem (Theorem 4.6) gives the output noise:</p><pre><code>  ||Err(v)||_inf  &lt;=  2 n (k+1) l beta N alpha     (bootstrapping-key noise, worst case)
+                   +  kN t gamma                    (keyswitch decomposition)
+                   +  n (1 + kN) epsilon             (approx gadget decomposition)
+                   +  kN 2^{-(t+1)}                  (keyswitch rounding)
+
+Average case (Corollary 4.7), with vartheta_BK = (2/pi) alpha^2, V_KS = (2/pi) gamma^2:
+  Var(Err(v)) &lt;= 2 N n (k+1) l beta^2 vartheta_BK + kN t V_KS
+               + n (1 + kN) epsilon^2 + kN 2^{-2(t+1)}.</code></pre></section>
+<section><h2>Sample extraction and key switching</h2><p>Two helper operations close the bootstrapping loop.</p><p><strong>Sample extraction</strong> turns a TRLWE (TLWE over T_N[X]) sample into a plain LWE sample encrypting the constant term. KeyExtract(s'') flattens the key polynomials into the integer vector s' = (coefs(s''_1(X)), ..., coefs(s''_k(X))) in Z^{kN}, and SampleExtract(a'', b'') outputs (a', b') with a' = (coefs(a''_1(1/X)), ..., coefs(a''_k(1/X))) and b' = the constant term of b''. It adds no noise: ||Err(a',b')||_inf &lt;= ||Err(a'',b'')||_inf.</p><p><strong>Key switching</strong> brings the extracted LWE sample (under the large key s' in B^{kN}) back to the original small key s in B^n, without blowing up noise, again tolerating approximation. The key-switching key KS_{s' -&gt; s, gamma, t} is, for each i in [1,n'] and j in [1,t], a fresh LWE sample KS_{i,j} encrypting s'_i . 2^{-j} under s.</p><pre><code>Algorithm 2  KeySwitch procedure
+Input:  A LWE sample (a' = (a'_1, ..., a'_{n'}), b') in LWE_{s'}(mu),
+        a keyswitching key KS_{s' -&gt; s}, where s' in {0,1}^{n'}, s in {0,1}^n,
+        and a precision parameter t in N
+Output: A LWE sample LWE_s(mu)
+ 1: Let abar'_i be the closest multiple of 1/2^t to a'_i, so |abar'_i - a'_i| &lt; 2^{-(t+1)}
+ 2: Binary decompose each abar'_i = sum_{j=1..t} a'_{i,j} . 2^{-j} where a'_{i,j} in {0,1}
+ 3: Return  (a, b) = (0, b') - sum_{i=1..n'} sum_{j=1..t} a'_{i,j} . KS_{i,j}</code></pre><p>The resulting noise (Lemma 4.3) is ||Err(a,b)||_inf &lt;= eta' + n' t gamma + n' 2^{-(t+1)}, where eta' is the input noise; the average-case variance version is Var &lt;= eta' + n' t gamma^2 + n' 2^{-2(t+1)}.</p></section>
+<section><h2>Homomorphic gates and leveled automata</h2><p>With message space {0, 1/4}, every basic binary gate is one bootstrap of a cheap affine combination (HomNOT needs none):</p><pre><code>HomNOT(c)        = (0, 1/4) - c                      (no bootstrapping)
+HomAND(c1, c2)   = Bootstrap( (0, -1/8) + c1 + c2 )
+HomNAND(c1, c2)  = Bootstrap( (0,  5/8) - c1 - c2 )
+HomOR(c1, c2)    = Bootstrap( (0,  1/8) + c1 + c2 )
+HomXOR(c1, c2)   = Bootstrap( 2 . (c1 - c2) )</code></pre><p>For NAND, for inputs with ||Err|| &lt;= 1/16, the intermediate cbar = (0, 5/8) - c1 - c2 has message 5/8 or 3/8 when at least one input is 0, and 1/8 when both are 1; bootstrapping with (mu_1, mu_0) = (1/4, 0) reads off the NAND.</p><p>For <strong>leveled</strong> (bootstrap-free) computation, the external product distinguishes two wire types: <em>control</em> wires carry a small integer (poly) and are TGSW samples; <em>data</em> wires carry a torus element and are TLWE samples. The key leveled gates are the controlled-AND CAnd(C, d) = C [] d and the controlled multiplexer CMux(C, d1, d0) = C [] (d1 - d0) + d0. The CMux noise grows additively (a max over the two branches plus a control-noise term, not a sum), thanks to the structure of the external product:</p><pre><code>Err(CMux(C, d1, d0))_inf &lt;= max(||Err(d0)||_inf, ||Err(d1)||_inf) + eta(C),
+   where eta(C) = (k+1) l N beta ||Err(C)||_inf + (kN+1) epsilon.</code></pre><p>Because control inputs must be fresh TGSW ciphertexts (data wires cannot feed control inputs), the construction naturally forces the use of deterministic-automata / binary-decision-diagram circuits, exactly the noise-optimal circuits from prior work. This lets the scheme evaluate deterministic automata with noise overhead only <em>linear</em> in word length, at up to about 5000 transitions/second, and compile constant-time (data-independent control flow) algorithms with logarithmic memory in a leveled manner.</p></section>
+<section><h2>Parameters, noise and timings</h2><p>Implementation chooses n = 500, N = 1024, k = 1. Torus elements are rescaled by 2^32 and stored as 32-bit integers (native mod-2^32 arithmetic); polynomials mod X^N+1 are kept either as coefficient lists or in a Lagrange half-complex (FFT) representation via FFTW, with 53 bits of precision sufficient.</p><ul><li>LWE samples: about 2 KB. All LWE masks are clamped to multiples of 1/2048, so the bootstrapping phase rescaling is exact (delta = 0).</li><li>TLWE samples: about 8 KB; TGSW samples: about 48 KB.</li><li>Gadget: l = 3, B_g = 1024, hence beta = 512 and epsilon = 2^{-31}.</li><li><strong>Bootstrapping key:</strong> n TGSW samples, about <strong>23.4 MB</strong> (vs. about 1 GB in FHEW), with alpha = 9.0e-9 (a higher, i.e. more secure, noise than FHEW's about 3.25e-10, made affordable by the lower noise overhead; the TRLWE key is binary).</li><li><strong>Key-switching key:</strong> about 29.2 MB, with gamma = 3.05e-5, t = 15 (decomposition precision 2^{-16}). This key can be shrunk by a factor n+1 = 501 by deriving masks from a PRF seed; the bootstrapping key similarly by k+1 = 2.</li></ul><p><strong>Correctness:</strong> final post-bootstrap error variance 9.24e-6 (std dev sigma about 0.00961, better than FHEW's 0.01076); the output noise is below 1/16 with probability at least 1 - 2^{-33.56}.</p><p><strong>Operation counts and timing</strong> on a single-core i7-4930MX at 3.00 GHz:</p><pre><code>                       #Classical products    #FFT (Lagrange repr.)
+External product               12                      8
+Bootstrapping                6000                    4006
+Bootstrapping [FHEW]       (72000)                  48000</code></pre><p>Measured running time: <strong>52 ms per gate bootstrap</strong> using the Lagrange half-complex representation, consistent with the predicted 12x speedup over FHEW. FFTs and complex multiplications dominate (over 90% of the time); key switching is negligible.</p></section>
+<section><h2>Practical security analysis</h2><p>The paper gives a concrete-security model that, unlike prior LWE estimates, has no modulus q (TLWE works on the continuous torus). Since the phase is Lipschitz, a TLWE sample maps to its nearest bin-LWE / bin-RingLWE instance, reducible to standard LWE and then to worst-case BDD. For practical hardness, the analysis builds on Albrecht-Player-Scott, with the SIS-distinguisher (Lindner-Peikert model) as the typical best attack, and expresses the security parameter lambda directly as a function of n and alpha.</p><p>To distinguish m homogeneous LWE samples from uniform, one seeks a short integer combination v cancelling the masks, found via a short vector in an (n+m)-dimensional lattice; allowing approximate solutions makes even m &lt; n viable. After a scaling fq(B) by q and lattice reduction of quality delta, the distinguishing term sum v_i b_i is Gaussian and distinguishable when its variance exceeds the smoothing parameter eta_epsilon(Z)^2. Optimizing over q, m, t (= n/(m+n)) and epsilon gives a system (Eqs. 3-6):</p><pre><code>lambda(n, alpha)  = log2(t_attack) = min over 0&lt;eps&lt;1 of  log2( (n/eps^2) t_BKZ(n,alpha,eps) )
+log2(t_BKZ)       = 0.009 / log2(delta)^2 - 27
+ln(delta)         = max over m&gt;1, q&gt;1 of
+                      (1 / 2(m+n)) [ ln(eta_eps(Z)^2)
+                                     - ln( (pi S^2 / 2 q^2)(n/(m+n)) + q^{2n/m} alpha^2 (m/(m+n)) ) ]
+eta_eps(Z)        ~= sqrt( (1/pi) ln(1/eps) )
+
+  with S = ||s|| / sqrt(n) ~= 1/sqrt(2),
+       q_best = (pi S^2 / 2 alpha^2)^{ m / 2(m+n) },
+       t_best = l1 / (2(l1 - l2)),  where l1 = ln(eta_eps^2 / alpha^2), l2 = ln(2 eta_eps^2 / (pi S^2)).</code></pre><p>Evaluated on the chosen parameters, the model predicts <strong>194 bits</strong> of security for the bootstrapping key (n = 1024, alpha = 9.0e-9) and <strong>136 bits</strong> for the key-switching key (n = 500, alpha = 2^{-15}), so the key-switching key is the bottleneck. The same model re-scores FHEW's parameter set at 136 bits (above the &gt;=100 bits FHEW originally claimed), the gap coming from counting how many times the SIS-distinguisher must be rerun to gain non-negligible advantage. The main remaining drawback noted in the conclusion is the large ciphertext expansion factor (about 400000) with limited batching.</p></section>
+</main></body></html>

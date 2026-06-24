@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Improved Programmable Bootstrapping with Larger Precision and Efficient Arithmetic Circuits for TFHE</title>
+<style>
+:root{--bg:#0f1115;--surface:#181b20;--ink:#e6e8eb;--muted:#9aa0a8;
+ --line:#2a2f37;--accent:#6ea8fe}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+code{background:#0b0d11;border:1px solid var(--line);border-radius:4px;
+ padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style></head>
+<body><main class="doc">
+<header><h1>Improved Programmable Bootstrapping with Larger Precision and Efficient Arithmetic Circuits for TFHE</h1><p class="meta">PDF, IACR ePrint 2021/729 · full view</p></header>
+<section><h2>Overview and Motivation</h2><p>By Ilaria Chillotti, Damien Ligier, Jean-Baptiste Orfila and Samuel Tap (Zama, Paris, November 2021). TFHE is an (R)LWE-based fully homomorphic encryption scheme whose distinguishing feature is a very fast <strong>programmable bootstrapping (PBS)</strong>: a single operation that both reduces ciphertext noise and evaluates a univariate function expressed as a look-up table (LUT). In TFHE a message <code>m</code> is encoded in the most significant bits, rescaled by a factor &#916; and reduced modulo <code>q</code>, with small noise <code>e</code> added in the least significant bits, so a noisy plaintext looks like &#916;&#183;m + e mod q. The <em>precision</em> is defined as p = log2(q/&#916;).</p><p>The paper attacks a list of concrete TFHE limitations (labelled A through H in the introduction):</p><ul><li><strong>A</strong> To bootstrap correctly the MSB of the plaintext must be known (set to zero), unless the evaluated function is negacyclic. This costs one bit of message space (a "bit of padding").</li><li><strong>B</strong> One cannot efficiently bootstrap a large-precision message (more than about 6 bits): the bootstrapped precision is tied to the ring dimension N, so more precision forces larger N and slower computation (FFT cost N&#183;log2 N).</li><li><strong>C</strong> The PBS is a sequential accumulator loop and is not multi-thread friendly.</li><li><strong>D</strong> There is no native LWE-by-LWE multiplication; existing approaches use PBS (the x &#8614; x&#178;/4 trick) or circuit bootstrapping, both inheriting limitations A and B.</li><li><strong>E</strong> Because of A and B one cannot efficiently split a single ciphertext into several ciphertexts each holding a chunk of the message.</li><li><strong>F</strong> A PBS evaluates a single function per call; the multi-value trick of [CIM19] adds function-dependent noise.</li><li><strong>G</strong> Gate bootstrapping requires a PBS per Boolean gate (costly), with no native solution for larger integers.</li><li><strong>H</strong> Circuit bootstrapping needs &#8467; PBS plus many key switches.</li></ul><p>The contributions remove these limitations by adding a BFV-like multiplication directly into the TFHE context (no scheme switching as in Chimera), generalizing the PBS, and combining the two into a <strong>Programmable Bootstrapping Without Padding (WoP-PBS)</strong>. The result also yields fast Boolean/arithmetic circuits, a faster circuit bootstrapping, and large-precision bootstrapping with much smaller parameters than naively scaled TFHE.</p></section>
+<section><h2>Background and Notation</h2><p>q is the integer modulus; N is a power of two and R_q = Z_q[X]/(X^N+1). &#967;_&#963; is a centered Gaussian with standard deviation &#963;. The paper works over Z_q (q = 2^32 or 2^64) rather than the torus T, using the isomorphism between Z_q and (1/q)Z/Z.</p><p><strong>Ciphertext families.</strong> A <em>GLWE</em> ciphertext of M &#8712; R_q with scaling factor &#916; under secret key S = (S_1,...,S_k) is CT = (A_1,...,A_k, B = &#8721; A_i&#183;S_i + round(M&#183;&#916;) + E). Setting N = 1 gives an <em>LWE</em> ciphertext (with key size n = k); setting k = 1, N &gt; 1 gives RLWE. <em>GLev</em> ciphertexts are vectors of &#8467; GLWE ciphertexts encrypting M&#183;q/B^i for a base B and &#8467; levels. <em>GGSW</em> ciphertexts are vectors of k+1 GLev ciphertexts encrypting -S_i&#183;M (with S_{k+1} = -1).</p><p><strong>Decomposition.</strong> dec^(B,&#8467;)(x) returns the MSB-first base-B decomposition vector of an integer (or polynomial) x. <strong>Key switching</strong> changes keys/parameters using a public key-switching key; the paper uses three flavours: PrivateKS (applies a private linear function), PublicKS (public linear function; the identity-function LWE instance is used inside TFHE PBS), and PackingKS (packs several LWE ciphertexts into one GLWE at chosen monomial indices i_j).</p><p><strong>TFHE PBS</strong> has three steps: (1) <em>Modulus Switching</em> from Z_q^{n+1} to Z_{2N}^{n+1}; (2) <em>Blind Rotation</em> of a GLWE-encrypted redundant LUT by a CMux loop driven by the LWE coefficients and the bootstrapping key (a list of GGSW encryptions of the secret-key bits); (3) <em>Sample Extraction</em> of the constant coefficient as an LWE ciphertext. A redundant LUT repeats each entry r times so the rounding/noise removal works during the rotation. <strong>TFHE circuit bootstrapping</strong> [CGGI17, Alg. 6] converts an LWE ciphertext into a GGSW with &#8467; PBS followed by (k+1)&#8467; private key switchings.</p></section>
+<section><h2>Building Block 1: GLWE / LWE Multiplication (BFV-like)</h2><p>The first building block is a BFV-like multiplication (tensor product followed by relinearization) imported into the TFHE context. Algorithm 1 multiplies two GLWE ciphertexts under the same key, producing a ciphertext of PT_1&#183;PT_2/&#916; where &#916; = min(&#916;_1,&#916;_2), using a relinearization key RLK = { GLev(S_i&#183;S_j) }. The paper gives a full noise analysis (Theorem 1) and a parameter table (Table 1, reproduced below) giving N, base B and level &#8467; as a function of precision (1 to 24 bits) and maximum multiplicative depth; e.g. precision 6 admits depth 8 with log2(N)=12, log2(B)=8, &#8467;=8, while precision 24 admits depth 2 with log2(N)=12, log2(B)=20, &#8467;=2. The noise variance of the GLWE multiplication is:</p><pre><code>Var(GLWEMult) = (N/&#916;&#178;)&#183;( &#916;_1&#178;&#183;||M_1||_&#8734;&#178;&#183;&#963;_2&#178; + &#916;_2&#178;&#183;||M_2||_&#8734;&#178;&#183;&#963;_1&#178; + &#963;_1&#178;&#963;_2&#178; )
+             + (N/&#916;&#178;)&#183;( (q&#178;-1)/12 )&#183;( 1 + k&#183;N&#183;Var(S) + k&#183;N&#183;E&#178;(S) )
+             + (k&#183;N/4)&#183;Var(S) + 1/4 + (relinearization terms)</code></pre><p>Algorithm 1 (GLWE multiplication), verbatim:</p><pre><code>Algorithm 1: CT &#8592; GLWEMult(CT1, CT2, RLK)
+
+Context:
+  S = (S_1, ..., S_k) &#8712; R_q^k        : a GLWE secret key
+  &#916; = min(&#916;_1, &#916;_2) &#8712; Z_q
+  PT1 = M1&#183;&#916;_1 &#8712; R_q
+  PT2 = M2&#183;&#916;_2 &#8712; R_q
+Input:
+  CT1 = GLWE_S(PT1) = (A_{1,1}, ..., A_{1,k}, B_1) &#8712; R_q^{k+1}
+  CT2 = GLWE_S(PT2) = (A_{2,1}, ..., A_{2,k}, B_2) &#8712; R_q^{k+1}
+  RLK = { CT_{i,j} = GLev_S^{(B,&#8467;)}(S_i&#183;S_j) }_{1&#8804;j&#8804;i&#8804;k}   : a relinearization key for S
+Output:
+  CT = GLWE_S(PT1&#183;PT2 / &#916;) &#8712; R_q^{k+1}
+
+1  begin
+        /* Tensor product */
+2      for 1 &#8804; i &#8804; k do
+3          T'_i  &#8592; round( [A_{1,i}&#183;A_{2,i}]_Q / &#916; )_q
+4      end
+5      for 1 &#8804; i &#8804; k, 1 &#8804; j &lt; i do
+6          R'_{i,j} &#8592; round( [A_{1,i}&#183;A_{2,j} + A_{1,j}&#183;A_{2,i}]_Q / &#916; )_q
+7      end
+8      for 1 &#8804; i &#8804; k do
+9          A'_i  &#8592; round( [A_{1,i}&#183;B_2 + B_1&#183;A_{2,i}]_Q / &#916; )_q
+10     end
+11     B' &#8592; round( [B_1&#183;B_2]_Q / &#916; )_q
+        /* Relinearization */
+12     CT &#8592; ( A'_1, ..., A'_k, B' )
+             + &#8721;_{i=1}^{k}  &#10216; CT_{i,i}, dec^{(B,&#8467;)}(T'_i) &#10217;
+             + &#8721;_{1&#8804;j&lt;i&#8804;k}  &#10216; CT_{i,j}, dec^{(B,&#8467;)}(R'_{i,j}) &#10217;
+13 end</code></pre><p>A more efficient <strong>GLWE square</strong> (Algorithm 9 in the supplementary material) shares the cross-term computation. Algorithm 9 begins identically:</p><pre><code>Algorithm 9: CT &#8592; GLWESquare(CTin, RLK)
+
+Context:
+  S = (S_1, ..., S_k)            : a GLWE secret key
+  &#916; = min({&#916;_i})
+  PT = &#8721;_{i=0}^{N-1} m_i&#183;&#916;_i&#183;X^i
+Input:
+  CTin = GLWE_S(PT) = (A_1, ..., A_k, B)
+  RLK  = { CT_{i,j} = GLev_S^{(B,&#8467;)}(S^(i)&#183;S^(j)) }_{1&#8804;j&#8804;i&#8804;k} : a relinearization key for S
+Output:
+  CT = GLWE_S(PT&#178; / &#916;)
+
+1  begin
+        /* Tensor product (cross terms computed once) */
+   ...  (A'_i and R'_{i,j} obtained with a single multiplication each,
+         then the same relinearization step as Algorithm 1)
+   end</code></pre></section>
+<section><h2>Building Block 1 (cont.): Single, Packed and Sum-of-Products LWE Multiplication</h2><p>Algorithm 2 multiplies two LWE ciphertexts by (i) packing each input into a GLWE via a PackingKS, (ii) calling the GLWE multiplication (Algorithm 1), and (iii) sample-extracting the constant term. The output scaling factor is &#916;_out = max(&#916;_1,&#916;_2). Theorem 2 gives two post-packing variances (a <em>filled</em>-coefficient variance and an <em>empty</em>-coefficient variance), and Theorem 3 obtains the LWEMult noise by substituting these into the GLWE-multiplication formula. Algorithm 2, verbatim:</p><pre><code>Algorithm 2: ct_out &#8592; LWEMult(ct1, ct2, RLK, KSK)
+
+Context:
+  s  = (s_1, ..., s_n) &#8712; Z_q^n        : the LWE input secret key
+  s' = (s'_1, ..., s'_{kN}) &#8712; Z_q^{kN} : the LWE output secret key
+  S' = (S'_1, ..., S'_k) &#8712; R_q^k       : a GLWE secret key
+  &#8704; 1 &#8804; i &#8804; k,  S'_i = &#8721;_{j=0}^{N-1} s'_{(i-1)&#183;N+j+1}&#183;X^j &#8712; R_q
+  &#916;_out = max(&#916;_1, &#916;_2) &#8712; Z_q
+Input:
+  ct1 = LWE_s(m1&#183;&#916;_1) &#8712; Z_q^{n+1}
+  ct2 = LWE_s(m2&#183;&#916;_2) &#8712; Z_q^{n+1}
+  RLK : a relinearization key for S' as defined in Algorithm 1
+  KSK = { CT_i = GLev_{S'}^{(B,&#8467;)}(s_i) }_{1&#8804;i&#8804;n} : a key switching key from s to S'
+Output:
+  ct_out = LWE_{s'}(m1&#183;m2&#183;&#916;_out) &#8712; Z_q^{kN+1}
+
+1  begin
+        /* KS from LWE to GLWE */
+2      CT1 = GLWE_{S'}(m1&#183;&#916;_1) &#8592; PackingKS({ct1}, {0}, KSK) ;
+3      CT2 = GLWE_{S'}(m2&#183;&#916;_2) &#8592; PackingKS({ct2}, {0}, KSK) ;
+        /* GLWE multiplication: Tensor product + Relinearization */
+4      CT  = GLWE_{S'}(m1&#183;m2&#183;&#916;_out) &#8592; GLWEMult(CT1, CT2, RLK)
+        /* Sample extract the constant term */
+5      ct_out = LWE_{s'}(m1&#183;m2&#183;&#916;_out) &#8592; SampleExtract(CT, 0)
+6  end</code></pre><p><strong>Packed variants.</strong> By slightly modifying Algorithm 2, one can compute many products, many squares, a sum of products or a sum of squares with a single GLWE multiplication, by packing the inputs at carefully chosen monomial-index sets and extracting the right coefficients:</p><ul><li><strong>PackedMult:</strong> pack input set 1 at indices {0,1,...,&#945;-1} and set 2 at {0,&#945;,2&#945;,...,(&#945;-1)&#945;}, multiply, then extract coefficients at indices i&#183;(&#945;+1) for 0&#8804;i&lt;&#945;.</li><li><strong>PackedSumProducts:</strong> pack set 1 at {0,1,...,&#945;-1} and set 2 at {&#945;-1,&#945;-2,...,0}, multiply, then extract the single coefficient at index &#945;-1.</li><li><strong>PackedSquares:</strong> pack at indices {2^0-1, 2^1-1, ..., 2^{&#945;-1}-1}, square (GLWE square), extract coefficients at indices 2^{i+1}-2.</li><li><strong>PackedSumSquares:</strong> pack with redundancy using index sets {0,...,&#945;-1} and {2&#945;-1,2&#945;-2,...,&#945;}, square, extract coefficient at index 2&#945;-1.</li></ul><p>Each of the four has a maximum admissible &#945; (detailed in the supplementary material). Algorithm 14 (SampleExtract), Algorithm 11 (PackedSumProducts), Algorithm 12 (PackedSquares) and Algorithm 13 (PackedSumSquares) are given in the appendix.</p></section>
+<section><h2>Building Block 2: Generalized PBS (GenPBS)</h2><p>The second building block generalizes the TFHE PBS so it can bootstrap an arbitrary <em>chunk</em> of bits rather than only the MSB, and evaluate several functions at once. Two new integer parameters redefine the modulus-switching step: <strong>&#954;</strong> is the number of MSB ignored by the PBS, and <strong>2^&#977;</strong> is the number of functions that can be evaluated simultaneously (&#977; LSB are forced to zero). The original TFHE PBS is the special case (&#954;,&#977;) = (0,0). A helper <code>PTModSwitch_q(m, &#916;, &#954;, &#977;)</code> returns (&#946;, m'): with q' = q/(&#916;&#183;2^&#954;), for &#954; &#8805; 0 it sets m' = (m mod q') mod (q'/2) and &#946; = 0 if m mod q' &lt; q'/2 else &#946; = 1; for &#954; &lt; 0 it sets m' = m and &#946; a random bit.</p><p>Theorem 4 states the correctness condition: with w = 2N&#183;2^{-&#977;} and q' = q&#183;2^{-&#954;}, the input noise variance must satisfy &#963;_in&#178; &lt; &#916;_in&#178;/(4&#915;&#178;) - q'&#178;/(12 w&#178;) + 1/12 - n&#183;q'&#178;/(24 w&#178;) - n/48, where &#915; relates to the correctness probability P = erf(&#915;/&#8730;2). The output ciphertext encrypts (-1)^&#946;&#183;f(m')&#183;&#916;_out, and the output noise is:</p><pre><code>Var(PBS) = n&#183;&#8467;&#183;(k+1)&#183;N&#183;((B&#178;+2)/12)&#183;Var(BSK)
+         + n&#183;(q&#178; - B^{2&#8467;})/(24&#183;B^{2&#8467;})&#183;(1 + kN/2)
+         + n&#183;kN/32 + (n/16)&#183;(1 - kN/2)&#178;</code></pre><p>Its complexity equals that of TFHE bootstrapping (modulus switching + n CMux + sample extract). Algorithm 3 (Generalized PBS), verbatim:</p><pre><code>Algorithm 3: ct_out &#8592; GenPBS(ct_in, BSK, CT_f, &#954;, &#977;)
+
+Context:
+  s  = (s_1, ..., s_n) &#8712; Z_q^n        : the LWE input secret key
+  s' = (s'_1, ..., s'_{kN}) &#8712; Z_q^{kN} : the LWE output secret key
+  S' = (S'_1, ..., S'_k) &#8712; R_q^k       : a GLWE secret key
+  &#8704; 1 &#8804; i &#8804; k,  S'_i = &#8721;_{j=0}^{N-1} s'_{(i-1)&#183;N+j+1}&#183;X^j &#8712; R_q
+  P_f &#8712; R_q : an r-redundant LUT for x &#8614; f(x)
+  &#916;_out &#8712; Z_q : the output scaling factor
+  f : Z &#8594; Z : a function
+  (&#946;, m') = PTModSwitch_q(m, &#916;_in, &#954;, &#977;) &#8712; {0,1} &#215; N
+Input:
+  ct_in = LWE_s(m&#183;&#916;_in) = (a_1, ..., a_n, a_{n+1} = b) &#8712; Z_q^{n+1}
+  BSK = { CT_i = GGSW_{S'}^{(B,&#8467;)}(s_i) }_{i=1}^{n} : a bootstrapping key from s to S'
+  CT_f = GLWE_{S'}(P_f &#183; &#916;_out) &#8712; R_q^{k+1}
+  (&#954;, &#977;) &#8712; Z &#215; N : define (with N) the chunk of the plaintext to bootstrap
+Output:
+  ct_out = LWE_{s'}( (-1)^&#946; &#183; f(m') &#183; &#916;_out )   if requirements of Theorem 4 hold
+
+1  begin
+        /* modulus switching */
+2      for 1 &#8804; i &#8804; n+1 do
+3          a'_i &#8592; round( ceil( a_i &#183; 2N &#183; 2^{&#954;-&#977;} / q ) &#183; 2^&#977; )_{2N}
+4      end
+        /* blind rotate of the LUT */
+5      CT &#8592; BlindRotate( CT_f, {a'_i}_{i=1}^{n+1}, BSK ) ;
+        /* sample extract the constant term */
+6      ct_out &#8592; SampleExtract(CT, 0)
+7  end</code></pre></section>
+<section><h2>WoP-PBS, First Version</h2><p>The negacyclicity of the LUT rotation is exactly what forces a padding bit (Limitation A). WoP-PBS removes it. Version 1 (Algorithm 4) runs two generalized PBS <em>in parallel</em>: one (with LUT P_f) produces ct_f encrypting (-1)^&#946;&#183;f(m')&#183;&#916;_out, the other (with the constant-1 LUT P_1) produces a "sign" ciphertext ct_Sign encrypting (-1)^&#946;&#183;&#916;_out. Multiplying them with LWEMult cancels the sign, since (-1)^{2&#946;} = 1, leaving an encryption of f(m')&#183;&#916;_out. Both GenPBS use &#954;-1 (one bit shifted). The output noise equals Var(LWEMult) with the two GenPBS variances as inputs. Algorithm 4, verbatim:</p><pre><code>Algorithm 4: ct_out &#8592; WoP-PBS1(ct_in, BSK, RLK, KSK, P_f, &#916;_out, &#954;, &#977;)
+
+Context:
+  s  = (s_1, ..., s_n) &#8712; Z_q^n
+  s' = (s'_1, ..., s'_{kN}) &#8712; Z_q^{kN}
+  S' = (S'^(1), ..., S'^(k)) &#8712; R_q^k
+  &#8704; 1 &#8804; i &#8804; k,  S'^(i) = &#8721;_{j=0}^{N-1} s'_{(i-1)&#183;N+j+1}&#183;X^j &#8712; R_q
+  f : Z &#8594; Z : a function
+  P_1 &#8712; R_q : a redundant LUT for x &#8614; 1
+  (&#946;, m') = PTModSwitch_q(m, &#916;, &#954;, &#977;) &#8712; {0,1} &#215; N
+  CT_f = GLWE_{S'}(P_f &#183; &#916;_out) &#8712; R_q^{k+1}  (might be a trivial encryption)
+  CT_1 &#8712; R_q^{k+1} : a trivial encryption of P_1 &#183; &#916;_out
+Input:
+  ct_in = LWE_s(m&#183;&#916;_in) = (a_1, ..., a_n, a_{n+1} = b) &#8712; Z_q^{n+1}
+  BSK = { BSK_i = GGSW_{S'}^{(B,&#8467;)}(s_i) }_{1&#8804;i&#8804;n} : a bootstrapping key from s to S'
+  RLK = { CT_{i,j} = GLev_{S'}^{(B,&#8467;)}(S'_i&#183;S'_j) }_{1&#8804;j&#8804;i&#8804;k} : a relinearization key for S'
+  KSK = { CT_i = GLev_{S'}^{(B,&#8467;)}(s'_i) }_{1&#8804;i&#8804;kN} : a key switching key from s' to S'
+  P_f &#8712; R : a redundant LUT for x &#8614; f(x)
+  &#916;_out &#8712; Z_q : the output scaling factor
+  (&#954;, &#977;) &#8712; Z &#215; N : define (with N) the window size
+Output:
+  ct_out = LWE_{s'}( f(m') &#183; &#916;_out )   if requirements of Theorem 5 hold
+
+1  begin
+        /* Compute two PBS in parallel: */
+2      ct_f    = LWE_{s'}( (-1)^&#946;&#183;f(m')&#183;&#916;_out ) &#8592; GenPBS(ct_in, BSK, CT_f, &#954;-1, &#977;) ;
+3      ct_Sign = LWE_{s'}( (-1)^&#946;&#183;&#916;_out )       &#8592; GenPBS(ct_in, BSK, CT_1, &#954;-1, &#977;) ;
+        /* Compute the multiplication */
+4      ct_out &#8592; LWEMult(ct_f, ct_Sign, RLK, KSK);
+5  end</code></pre><p>Practical optimizations: the two GenPBS share the input ciphertext, so they can be fused into one PBS via the multi-value bootstrap of [CIM19] (faster, more noise) or via PBSmanyLUT (Algorithm 6, when the message is small enough); one of the two key switchings inside LWEMult can be dropped if an input arrives already as a GLWE; and the LWEMult on line 4 can be replaced by an LWESquare (PackedSquares with &#945;=2).</p></section>
+<section><h2>WoP-PBS, Second Version</h2><p>Version 2 (Algorithm 5) targets Limitation B (the precision-vs-N link). The message m is written as &#946;||m' (top bit &#946;, remainder m'). The function f is split into f_0 and f_1 with f_0(x) = f(x) = f_1(x - p); &#946; selects which to apply. Three GenPBS run in parallel (P_{f0}, P_{f1}, constant P_1 for the sign), two trivial additions form decision ciphertexts ct_{&#946;0} = LWE((1-&#946;)&#183;&#916;_out) and ct_{&#946;1} = LWE(-&#946;&#183;&#916;_out), two LWEMult select the branch, and a final addition combines them. Output noise is 2&#183;Var(LWEMult). Table 2 lists 128-bit parameter sets for a WoP-PBS2 followed by a GLWE multiplication for precisions 1 to 7 (log2(N)=11 for 1 to 5 bits, log2(N)=12 for 6 and 7 bits). Algorithm 5, verbatim:</p><pre><code>Algorithm 5: ct_out &#8592; WoP-PBS2(ct_in, BSK, RLK, KSK, P_f, &#916;_out, &#954;, &#977;)
+
+Context:
+  s  = (s_1, ..., s_n) &#8712; Z_q^n
+  s' = (s'_1, ..., s'_{kN}) &#8712; Z_q^{kN}
+  S' = (S'^(1), ..., S'^(k)) &#8712; R_q^k
+  &#8704; 1 &#8804; i &#8804; k,  S'^(i) = &#8721;_{j=0}^{N-1} s'_{(i-1)&#183;N+j+1}&#183;X^j &#8712; R_q
+  f_0(x) = f(x) = f_1(x - p)  for a certain p
+  (&#946;, m') = PTModSwitch_q(m, &#916;, &#954;, &#977;) &#8712; {0,1} &#215; N
+  P_1 &#8712; R_q : as defined in Algorithm 4
+  CT_{f_i} = GLWE_{S'}(P_{f_i} &#183; &#916;_out) &#8712; R_q^{k+1}  (might be a trivial encryption)
+  CT_1 &#8712; R_q^{k+1} : a trivial encryption of P_1 &#183; &#916;_out / 2
+  P_{f0}, P_{f1} &#8712; R_q : redundant LUTs of the two halves of P_f
+Input:
+  ct_in = LWE_s(m&#183;&#916;_in) = (a_1, ..., a_n, a_{n+1} = b) &#8712; Z_q^{n+1}
+  BSK, KSK, RLK : as defined in Algorithm 4
+  P_f &#8712; R_q : a redundant LUT for x &#8614; f(x)
+  &#916;_out &#8712; Z_q : the output scaling factor
+  (&#954;, &#977;) &#8712; Z &#215; N : define (with N) the window size
+Output:
+  ct_out = LWE_{s'}( f(m') &#183; &#916;_out )   if requirements of Theorem 6 hold
+
+1  begin
+        /* Compute in parallel 3 PBS: */
+2      ct_{f0}   = LWE_{s'}( (-1)^&#946; &#183; &#916;_out &#183; f_0(m') ) &#8592; GenPBS(ct_in, BSK, CT_{f0}, &#954;, &#977;) ;
+3      ct_{f1}   = LWE_{s'}( (-1)^&#946; &#183; &#916;_out &#183; f_1(m') ) &#8592; GenPBS(ct_in, BSK, CT_{f1}, &#954;, &#977;) ;
+4      ct_Sign   = LWE_{s'}( (-1)^&#946; &#183; &#916;_out / 2 )       &#8592; GenPBS(ct_in, BSK, CT_1, &#954;, &#977;) ;
+        /* Compute two sums in parallel: */
+5      ct_{&#946;0} = LWE_{s'}( (1-&#946;) &#183; &#916;_out ) &#8592; ct_Sign + (0, &#916;_out/2) ;
+6      ct_{&#946;1} = LWE_{s'}( -&#946; &#183; &#916;_out )    &#8592; ct_Sign - (0, &#916;_out/2) ;
+        /* Compute two multiplications in parallel: */
+7      ct_{&#946;&#183;f0} &#8592; LWEMult(ct_{f0}, ct_{&#946;0}, RLK, KSK) ;
+8      ct_{&#946;&#183;f1} &#8592; LWEMult(ct_{f1}, ct_{&#946;1}, RLK, KSK) ;
+        /* Add the previous results: */
+9      ct_out &#8592; ct_{&#946;&#183;f0} + ct_{&#946;&#183;f1} ;
+10 end</code></pre><p>Optimizations: fuse the three GenPBS via [CIM19] or PBSmanyLUT; drop two of four key switches; use lazy relinearization [LLK+20] (relinearize only after the final addition); and replace the two LWEMult plus the final addition by a single PackedSumProducts (Algorithm 11).</p></section>
+<section><h2>Multi-output PBS (PBSmanyLUT)</h2><p>Because &#977; LSB are forced to zero by the modulus switching, a single GenPBS can evaluate 2^&#977; functions for free (no extra noise versus an ordinary PBS), by encoding all of them into one LUT polynomial and extracting the first 2^&#977; output coefficients. The LUT is built as</p><pre><code>P_{(f_1, ..., f_{2^&#977;})} = X^{N/(2p)} &#183; &#8721;_{j=0}^{p-1} X^{j&#183;N/p}
+                          &#183; &#8721;_{k=0}^{N/(p&#183;2^&#977;) - 1} X^{k&#183;2^&#977;}
+                          &#183; &#8721;_{i=0}^{2^&#977; - 1} f_{i+1}(j) &#183; X^i ,
+   with  p = q / (&#916;_in &#183; 2^{&#954;+1})</code></pre><p>Each block of 2^&#977; function values is repeated along the polynomial for redundancy. Theorem 7 gives correctness and complexity C(PBSmanyLUT) = C(GenPBS) + 2^&#977;&#183;C(SampleExtract). Algorithm 6, verbatim:</p><pre><code>Algorithm 6: ct_1, ..., ct_{2^&#977;} &#8592; PBSmanyLUT(ct_in, BSK, P_{(f_1,...,f_{2^&#977;})}, &#916;_out, &#954;, &#977;)
+
+Context:
+  s  = (s_1, ..., s_n) &#8712; Z_q^n
+  s' = (s'_1, ..., s'_{kN}) &#8712; Z_q^{kN}
+  S' = (S'^(1), ..., S'^(k)) &#8712; R_q^k
+  &#8704; 1 &#8804; i &#8804; k,  S'^(i) = &#8721;_{j=0}^{N-1} s'_{(i-1)&#183;N+j+1}&#183;X^j &#8712; R_q
+  f_1, ..., f_{2^&#977;} : Z &#8594; Z
+  (&#946;, m') = PTModSwitch_q(m, &#916;, &#954;, &#977;) &#8712; {0,1} &#215; N
+  CT_{(f_1,...,f_{2^&#977;})} = GLWE_{S'}(P_{(f_1,...,f_{2^&#977;})} &#183; &#916;_out)  (might be trivial)
+Input:
+  ct_in = LWE_s(m&#183;&#916;_in) = (a_1, ..., a_n, a_{n+1} = b) &#8712; Z_q^{n+1}
+  BSK = { BSK_i = GGSW_{S'}^{(B,&#8467;)}(s_i) }_{1&#8804;i&#8804;n}
+  P_{(f_1,...,f_{2^&#977;})} : a redundant LUT for  x &#8614; f_1(x) || ... || f_{2^&#977;}(x)
+  (&#954;, &#977;) &#8712; Z &#215; N : define (with N) the window size
+Output:
+  ct_1, ..., ct_{2^&#977;}  such that  ct_j = LWE_{s'}( (-1)^&#946; &#183; f_j(m') &#183; &#916;_out )
+
+1  begin
+        /* modulus switching */
+2      for 1 &#8804; i &#8804; n+1 do
+3          a'_i &#8592; round( ceil( a_i &#183; 2N &#183; 2^{&#954;-&#977;} / q ) &#183; 2^&#977; )_{2N}
+4      end
+        /* blind rotate of the LUT */
+5      CT &#8592; BlindRotate( CT_{(f_1,...,f_{2^&#977;})}, {a'_i}_{1&#8804;i&#8804;n+1}, BSK ) ;
+        /* sample extract the first 2^&#977; terms (coeffs. from 0 to 2^&#977; - 1) */
+6      for 1 &#8804; j &#8804; 2^&#977; do
+7          ct_j &#8592; SampleExtract_{j-1}(CT)
+8      end
+9  end</code></pre><p><strong>Remark 3</strong>: PBSmanyLUT and WoP-PBS compose both ways. PBSmanyLUT can fuse the several GenPBS inside a WoP-PBS (when N is large enough), improving complexity without affecting noise; conversely the implicit GenPBS inside PBSmanyLUT can be replaced by a WoP-PBS, yielding what the authors call <strong>WoPBSmanyLUT</strong>. <strong>Remark 4</strong>: unlike the [CIM19] multi-value technique, PBSmanyLUT's output noise is independent of the evaluated functions, at the cost of needing &#977; free LSB (hence large enough N).</p></section>
+<section><h2>Application 1: Fast Boolean and Modular Arithmetic</h2><p>Combining GenPBS and LWEMult lets one evaluate Boolean circuits with leveled gates between bootstraps, instead of a PBS per gate (Limitation G). With a bit encoded as 0 or q/2 (Lemma 1):</p><pre><code>ct1 XOR ct2 = ct1 + ct2
+ct1 AND ct2 = LWEMult(ct1, ct2, RLK, KSK)
+NOT ct1     = ct1 + (0, q/2)</code></pre><p>XOR, NOT and AND give functional completeness; noise grows until a refresh is needed. Lemma 2 gives two sign-function refresh operators using GenPBS:</p><pre><code>(4)  ct_out &#8592; GenPBS(ct_in, BSK, P_1&#183;X^{N/2}, &#916;_out = q/4, &#954; = 0, &#977; = 0) + (0, q/4)
+
+(5)  ct_out &#8592; GenPBS(ct_in, BSK,
+                      P_f = &#8721;_{i=N/4}^{3N/4 - 1} X^i,
+                      &#916;_out = q/2, &#954; = -1, &#977; = 0)</code></pre><p>The construction generalizes to modular arithmetic over 2^p: Add2p is an LWE addition, Mul2p is an LWEMult, and Opp2p negates the input. Because functions on multi-bit integers are no longer negacyclic, doing this without WoP-PBS would need two padding bits and thus a large N; with WoP-PBS no padding is required and the bootstrap is only invoked to reset noise. Table 3 summarizes how each TFHE gate-bootstrapping operator maps to the binary (p=1) and integer (p&gt;1) cases.</p></section>
+<section><h2>Application 2: Exact Integer Arithmetic (carry extraction)</h2><p>To build exact arithmetic on large integers represented by several ciphertexts, one needs the MSB (carry) of additions and multiplications: AddMSB_{2p}(m_1,m_2) = floor((m_1+m_2)/2^p) mod 2^p and MulMSB_{2p}(m_1,m_2) = floor((m_1&#183;m_2)/2^p) mod 2^p. Algorithm 7 first uses two WoP-PBS to drop each input to a lower scaling factor q/2^{2p} (adding p padding bits), performs the leveled operation (addition for AddMSB, LWEMult for MulMSB) at the doubled precision, key-switches, uses a third WoP-PBS to extract only the LSB, subtracts it to isolate the MSB, and key-switches again. Algorithm 7, verbatim:</p><pre><code>Algorithm 7: ct_out &#8592; AddMSB_{2p} / MulMSB_{2p} (ct1, ct2, BSK, KSK1, KSK2, RLK)
+
+Context:
+  s  = (s_1, ..., s_n) &#8712; Z_q^n
+  s' = (s'_1, ..., s'_{kN}) &#8712; Z_q^{kN}
+  S' = (S'^(1), ..., S'^(k)) &#8712; R_q^k
+  &#8704; 1 &#8804; i &#8804; k,  S'^(i) = &#8721;_{j=0}^{N-1} s'_{(i-1)&#183;N+j+1}&#183;X^j &#8712; R_q
+  &#916; = q / 2^p &#8712; Z_q
+  0 &#8804; m1, m2 &lt; 2^p
+  P_Id : a redundant LUT for x &#8614; x (identity function)
+Input:
+  ct1 = LWE_s(m1&#183;&#916;) &#8712; Z_q^{n+1}
+  ct2 = LWE_s(m2&#183;&#916;) &#8712; Z_q^{n+1}
+  BSK  = { BSK_i = GGSW_{S'}^{(B,&#8467;)}(s_i) }_{1&#8804;i&#8804;n} : a bootstrapping key from s to S'
+  KSK1 = { CT_i = GLev_{S'}^{(B,&#8467;)}(s'_i) }_{1&#8804;i&#8804;kN} : a key switching key from s' to S'
+  KSK2 = { ct_i = Lev_s^{(B,&#8467;)}(s'_i) }_{1&#8804;i&#8804;kN}    : a key switching key from s' to s
+  RLK  = { CT_{i,j} = GLev_{S'}^{(B,&#8467;)}(S'_i&#183;S'_j) }_{1&#8804;j&#8804;i&#8804;k} : a relinearization key for S'
+Output:
+  ct_out = LWE_s( floor((m1+m2)/2^p) mod 2^p &#183; &#916; )        [AddMSB]
+  ct_out = LWE_s( floor((m1&#183;m2)/2^p) mod 2^p &#183; &#916; )        [MulMSB]
+
+1  begin
+        /* add p bits of padding */
+2      ct'_1 &#8592; WoP-PBS(ct1, BSK, RLK, KSK1, P_Id, &#916;/2^p, 0, 0);
+       ct'_2 &#8592; WoP-PBS(ct2, BSK, RLK, KSK1, P_Id, &#916;/2^p, 0, 0);
+        /* compute the operation */
+4      ct'   &#8592; ct'_1 + ct'_2                              [AddMSB]
+       ct'   &#8592; LWEMult(ct'_1, ct'_2, RLK, KSK1) ;         [MulMSB]
+        /* key switch */
+5      ct''  &#8592; PublicKS(ct', KSK2, Id) ;
+        /* extract the LSB */
+6      ct'_LSB &#8592; WoP-PBS(ct'', BSK, RLK, KSK1, P_Id, &#916;/2^p, p, 0);
+        /* subtract the LSB to only keep the MSB */
+7      ct    &#8592; ct' - ct'_LSB ;
+        /* key switch */
+8      ct_out &#8592; PublicKS(ct, KSK2, Id) ;
+9  end</code></pre><p>Optimization: both PublicKS can be folded into the relinearization steps of the preceding WoP-PBS, and if parameters allow, lines 6 and 7 can be replaced by a single WoP-PBS that directly extracts the MSB.</p></section>
+<section><h2>Application 3: Faster Circuit Bootstrapping</h2><p>TFHE circuit bootstrapping (converting an LWE ciphertext to a GGSW) has a first step of &#8467; independent PBS and a second step of (k+1)&#8467; private key switchings. Because the &#8467; PBS dominate the cost and differ only in their output scaling, they can be replaced by a single PBSmanyLUT producing all &#8467; outputs at once, cutting the PBS cost by roughly a factor &#8467; (factor 2 for the typical &#8467;=2) with no noise penalty. Lemma 4 specifies the replacement:</p><pre><code>{ ct_i }_{i&#8712;[1,&#8467;]} &#8592; PBSmanyLUT(ct_in, BSK, P&#183;X^{N/2^{&#961;+1}}, 1, &#954;=0, &#961;=&#8968;log2(&#8467;)&#8969;)
+&#8704; i &#8712; [1, &#8467;],  ct_i + ( 0, q/(2 B^i) )
+
+with   P(X) = &#8721;_{i=0}^{N/2^&#961; - 1} &#8721;_{j=0}^{2^&#961; - 1} (q / (2 B^j)) &#183; X^{2^&#961;&#183;i + j}</code></pre><p>The LUT encodes the values q/(2B^1), ..., q/(2B^&#8467;) followed by zeros, repeated in N/2^&#961; blocks; after the rotation each ct_i is LWE(&#177; q/(2B^i)), and adding the trivial (0, q/(2B^i)) yields LWE(q/B^i) or LWE(0) as required.</p></section>
+<section><h2>Application 4: Large-Precision Bootstrapping (Decomp) and Large-Precision WoP-PBS</h2><p>Algorithm 8 (Decomp) homomorphically splits one ciphertext into &#945; ciphertexts each holding a chunk of the message (Limitation E and B). The trick is to extract the <em>least</em> significant bits first: parameter &#954; removes some MSB, a WoP-PBS bootstraps the remaining low bits, the result is subtracted from the running ciphertext to peel off those bits, and the process repeats. This is analogous to BGV/BFV "digit extraction" [HS15, CH18]. Each bootstrap only needs N large enough for one chunk, not for the whole message, giving much better complexity. Algorithm 8, verbatim:</p><pre><code>Algorithm 8: ct_out &#8592; Decomp(ct_in, BSK, RLK, KSK, &#8466;)
+
+Context:
+  s  = (s_1, ..., s_n) &#8712; Z_q^n
+  s' = (s'_1, ..., s'_N) &#8712; Z_q^{kN}
+  S' = (S'^(1), ..., S'^(k)) &#8712; R_q^k
+  &#8704; 1 &#8804; i &#8804; k,  S'^(i) = &#8721;_{j=0}^{N-1} s'_{(i-1)&#183;N+j+1}&#183;X^j &#8712; R_q
+  { P_{f_i} }_{i&#8712;[0,&#945;-1]} : LUTs for the functions f_i
+  &#8704; i &#8712; [1, &#945;-1], &#916;_i = &#916;_in &#183; 2^{&#8721;_{j=1}^{i-1} d_j} &#8804; q
+  &#916;_0 = &#916;_in,  m_in&#183;&#916;_in = &#8721;_{i=0}^{&#945;-1} m_i&#183;&#916;_i
+Input:
+  ct_in = LWE_s(m_in &#183; &#916;_in) &#8712; Z_q^{n+1}
+  BSK, KSK, RLK : as defined in Algorithm 4
+  &#8466; = { d_i }_{i&#8712;[0,&#945;-1]}  with  d_i &#8712; N*
+Output:
+  { ct_{out,i} = LWE_{s'}(m_i &#183; &#916;_i) }_{i&#8712;[0,&#945;-1]}
+
+1  begin
+2      ct &#8592; ct_in
+3      for i &#8712; [0, &#945;-1] do
+4          &#954;_i &#8592; &#8721;_{j=i+1}^{&#945;-1} d_j
+5          ct_{out,i} &#8592; WoP-PBS(ct, BSK, RLK, KSK, P_{f_i}, &#916;_i, &#954;_i, 0)
+6          ct &#8592; ct - ct_{out,i}
+7      end
+8  end</code></pre><p>Summing the ctout,i after a Decomp gives a high-precision <em>noise-reduction</em> bootstrap. For a high-precision <em>programmable</em> bootstrap, Decomp efficiently produces the per-chunk ciphertexts that the Tree-PBS and ChainPBS algorithms of [GBA21] need; replacing the internal PBS calls of those algorithms with WoP-PBS removes their padding-bit requirement, yielding the <strong>Tree-WoP-PBS</strong> and <strong>Chained-WoP-PBS</strong> (Limitation B). These also implement the AddMSB_{2p} and MulMSB_{2p} operators.</p></section>
+<section><h2>Conclusion and Open Problems</h2><p>The paper extends TFHE on several fronts simultaneously. A BFV-like GLWE/LWE multiplication (tensor product plus relinearization) is shown, via a thorough noise analysis, to be correct with practical TFHE parameters, giving a native LWE multiplication without a PBS (Limitation D). A generalized PBS bootstraps any chunk of bits and can evaluate 2^&#977; LUTs at once for free (Limitations F, H). Their combination, the WoP-PBS, removes the padding-bit requirement (Limitation A) and is more parallel than the sequential PBS (Limitation C). Downstream, these enable leveled Boolean and modular-2^p arithmetic with bootstraps only when noise demands it (Limitation G), exact large-integer arithmetic via carry extraction, a circuit bootstrapping faster by roughly a factor &#8467; with no noise penalty, and large-precision (programmable) bootstrapping using far smaller parameters than scaling TFHE (Limitations B, E). All of this stays inside the TFHE context, without bridging to other schemes as Chimera does. The noise analysis also applies to BFV-like schemes.</p><p><strong>Open problem.</strong> The main bottleneck remains the negacyclic polynomial convolutions: the FFT-over-64-bit-floats method injects noise, and wider floating-point representations collapse performance, so alternative TFHE-compatible convolution methods are an avenue for improvement.</p><p><em>Figures (vector, not extracted as images): Figure 1 illustrates the MSB message / LSB noise encoding and precision p = log2(q/&#916;) (7 bits in the example). Figure 2 shows the modulus-switching operation of the generalized PBS, with the data (m-bar, m, e) on top and the dimensions (&#954;, 2N, &#977;) below. Figure 3 shows the plaintext after the generalized-PBS modulus switching for &#954; &#8805; 0, with data (m, &#946;, m') and dimensions (2N, &#977;).</em></p></section>
+</main></body></html>

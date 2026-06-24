@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Homomorphic Encryption from Learning with Errors: Conceptually-Simpler, Asymptotically-Faster, Attribute-Based (GSW)</title>
+<style>
+:root{--bg:#0f1115;--surface:#181b20;--ink:#e6e8eb;--muted:#9aa0a8;
+ --line:#2a2f37;--accent:#6ea8fe}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+code{background:#0b0d11;border:1px solid var(--line);border-radius:4px;
+ padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style></head>
+<body><main class="doc">
+<header><h1>Homomorphic Encryption from Learning with Errors: Conceptually-Simpler, Asymptotically-Faster, Attribute-Based (GSW)</h1><p class="meta">PDF, IACR ePrint 2013/340 (Gentry, Sahai, Waters; CRYPTO 2013) · full view</p></header>
+<section><h2>Motivation: a natural multiplication for LWE-based FHE</h2><p>Earlier LWE-based FHE schemes (BV11b, BGV12, Brakerski's Bra12) represent a ciphertext <em>c</em> and secret key <em>s</em> as n-dimensional vectors whose dot product encodes the message: &lt;c, s&gt; is approximately the message up to a small error removed by rounding. Addition is easy, but multiplication is the hard part. It relies on the tensor identity &lt;u1 tensor u2, v1 tensor v2&gt; = &lt;u1, v1&gt; times &lt;u2, v2&gt;, so multiplying ciphertexts tensors them: c1 tensor c2 encrypts the product under the longer key s tensor s, of dimension Theta(n^2). Because tensoring blows up the ciphertext, the evaluator must <strong>relinearize</strong>: multiply the long ciphertext by a special n by Theta(n^2) relinearization matrix to compress it back to a normal n-dimensional ciphertext under a normal key. Each relinearization matrix has size Omega(n^3) and the public key must hold L of them for multiplicative depth L; relinearization costs Omega(n^3) operations per multiply.</p><p>Relinearization is the central insight that enabled LWE-FHE, but it is unnatural, hard to explain, and expensive. The authors ask: can homomorphic add and multiply just be c1 + c2 and c1 times c2 over some ring, with the product having the same form (not a long ciphertext), and with no evaluation key at all? Their answer is yes.</p></section>
+<section><h2>Main results</h2><ul><li><strong>Conceptually simpler FHE from LWE.</strong> The whole scheme is described in the paper's introduction; homomorphic add and multiply are (almost) just matrix add and multiply.</li><li><strong>Asymptotically faster.</strong> Relinearization and its Omega(n^3) matrices are eliminated. Ciphertexts are matrices multiplied naturally, so sub-cubic matrix multiplication (Strassen n^2.807, Williams n^2.3727) applies. Space complexity drops from quasi-cubic to quasi-quadratic.</li><li><strong>No evaluation key.</strong> The evaluator needs only basic public parameters (like n, m, ell), not any user-specific key.</li><li><strong>Identity-based FHE (IBFHE).</strong> Because there is no evaluation key, the authors give a compiler turning any suitable LWE-based IBE (GPV08, ABB10a/b, CHKP10) into an IBFHE, solving a long-standing open problem.</li><li><strong>Attribute-based FHE (ABFHE).</strong> The same compiler, with minor changes, compiles the Gorbunov-Vaikuntanathan-Wee (GVW13) ABE-for-circuits into an ABFHE.</li></ul><p>The scheme keeps the usual LWE-FHE advantages: optional bootstrapping (BGV12), security from quasi-polynomial LWE factors with bootstrapping, no modulus switching (Bra12), and security based directly on classical GapSVP. The authors caution the asymptotic speedup is mostly evidence of conceptual novelty rather than a practical win; LWE-FHE is still slower than RLWE-FHE, and a RLWE version of this scheme is worse than the best RLWE schemes by log factors. The real practical gain is space, not time.</p></section>
+<section><h2>The approximate-eigenvector method</h2><p>The core idea: the secret key is an <strong>approximate eigenvector</strong> of the ciphertext matrix, and the message is the eigenvalue. For modulus q and dimension N, a ciphertext C is an N by N matrix over Z_q with small entries, and the secret key v is an N-vector over Z_q with at least one big coefficient. C encrypts mu when C times v = mu times v + e for a small error vector e. Decryption extracts row C_i, computes x = &lt;C_i, v&gt; = mu times v_i + e_i, and rounds: mu = round(x / v_i).</p><p>Now the homomorphic operations follow from linear algebra. With C_i times v = mu_i times v + e_i:</p><pre><code>Addition:    C+ = C1 + C2
+   C+ . v = (mu1 + mu2) . v + (e1 + e2)
+
+Multiplication: Cx = C1 . C2
+   Cx . v = C1 . (mu2 . v + e2)
+          = mu2 . (mu1 . v + e1) + C1 . e2
+          = mu1 . mu2 . v + mu2 . e1 + C1 . e2
+          = mu1 . mu2 . v + small</code></pre><p>So matrix sum encrypts the message sum and matrix product encrypts the message product, as long as the error stays small. Note C2 times C1 also encrypts mu1 times mu2, even though matrix multiplication is non-commutative: in the error-free picture, if C1 and C2 share eigenvector v with eigenvalues mu1, mu2, then both C1 C2 and C2 C1 have eigenvector v with eigenvalue mu1 mu2. Introducing the error e (to base security on LWE) makes v only an approximate eigenvector, which is why certain terms must be kept small.</p></section>
+<section><h2>Noise growth without flattening: somewhat-homomorphic</h2><p>Call C B-bounded if mu and the coefficients of C and e are all at most B in magnitude. Then C+ is 2B-bounded, but Cx is (N+1)B^2-bounded. The error therefore grows worse than B^(2^L), doubly exponentially in multiplicative depth L. By degree: evaluating a degree-d polynomial P on B-bounded inputs gives a |P|(N+1)^(d-1)B^d-bounded ciphertext, where |P| is the L1-norm of P's coefficients. Taking q to exceed this, one can evaluate degree roughly log_{NB}(q). Since q/B must be at most sub-exponential in N for security, the scheme so far evaluates only polynomial degree (logarithmic depth). This is a <strong>somewhat-homomorphic (SWHE)</strong> scheme: the most homomorphic LWE scheme using only natural operations, but not yet FHE.</p></section>
+<section><h2>The gadget and flatten technique: G, BitDecomp, Powersof2, Flatten</h2><p>To get leveled FHE, the error must grow only singly-exponentially. The fix is <strong>flattening</strong>, built on bit-decomposition operations from BV11b/BGV12/Bra12 that change a vector without changing its dot product. Let a, b be k-dimensional over Z_q, let ell = floor(log2 q) + 1, and N = k times ell.</p><pre><code>BitDecomp(a) = (a_{1,0},...,a_{1,ell-1}, ..., a_{k,0},...,a_{k,ell-1})
+   where a_{i,j} is the j-th bit of a_i (LSB first).
+
+BitDecomp^{-1}(a') = ( sum_j 2^j . a_{1,j}, ..., sum_j 2^j . a_{k,j} )
+   the inverse of BitDecomp, but well-defined even when the
+   input a' is NOT a 0/1 vector.
+
+Flatten(a') = BitDecomp( BitDecomp^{-1}(a') )
+   an N-dim vector with 0/1 coefficients.
+
+Powersof2(b) = (b_1, 2 b_1, ..., 2^{ell-1} b_1, ...,
+                b_k, 2 b_k, ..., 2^{ell-1} b_k)
+   an N-dim vector.
+
+For a matrix A, BitDecomp(A) / BitDecomp^{-1}(A) / Flatten(A)
+   apply the operation to each row of A separately.</code></pre><p>The key dot-product identities (which hold without knowing b):</p><pre><code>&lt;BitDecomp(a), Powersof2(b)&gt; = &lt;a, b&gt;
+
+For any N-dim a':
+  &lt;a', Powersof2(b)&gt;
+    = &lt;BitDecomp^{-1}(a'), b&gt;
+    = &lt;Flatten(a'), Powersof2(b)&gt;</code></pre><p>So Flatten makes the coefficients of a vector or matrix small (0/1) without affecting its product with Powersof2(b), and without knowing b. The scheme sets the secret key to v = Powersof2(s) for a secret vector s. Then for any N by N matrix C, <strong>Flatten(C) times v = C times v</strong>. The matrix G = BitDecomp^{-1}(I_N) is (the transpose of) the Micciancio-Peikert primitive (gadget) matrix.</p></section>
+<section><h2>Flattening yields leveled FHE</h2><p>Call C B-strongly-bounded if mu and all coefficients of C are at most 1 in magnitude while the coefficients of e are at most B. Evaluating a NAND gate as C3 = I_N - C1 times C2 keeps the message in {0,1} and produces error at most (N+1)B; but C3's coefficients are not small. Applying Flatten fixes exactly this: because Flatten(C) times v = C times v, setting C_NAND = Flatten(C3) gives a ciphertext with 0/1 coefficients that is still strongly bounded. Iterating a depth-L NAND circuit keeps the error at most (N+1)^L times B, only singly-exponential in L. With q/B sub-exponential in N, the scheme evaluates polynomial-depth circuits: a <strong>leveled FHE scheme</strong>, with no relinearization and a single fixed approximate-eigenvector key.</p></section>
+<section><h2>Key generation, encryption, and reduction to LWE</h2><p>Key generation produces an LWE instance: a matrix A such that A times s = e is small, where s has first coefficient 1. The approximate eigenvector is v = Powersof2(s), dimension N = (n+1) times ell. To encrypt mu, sample a random 0/1 matrix R and Flatten mu times I_N plus BitDecomp(R times A):</p><pre><code>C = Flatten( mu . I_N + BitDecomp(R . A) )  in Z_q^{N x N}
+
+C . v = mu . v + BitDecomp(R . A) . v
+      = mu . v + R . A . s
+      = mu . v + small      (since A . s = e is small)</code></pre><p><strong>Security.</strong> Let C' = BitDecomp^{-1}(C). Since C is Flatten'd, C = BitDecomp(C'), so C reveals nothing more than C'. And C' = BitDecomp^{-1}(mu times I_N) + R times A = mu times G + R times A, where the rows of R times A are Regev encryptions of 0. By the leftover hash lemma with m = O(n log q) (concretely m &gt; 2n log q), R times A is statistically uniform, so C is independent of mu. Security reduces directly to LWE (Lemma 1, implicit in Regev05). Security can also be based on classical GapSVP; the error bound B of fresh ciphertexts need not be small, so q may be exponential (only q/B must be sub-exponential).</p></section>
+<section><h2>The formal scheme: Setup, key generation, Enc, Dec, MPDec</h2><p>KeyGen is split into Setup, SecretKeyGen, PublicKeyGen. Two decryption routines are given: Dec (recovers small mu, e.g. in {0,1}) and MPDec (the Micciancio-Peikert procedure recovering any mu in Z_q).</p><pre><code>Setup(1^lambda, 1^L):
+   Choose modulus q of kappa = kappa(lambda,L) bits, dimension
+   n = n(lambda,L), error distribution chi for >= 2^lambda
+   security, and m = O(n log q). params = (n, q, chi, m).
+   ell = floor(log q) + 1,   N = (n+1) . ell.
+
+SecretKeyGen(params):
+   Sample t &lt;- Z_q^n.
+   Output sk = s &lt;- (1, -t_1, ..., -t_n) in Z_q^{n+1}.
+   Let v = Powersof2(s).
+
+PublicKeyGen(params, sk):
+   Generate B &lt;- Z_q^{m x n} uniformly,  e &lt;- chi^m.
+   Set b = B . t + e.
+   Set A = [ b | columns of B ]   (an m x (n+1) matrix).
+   pk = A.    (Remark: A . s = e.)
+
+Enc(params, pk, mu):    for mu in Z_q
+   Sample R in {0,1}^{N x m} uniformly.
+   Output  C = Flatten( mu . I_N + BitDecomp(R . A) ) in Z_q^{N x N}.
+
+Dec(params, sk, C):     (small message, e.g. {0,1})
+   The first ell coefficients of v are 1, 2, ..., 2^{ell-1}.
+   Pick v_i = 2^i in (q/4, q/2].
+   Let C_i be row i of C. Compute x_i = &lt;C_i, v&gt;.
+   Output mu' = round( x_i / v_i ).
+
+MPDec(params, sk, C):   (any mu in Z_q; here q a power of 2)
+   q = 2^{ell-1}; first ell-1 coeffs of v are 1,2,...,2^{ell-2}.
+   If C.v = mu.v + small, the first ell-1 coeffs of C.v are
+   mu.g + small with g = (1,2,...,2^{ell-2}).
+   Recover LSB(mu) from  mu . 2^{ell-2} + small;
+   recover the next bit from (mu - LSB(mu)) . 2^{ell-3} + small;
+   etc.  (See MP12 for general q.)</code></pre><p>Correctness: if C is well-formed, C times v = mu times v + R times A times s = mu times v + R times e. Dec uses only coefficient i, x_i = mu times v_i + &lt;R_i, e&gt;, whose error has magnitude at most ||e||_1. If the error is at most q/8 and v_i is in (q/4, q/2], then x_i / v_i differs from mu by less than 1/2 and rounding recovers mu. Dec is simply a BitDecomp'd version of Regev decryption applied to one row; the extra rows matter for homomorphism.</p></section>
+<section><h2>Homomorphic operations: MultConst, Add, Mult, NAND</h2><p>All four operations end with Flatten so the output is strongly bounded.</p><pre><code>MultConst(C, alpha):    multiply ciphertext by known alpha in Z_q
+   M_alpha &lt;- Flatten(alpha . I_N)
+   output Flatten(M_alpha . C)
+   Check: MultConst(C,alpha).v = M_alpha . (mu.v + e)
+          = alpha . mu . v + M_alpha . e
+   Error grows by a factor of at most N, regardless of alpha
+   (vs. repeated Add, which multiplies error by ~alpha).
+   Enables native homomorphic FFT over Z_q without q-dependent
+   error growth.
+
+Add(C1, C2):
+   output Flatten(C1 + C2)
+   Message addition is over the full ring Z_q.
+
+Mult(C1, C2):
+   output Flatten(C1 . C2)
+   Check: Mult(C1,C2).v = C1 . C2 . v
+        = C1.(mu2.v + e2) + mu2.(mu1.v + e1) - ...
+        = mu1 . mu2 . v + mu2 . e1 + C1 . e2
+   C1 contributes &lt;= factor N error (entries in {0,1}); the
+   mu2 . e1 term means message magnitude affects error growth,
+   so the message space must be kept small.
+
+NAND(C1, C2):   for mu1, mu2 in {0,1}
+   output Flatten(I_N - C1 . C2)
+   Check: NAND(C1,C2).v = (I_N - C1.C2).v
+        = (1 - mu1.mu2).v - mu2.e1 - C1.e2
+   Keeps messages in {0,1}; error grows by a factor of at
+   most N+1.</code></pre><p><strong>Circuits.</strong> A Boolean circuit converted to NAND gates, evaluated at depth L over fresh ciphertexts with error bound B, yields error at most (N+1)^L times B. For arithmetic circuits over Z_q where all inputs and intermediate values stay bounded by T (resp. T'), the final error is bounded by (N+T')^L times B; this gives somewhat-homomorphic evaluation of degree-d polynomials when initial messages are bounded by roughly q^(1/d).</p></section>
+<section><h2>Parameters and performance</h2><p>If C1, C2 are B-bounded encryptions of {0,1} bits, then NAND(C1, C2) is (N+1)B-bounded. As long as q/B &gt; 8(N+1)^L, a depth-L NAND circuit yields a q/8-bounded ciphertext that Dec decrypts correctly. To hold 2^lambda security, n (hence N) grows linearly with log(q/B), so q/B grows like exp(L log L). With kappa = log q = O(L log n) and N = O(n kappa) = O(nL log n), each NAND is dominated by one N by N matrix multiply.</p><p><strong>Theorem 3.</strong> The scheme evaluates depth-L NAND circuits with O~((nL)^omega) field operations per gate, where omega &lt; 2.3727 is the matrix-multiplication exponent. Previous LWE-FHE schemes need at least O~(n^3 L) field operations, and since their field ops multiply a small number by a general Z_q element (cost O~(kappa) = O~(L)), their real complexity is O~(n^3 L^2) versus this scheme's O~((nL)^omega). The hidden benefit: 0/1 ciphertext entries multiply faster than general Z_q matrices. Bootstrapping works as in prior LWE schemes since Dec is essentially Regev decryption (evaluable in O(log n) depth), allowing quasi-polynomial q/B.</p></section>
+<section><h2>No evaluation key, and the IBFHE / ABFHE compiler</h2><p>The decisive structural property is that homomorphic evaluation needs only public parameters (n, m, ell), never a user-specific evaluation key. This removes the obstacle that had kept identity-based FHE open: prior FHE always needed an evaluation key that is not derivable non-interactively from an identity, undermining IBE's whole point.</p><p>The compiler turns any LWE-based IBE with three properties into IBFHE. Property 1: the decryption key s_ID and a ciphertext c_ID for identity ID are vectors in Z_q^{n'} with s_ID's first coefficient 1. Property 2 (small dot product): if c_ID encrypts 0, then &lt;c_ID, s_ID&gt; is small. Property 3 (security): encryptions of 0 are indistinguishable from uniform under LWE.</p><pre><code>Theorem 4 (IBE -> IBFHE compiler):
+   Use E's Setup and KeyGen; add FHE params (m, ell) to MPK.
+   N = (n+1) . ell,   ell = floor(log q) + 1.
+
+   To encrypt mu in {0,1} under ID:
+     generate N encryptions of 0 via E.Enc;
+     let C'_ID be the N x (n+1) matrix of these rows;
+     output C_ID = Flatten( mu . I_N + BitDecomp(C'_ID) ).
+
+   Decryption: v_ID = Powersof2(s_ID); run Dec(v_ID, C_ID).
+     Correctness: C_ID . v_ID
+       = mu . v_ID + C'_ID . s_ID
+       = mu . v_ID + small      (small by Property 2).
+   Homomorphic ops: as in Section 3.3.</code></pre><p>Semantic security follows: any adversary breaking the IBFHE distinguishes C'_ID from uniform and hence breaks LWE (Property 3). All known LWE-based IBE schemes (GPV08, ABB10a/b, CHKP10) fit. For ABFHE the authors re-interpret decryption in the GVW13 ABE: from sk_y with R(x,y)=1 one derives a sub-key s_{x,y} satisfying a Property-2-like small-dot-product condition (if c_x encrypts 0 under x then &lt;c_x, s_{x,y}&gt; is small), so the same compiler applies, giving the first ABFHE where ciphertexts under a common index are processed homomorphically with no evaluation key. Full IBE/ABE details are deferred to the full version.</p></section>
+<section><h2>Significance for FHEW and TFHE</h2><p>This scheme, now universally called <strong>GSW</strong>, is the conceptual foundation of the FHEW and TFHE line of fast bootstrapping schemes. Two GSW features are decisive for them. First, the asymmetric noise growth of Mult: since C1's entries are 0/1, the C1 times e2 term contributes only a factor-N blowup, so a chain of GSW multiplications grows error only quasi-additively rather than multiplicatively. This makes GSW the natural vehicle for the homomorphic accumulator at the heart of FHEW/TFHE bootstrapping, where many controlled GSW products are chained. Second, the gadget G / BitDecomp / Flatten machinery (the G, G^{-1} decomposition) is exactly the external-product structure that TFHE generalizes to its GGSW ciphertexts and the external product (a GGSW times a GLWE giving a GLWE), the operation that drives the blind-rotation step of programmable bootstrapping. The approximate-eigenvector / eigenvalue-as-message view and the absence of an evaluation key carry directly into how FHEW and TFHE structure their bootstrapping keys and CMux / blind-rotation gates.</p></section>
+</main></body></html>
