@@ -34,10 +34,16 @@ figure img{cursor:zoom-in}
 #rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
 #rt-lightbox img{max-width:95vw;max-height:95vh}
 #rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+#rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
+#rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
+a.rt-figref,a.rt-eqref{color:#1a73e8;text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+body{counter-reset:rt-eq}
+mjx-container[display="true"]{position:relative;padding-right:2.4em}
+mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
 </style>
 </head>
 <body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://github.com/zama-ai/concrete" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
-<header><h1>Programmable Bootstrapping Enables Efficient Homomorphic Inference of Deep Neural Networks</h1><p class="meta">PDF, IACR ePrint 2021/091 · full view</p></header>
+<header><h1>Programmable Bootstrapping Enables Efficient Homomorphic Inference of Deep Neural Networks</h1><p class="meta">PDF, IACR ePrint 2021/091 · full view · verified</p></header>
 <section><h2>Overview</h2><p>This paper (Chillotti, Joye, Paillier; Zama) reports the first experiments showing that <strong>deep</strong> neural networks are within reach of fully homomorphic encryption (FHE). It builds on the TFHE scheme and its key enabling technique, the <em>programmable bootstrapping</em> (PBS), which simultaneously refreshes a ciphertext's noise and evaluates an arbitrary function of the underlying plaintext. Crucially, and in contrast to prior work, the framework evaluates the <strong>original</strong> trained model as is: it does not require re-designing operations, altering the network topology, or re-training the model.</p><p>The authors demonstrate homomorphic inference on MNIST with networks of depth 20, 50, and 100 (NN-20, NN-50, NN-100), reaching accuracies close to the in-the-clear baseline. The library is an extended TFHE variant written in Rust and released open source as Concrete (https://github.com/zama-ai/concrete).</p></section>
 <section><h2>Motivation: FHE and noise control</h2><p>Machine learning often processes sensitive data (medical, biometric, communications), and regulations such as GDPR and CCPA require its protection. Traditional encryption protects data only at rest or in transit; the data must be decrypted before processing. FHE, posed as a challenge in 1978 and first realized by Gentry in 2009, instead lets a recipient compute directly on encrypted data.</p><p>All known FHE schemes produce noisy ciphertexts, and homomorphic operations increase that noise. Once the noise exceeds a threshold the ciphertext is no longer decryptable. A scheme limited to a predetermined noise budget is termed <em>leveled</em>. <em>Bootstrapping</em> generically refreshes ciphertexts by homomorphically evaluating the decryption circuit, turning a leveled scheme into a fully homomorphic one. A fast GSW-based bootstrapping by Ducas and Micciancio (sub-second) was refined into TFHE.</p><p>TFHE operates in two modes. The <strong>leveled</strong> mode supports linear combinations and a bounded number of external products, with noise always growing; it suits small-depth circuits. The <strong>bootstrapped</strong> mode finely controls noise and, being <em>programmable</em>, evaluates complex non-linear functions. Large-depth circuits such as deep neural networks require the bootstrapped mode.</p></section>
 <section><h2>Preliminaries: the torus and torus polynomials</h2><p>The letter T in TFHE denotes the real torus $\mathbb{T} = \mathbb{R}/\mathbb{Z}$, the reals modulo 1. $(\mathbb{T}, +)$ is an abelian group, but $\mathbb{T}$ is not a ring since an internal product of torus elements is undefined. An external product between integers and torus elements is well defined: for $k \in \mathbb{Z}$ and $t \in \mathbb{T}$, $k \bullet t \in \mathbb{T}$, giving $\mathbb{T}$ a $\mathbb{Z}$-module structure.</p><p>Polynomials are defined over the torus. With $\Phi(X)$ the $M$-th cyclotomic polynomial of degree $N$, and $M$ a power of 2, one has $N = M/2$ and $\Phi(X) = X^N + 1$. Define $\mathbb{R}_N[X] := \mathbb{R}[X]/(X^N+1)$ and $\mathbb{Z}_N[X] := \mathbb{Z}[X]/(X^N+1)$, and the $\mathbb{Z}_N[X]$-module $\mathbb{T}_N[X] := \mathbb{R}_N[X]/\mathbb{Z}_N[X] = \mathbb{T}[X]/(X^N+1)$. Elements of $\mathbb{T}_N[X]$ are polynomials modulo $X^N+1$ with torus coefficients; they can be added and externally multiplied by polynomials of $\mathbb{Z}_N[X]$.</p><p>Two distributions are used: the uniform distribution $\mathcal{U}$ and the normal distribution $\mathcal{N}(\mu, \sigma^2)$. A real normal distribution induces a discretized version over $\mathbb{Z}$ via $Z = \lfloor X q \rceil$. The shorthand $s \xleftarrow{\$} S$ means $s \leftarrow \mathcal{U}(S)$.</p></section>
@@ -136,7 +142,34 @@ Result: a low-noise ciphertext encoding f(x).</code></pre><p><strong>Remark.</st
     if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
   });
 })();
+function rtSetupEquations(){
+  var prev=document.getElementById('rt-eqprev');
+  if(!prev){prev=document.createElement('div');prev.id='rt-eqprev';document.body.appendChild(prev);}
+  function showEq(html,e){prev.innerHTML=html;prev.style.display='block';var x=Math.min(e.clientX+20,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+20,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hideEq(){prev.style.display='none';}
+  var eqs=document.querySelectorAll('mjx-container[display="true"]'),htmlByNum={};
+  for(var i=0;i<eqs.length;i++){var n=i+1;eqs[i].id='eq'+n;htmlByNum[n]=eqs[i].outerHTML;}
+  if(!eqs.length)return;
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='script'||tg==='style')continue;
+    if(pn.closest&&pn.closest('mjx-container'))continue;
+    if(/eq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!htmlByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#eq'+num;a.className='rt-eqref';a.textContent=m[0];
+      (function(h){a.addEventListener('mousemove',function(e){showEq(h,e);});a.addEventListener('mouseleave',hideEq);})(htmlByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+}
+window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],tags:'none'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},startup:{pageReady:function(){return MathJax.startup.defaultPageReady().then(function(){rtSetupEquations();});}}};
 </script>
-<script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
 </body></html>
