@@ -25,7 +25,7 @@
   date: "2026-06-24"
   pub: "2019"
   source_type: "PDF (text-layer; tables and matrix rasterized from the typeset PDF)  -  IACR ePrint 2019/116, retrieved via Wayback Machine"
-  source_url: "https://eprint.iacr.org/2019/116"
+  source_url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js\\"
   pdf: ""
   tags: ["tfhe", "multi-key-he", "bootstrapping"]
 - slug: "lmkcdey-fhew-small-eval-keys-2026-06-24"
