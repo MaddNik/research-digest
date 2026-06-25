@@ -25,8 +25,18 @@ figure img{max-width:100%;height:auto;background:#fff;padding:10px;
 .figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
 .missing{color:var(--muted);font-style:italic;font-size:13px}
 @media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
-</style></head>
-<body><main class="doc">
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:#15151a;border-bottom:1px solid #333;font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:#8ab4f8;text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://eprint.iacr.org/2014/816" target="_blank" rel="noopener noreferrer">Read the full article &#8594;</a></div><main class="doc">
 <header><h1>FHEW: Bootstrapping Homomorphic Encryption in Less Than a Second</h1><p class="meta">PDF, IACR ePrint 2014/816 · full view</p></header>
 <section><h2>Motivation: bootstrapping is the FHE bottleneck</h2><p>Every fully homomorphic encryption (FHE) scheme since Gentry's 2009 construction relies on noisy lattice ciphertexts. Each homomorphic operation grows the noise, and once it crosses a threshold the ciphertext stops decrypting. Gentry's <em>bootstrapping</em> fixes this by homomorphically evaluating the decryption circuit on an encrypted secret key, refreshing the ciphertext back to a low noise level. It is what makes unbounded computation possible, and it is the dominant cost in every practical implementation. At the time of writing, the fastest reference implementation (HElib, Halevi and Shoup, Crypto 2014) needed about six minutes per bootstrap.</p><p>Ducas and Micciancio study bootstrapping "in vitro": the simplest useful setting. Given two LWE-encrypted bits E(b1) and E(b2), compute an encryption of their logical NAND and return it refreshed to the same low-noise form as the inputs. NAND is complete for boolean circuits, so a fast bootstrapped NAND yields a full FHE. Their prototype performs one homomorphic NAND plus a full refresh in about 0.69 seconds on a single 3 GHz core, roughly 500x faster than HElib's per-bootstrap time, in about 600 lines of C++ (released as FHEW on GitHub). Security rests on worst-case hardness of standard lattice problems (LWE / Ring-LWE) plus the usual circular-security assumption needed to publish a compact evaluation key.</p></section>
 <section><h2>LWE encryption, modulus switching, key switching</h2><p>The base scheme is plain symmetric LWE. With dimension n, message modulus t, ciphertext modulus q and randomized rounding function chi, a message m in Z_t is encrypted under secret key s in Z_q^n as</p><pre><code>LWE_s^{t/q}(m) = (a, chi(a.s + m*q/t) mod q)  in  Z_q^{n+1},   a &lt;- Z_q^n uniform</code></pre><p>When t divides q this is (a, a.s + e + m*q/t mod q). Decryption computes m' = round( t*(b - a.s) / q ) mod t. A ciphertext decrypts correctly whenever its error satisfies |err| &lt; q/(2t). The notation LWE_s^{t/q}(m, E) means the subset of encryptions of m whose error is bounded by E.</p><p>Two helper conversions are central to the pipeline. <strong>Modulus switching</strong> rescales a ciphertext from modulus Q to q with the scaled randomized rounding [x]_{Q:q} = floor(q*x/Q) + B, B a Bernoulli rounding bit; the resulting rounding error is subgaussian of parameter sqrt(2*pi). Lemma 5 gives the output error parameter sqrt( (q*sigma/Q)^2 + 2*pi*(||s||^2 + 1) ). <strong>Key switching</strong> converts a ciphertext under key z into one under a different key s using auxiliary encryptions k_{i,j,v} = LWE_s^{q/q}(v*z_i*B_ks^j); it expands each coordinate a_i in base B_ks and computes</p><pre><code>KeySwitch((a,b), K) = (0, b) - sum_{i,j} k_{i,j, a_{i,j}}</code></pre><p>Lemma 6: this yields an encryption of the same message with output error parameter sqrt( alpha^2 + N*d_ks*sigma^2 ). To keep key-switching noise small the LWE secret s is taken <em>binary</em>, which is proven as hard as standard LWE (Brakerski et al. 2013).</p></section>
@@ -64,4 +74,31 @@ Require: switching key  k_{i,j,w} &lt;- LWE_s^{q/q}( w * z_i * d_ks^j )  from z 
          +  ||s||^2 * omega( sqrt(log n) ).</code></pre><p>Asymptotic parameters: binary secret s; B_g, B_r, B_ks = Theta(1) so d_g, d_r, d_ks = O(log n); sigma, zeta = omega(sqrt(log n)); 2N = q = Theta(n); Q = n^2 * log n * omega(log n). This yields refresh error E(n*d) = O(n) &lt;= q/16, satisfying the NAND requirement. Refresh costs d*n homomorphic operations, versus d*n * O(log^3 q / log log q) in Alperin-Sheriff and Peikert; the pre-switch refresh error is parameter alpha = O(n^2 log n) here versus Theta(n^{5/2} log^3 n / log log n) there, with memory cut by O(log^2 q / log log q).</p></section>
 <section><h2>Concrete parameters, security and the sub-second timing</h2><p>For the implementation the proof-only constraints (B_g a power of 3, Q a power of B_g) are dropped, requiring only B_g^{d_g} &gt;= Q. Under the central-limit heuristic, refreshed error behaves as a Gaussian of standard deviation beta = sqrt( (q^2/Q^2)*( (zeta^2 B_r^2 / 12)*n*d_r*(q/2)*2*N*d' + sigma^2*N*d_ks ) + (||s||^2 + 1)/12 ), with d' = B_g - 1 + Q/B_g^{d_g} (here d' = 2.5).</p><p>Chosen parameters: <strong>LWE</strong> n = 500, Q = 2^32, sigma = 2^17, q = 2^9; <strong>Ring-GSW</strong> N = 2^10, zeta = 1.4; <strong>gadget</strong> B_g = 2^11, d_g = 3, u = Q/8 + 1; <strong>bootstrapping key</strong> B_r = 2^3, d_r = 2; <strong>key-switching key</strong> B_ks = 2^4, d_ks = 7. Resulting sizes: bootstrapping key 1032 MB, key-switching key 314 MB, and 48,000 FFTs per NAND gate. Final error parameter beta = 6.94, giving per-NAND error probability p &lt;= 2^-31 (with r = (q/8)/(sqrt(2)*beta)); applying HomNAND before the switches lowers this to 2^-45. Security: delta-binLWE(n, Q, sigma, 2^-64) = 1.0064 and delta-LWE(N, Q, zeta, 2^-64) = 1.0064, corresponding (per BKZ 2.0 estimates) to block size &gt; 190 and &gt; 2^100 enumeration nodes per call. Binary-secret LWE security accounts for the modulus-switching attack via delta-binLWE(n,q,sigma,eps) = min over q' &lt;= q of delta-LWE(n, q', sqrt((q'/q)^2 sigma^2 + n/24), eps).</p><p>Implementation uses double-precision complex FFT (FFTW) rather than NTT, with Q a power of two so reduction mod Q is free; a negacyclic FFT of rank N is read off the odd indices of a rank-2N real-data FFT, hitting ~6 Gflops and ~10 microseconds per FFT at 2N = 2048. The product magnitude S = B_g*Q*sqrt(N)/4 = 2^46 sits just within double precision; small floating-point errors fold into the accumulator noise. <strong>Result:</strong> one HomNAND plus one Refresh runs in 0.69 seconds on a single 3 GHz 64-bit core using 2.2 GB of memory, within an order of magnitude of HElib's amortized per-bit bootstrapping cost, in roughly 600 lines of C++ (FHEW, released on GitHub).</p></section>
 <section><h2>Extensions and conclusions</h2><p>The technique is not limited to NAND. Working mod 4, a <strong>majority</strong> gate on x1,x2,x3 is the msb test on the shifted sum (x1+x2+x3) - 0.5. Larger moduli t handle arbitrary weighted <strong>threshold</strong> gates sum w_i x_i &gt; h. Replacing msbExtract with a membership test for any anti-symmetric set S in Z_t (x in S iff x + t/2 not in S) generalizes further: with t = 6, an arbitrary-fan-in XOR x1 XOR ... XOR xk is one Refresh via the test (x1 + ... + xk mod 6) in {1,3,5}, giving xor-for-almost-free. Since the membership test is cheap relative to the rest of Refresh, multi-output gates (e.g. a 3-input, 2-output add-with-carry at t=6 in a single shot) cost little extra. Taking weighted combinations sum 2^i x_i and testing subsets of Z_{2^{k+2}} can in principle realize any boolean gate, though cost grows exponentially in fan-in k.</p><p>Open problems left by the authors: combining this fast sub-second bootstrapping with techniques that do more complex computation between bootstraps, fully exploiting the ring-LWE message space inside the accumulator, and merging with the CRT techniques of Alperin-Sheriff and Peikert. The scheme still needs a circular-security assumption to publish a compact evaluation key.</p></section>
-</main></body></html>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  var n=0;
+  Array.prototype.forEach.call(document.querySelectorAll('figure'),function(fig){
+    var img=fig.querySelector('img');if(!img)return;n++;
+    if(!fig.id)fig.id='fig'+n;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+n;fig.appendChild(cap);}
+    img.addEventListener('click',function(){lb.firstChild.src=img.src;lb.style.display='flex';});
+    img.addEventListener('mousemove',function(e){
+      prev.src=img.src;prev.style.display='block';
+      var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);
+      var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);
+      prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';
+    });
+    img.addEventListener('mouseleave',function(){prev.style.display='none';});
+  });
+})();
+</script>
+<script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>

@@ -25,8 +25,18 @@ figure img{max-width:100%;height:auto;background:#fff;padding:10px;
 .figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
 .missing{color:var(--muted);font-style:italic;font-size:13px}
 @media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
-</style></head>
-<body><main class="doc">
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:#15151a;border-bottom:1px solid #333;font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:#8ab4f8;text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://arxiv.org/abs/2510.23483" target="_blank" rel="noopener noreferrer">Read the full article &#8594;</a></div><main class="doc">
 <header><h1>Towards a Functionally Complete and Parameterizable TFHE Processor</h1><p class="meta">PDF (text-layer), arXiv:2510.23483 · full view</p></header>
 <section><h2>Overview and Motivation</h2><p>Fully homomorphic encryption (FHE) lets arbitrary functions be evaluated directly on encrypted data, which makes it attractive for securing outsourced and multiparty computation. TFHE is a fast, torus-based FHE scheme built on the learning with errors (LWE) assumption. It supports linear operations and, through programmable bootstrapping (PBS), the evaluation of arbitrary non-linear lookup tables. TFHE currently offers the fastest bootstrapping of any FHE scheme, yet homomorphic circuit evaluation remains several orders of magnitude slower than the equivalent plaintext computation, which is the main barrier to adoption.</p><p>Prior FPGA accelerators mostly offload only the single most expensive step (typically the blind rotation inside PBS) while leaving the rest of the computation on conventional hardware. This forces large ciphertexts and keys to be shuttled across the host-to-FPGA boundary, so overall throughput and scalability become dominated by external memory bandwidth, with prior designs requiring several gigabytes per second. The authors (Reyes Haeusler, Ott, Jayasena, and Peter) propose a fully FPGA-based TFHE accelerator that performs PBS entirely on the FPGA and keeps the keys on chip, eliminating that bandwidth bottleneck. Their improved bootstrapping module delivers 240 percent to 480 percent more bootstrappings per second than the current state of the art. Code and artifacts are open at the project repository.</p></section>
 <section><h2>What &quot;Functionally Complete&quot; and &quot;Parameterizable&quot; Mean Here</h2><p><strong>Functionally complete</strong> means the design targets the full set of operations TFHE needs to evaluate any homomorphic circuit, not just a single accelerated kernel. TFHE messages are stored as LWE ciphertexts; addition is native, scalar multiplication is supported, and arbitrary non-linear functions are realized via programmable bootstrapping with a lookup table. To complete the operation set the authors add a key-switch unit (returning bootstrapped ciphertexts to the original LWE key) that doubles as a fused multiply-add (MulAdd) module. The paper notes that ciphertext-ciphertext multiplication is not a dedicated operation; instead, as in the tfhe-rs library, homomorphic multiplication is done by concatenating messages and performing a PBS with an appropriately constructed lookup table.</p><p><strong>Parameterizable</strong> means the architecture is designed so that TFHE parameters can be varied without redesign. The key parameters are the LWE mask dimension n, the RLWE polynomial degree N and mask dimension k, the decomposition base and depth, and a throughput knob T (the number of coefficients processed per clock cycle). The authors report that k affects only buffer sizes, while N mainly affects on-chip RAM (BRAM and URAM) blocks that are already partitioned into T sub-buffers. As long as these fit within the FPGA RAM primitives, scaling the parameters proportionally scales performance with negligible per-operation penalty, which lets the same design serve both standard and large parameter sets.</p></section>
@@ -38,4 +48,31 @@ figure img{max-width:100%;height:auto;background:#fff;padding:10px;
 <section><h2>Results: NTT and Bootstrapping Throughput</h2><p>To compare fairly across platforms and parameter choices, the authors baseline on the blind rotation (the heaviest, most widely implemented operation), scale prior 32-bit designs by a factor of two to account for 64-bit arithmetic, and normalize decryption failure rates (DFR) to a common 2^-64 by squaring DFR per repeated computation.</p><p><strong>NTT (1024-point).</strong> Running at 600 MHz with T = 2, the 64-bit negacyclic NTT achieves about 1172 NTTs per millisecond at 1.17 microseconds latency, the best frequency and throughput among the compared designs. It is only narrowly beaten on latency by YYKKP, which uses over 7 times more DSPs, 5 times more flip-flops, and 7 times more LUTs at half the bit width. Against HLW (same 64-bit modulus) it delivers roughly 9 times the throughput and 6 times lower latency, and it outperforms KL, Proteus, and CM by around 4 times.</p><p><strong>PBS on the standard parameter set</strong> (n = 500, N = 1024, k = 1, l = 2, log beta = 10, DFR 2^-64). The T = 32 configuration runs at 325 MHz and reaches 10156 PBS per second at 64-bit (20312 normalized 32-bit equivalent), over 3.4 times the throughput of the next fastest FPGA design (FPT) and more than 5.8 times other FPGA implementations, with comparable total resource use. At the best performance-per-resource point (T = 2) it matches ALT, KL, and YKP on PBS rate while using far fewer resources, with about 18 percent higher throughput. Reported PBS/s scale across configurations from 1123 (T = 2) to 10156 (T = 32) at 64-bit, with frequency falling from 575 MHz to 325 MHz as T grows because of longer interconnect and routing congestion (a standalone T = 8 NTT nearly hits 600 MHz, indicating inter-block routing rather than the NTT limits the clock). Energy efficiency is second-best (140 to 171 PBS per watt), behind only ALT; latency trails ALT and FPT, partly because ALT uses smaller composite-NTT multiplications and key unrolling that this design does not yet adopt.</p></section>
 <section><h2>Results: Scalability and Comparison to CPU and GPU</h2><p>On the demanding large parameter set from Ohba et al. (n = 800, N = 16384, k = 1, l = 5, log beta = 6, DFR 2^-64), the T = 8 configuration runs at 400 MHz and reaches 122 PBS per second, achieving over 30 times higher throughput and 10 times lower latency than the Ohba FPGA baseline, demonstrating the design scales to large parameters.</p><p>Against general-purpose hardware (a 16-core AMD 7950X3D and an Nvidia L40 GPU running tfhe-rs), the FPGA delivers a 2.89 times (CPU) and 1.16 times (GPU) speedup on the standard parameter set and 4.35 times (CPU) and 1.12 times (GPU) on the large set, with improving efficiency at scale relative to the CPU and similar scalability to the L40. This is notable because the FPGA is built on a 20 nm node while the CPU and GPU use 5 to 6 nm FinFET processes; despite that disadvantage the T = 32 design reaches over 5 times (28 times) lower latency and 2.8 times (1.16 times) higher throughput than the 16-core CPU (GPU) at similar or lower power.</p></section>
 <section><h2>Conclusion and Future Work</h2><p>The paper presents a fully FPGA-integrated TFHE accelerator that runs programmable bootstrapping entirely on chip, keeps keys on the device, and thereby removes the off-chip bandwidth bottleneck that limited prior work, reducing external bandwidth from gigabytes per second to about 3 megabits per second. The compact, parameterizable design outperforms the state of the art by 240 percent to 480 percent in bootstrappings per second, scales across standard and large parameter sets, and beats CPU and GPU baselines despite an older process node. The prototype implements PBS and supporting programmable infrastructure, and adds a designed-and-validated dual-purpose key-switch and MulAdd module. Remaining work is to complete the key-switch and instruction modules, define a dedicated instruction set, and build a compiler that translates homomorphic circuits into hardware instructions, with further gains expected from key unrolling and composite NTTs. The authors frame the result as a foundation for future ASIC-based TFHE processors.</p></section>
-</main></body></html>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  var n=0;
+  Array.prototype.forEach.call(document.querySelectorAll('figure'),function(fig){
+    var img=fig.querySelector('img');if(!img)return;n++;
+    if(!fig.id)fig.id='fig'+n;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+n;fig.appendChild(cap);}
+    img.addEventListener('click',function(){lb.firstChild.src=img.src;lb.style.display='flex';});
+    img.addEventListener('mousemove',function(e){
+      prev.src=img.src;prev.style.display='block';
+      var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);
+      var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);
+      prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';
+    });
+    img.addEventListener('mouseleave',function(){prev.style.display='none';});
+  });
+})();
+</script>
+<script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>

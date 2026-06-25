@@ -25,8 +25,18 @@ figure img{max-width:100%;height:auto;background:#fff;padding:10px;
 .figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
 .missing{color:var(--muted);font-style:italic;font-size:13px}
 @media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
-</style></head>
-<body><main class="doc">
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:#15151a;border-bottom:1px solid #333;font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:#8ab4f8;text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://eprint.iacr.org/2013/340" target="_blank" rel="noopener noreferrer">Read the full article &#8594;</a></div><main class="doc">
 <header><h1>Homomorphic Encryption from Learning with Errors: Conceptually-Simpler, Asymptotically-Faster, Attribute-Based (GSW)</h1><p class="meta">PDF, IACR ePrint 2013/340 (Gentry, Sahai, Waters; CRYPTO 2013) · full view</p></header>
 <section><h2>Motivation: a natural multiplication for LWE-based FHE</h2><p>Earlier LWE-based FHE schemes (BV11b, BGV12, Brakerski's Bra12) represent a ciphertext <em>c</em> and secret key <em>s</em> as n-dimensional vectors whose dot product encodes the message: &lt;c, s&gt; is approximately the message up to a small error removed by rounding. Addition is easy, but multiplication is the hard part. It relies on the tensor identity &lt;u1 tensor u2, v1 tensor v2&gt; = &lt;u1, v1&gt; times &lt;u2, v2&gt;, so multiplying ciphertexts tensors them: c1 tensor c2 encrypts the product under the longer key s tensor s, of dimension Theta(n^2). Because tensoring blows up the ciphertext, the evaluator must <strong>relinearize</strong>: multiply the long ciphertext by a special n by Theta(n^2) relinearization matrix to compress it back to a normal n-dimensional ciphertext under a normal key. Each relinearization matrix has size Omega(n^3) and the public key must hold L of them for multiplicative depth L; relinearization costs Omega(n^3) operations per multiply.</p><p>Relinearization is the central insight that enabled LWE-FHE, but it is unnatural, hard to explain, and expensive. The authors ask: can homomorphic add and multiply just be c1 + c2 and c1 times c2 over some ring, with the product having the same form (not a long ciphertext), and with no evaluation key at all? Their answer is yes.</p></section>
 <section><h2>Main results</h2><ul><li><strong>Conceptually simpler FHE from LWE.</strong> The whole scheme is described in the paper's introduction; homomorphic add and multiply are (almost) just matrix add and multiply.</li><li><strong>Asymptotically faster.</strong> Relinearization and its Omega(n^3) matrices are eliminated. Ciphertexts are matrices multiplied naturally, so sub-cubic matrix multiplication (Strassen n^2.807, Williams n^2.3727) applies. Space complexity drops from quasi-cubic to quasi-quadratic.</li><li><strong>No evaluation key.</strong> The evaluator needs only basic public parameters (like n, m, ell), not any user-specific key.</li><li><strong>Identity-based FHE (IBFHE).</strong> Because there is no evaluation key, the authors give a compiler turning any suitable LWE-based IBE (GPV08, ABB10a/b, CHKP10) into an IBFHE, solving a long-standing open problem.</li><li><strong>Attribute-based FHE (ABFHE).</strong> The same compiler, with minor changes, compiles the Gorbunov-Vaikuntanathan-Wee (GVW13) ABE-for-circuits into an ABFHE.</li></ul><p>The scheme keeps the usual LWE-FHE advantages: optional bootstrapping (BGV12), security from quasi-polynomial LWE factors with bootstrapping, no modulus switching (Bra12), and security based directly on classical GapSVP. The authors caution the asymptotic speedup is mostly evidence of conceptual novelty rather than a practical win; LWE-FHE is still slower than RLWE-FHE, and a RLWE version of this scheme is worse than the best RLWE schemes by log factors. The real practical gain is space, not time.</p></section>
@@ -145,4 +155,31 @@ NAND(C1, C2):   for mu1, mu2 in {0,1}
        = mu . v_ID + small      (small by Property 2).
    Homomorphic ops: as in Section 3.3.</code></pre><p>Semantic security follows: any adversary breaking the IBFHE distinguishes C'_ID from uniform and hence breaks LWE (Property 3). All known LWE-based IBE schemes (GPV08, ABB10a/b, CHKP10) fit. For ABFHE the authors re-interpret decryption in the GVW13 ABE: from sk_y with R(x,y)=1 one derives a sub-key s_{x,y} satisfying a Property-2-like small-dot-product condition (if c_x encrypts 0 under x then &lt;c_x, s_{x,y}&gt; is small), so the same compiler applies, giving the first ABFHE where ciphertexts under a common index are processed homomorphically with no evaluation key. Full IBE/ABE details are deferred to the full version.</p></section>
 <section><h2>Significance for FHEW and TFHE</h2><p>This scheme, now universally called <strong>GSW</strong>, is the conceptual foundation of the FHEW and TFHE line of fast bootstrapping schemes. Two GSW features are decisive for them. First, the asymmetric noise growth of Mult: since C1's entries are 0/1, the C1 times e2 term contributes only a factor-N blowup, so a chain of GSW multiplications grows error only quasi-additively rather than multiplicatively. This makes GSW the natural vehicle for the homomorphic accumulator at the heart of FHEW/TFHE bootstrapping, where many controlled GSW products are chained. Second, the gadget G / BitDecomp / Flatten machinery (the G, G^{-1} decomposition) is exactly the external-product structure that TFHE generalizes to its GGSW ciphertexts and the external product (a GGSW times a GLWE giving a GLWE), the operation that drives the blind-rotation step of programmable bootstrapping. The approximate-eigenvector / eigenvalue-as-message view and the absence of an evaluation key carry directly into how FHEW and TFHE structure their bootstrapping keys and CMux / blind-rotation gates.</p></section>
-</main></body></html>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  var n=0;
+  Array.prototype.forEach.call(document.querySelectorAll('figure'),function(fig){
+    var img=fig.querySelector('img');if(!img)return;n++;
+    if(!fig.id)fig.id='fig'+n;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+n;fig.appendChild(cap);}
+    img.addEventListener('click',function(){lb.firstChild.src=img.src;lb.style.display='flex';});
+    img.addEventListener('mousemove',function(e){
+      prev.src=img.src;prev.style.display='block';
+      var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);
+      var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);
+      prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';
+    });
+    img.addEventListener('mouseleave',function(){prev.style.display='none';});
+  });
+})();
+</script>
+<script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>

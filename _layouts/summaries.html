@@ -4,7 +4,7 @@ layout: page
 
 {% assign sums = site.data.summaries %}
 
-<p class="text-muted">Summaries I have written from sources, with a link back to each source. Published automatically from my research-material. Use the tiles to filter; "TFHE on FPGA" shows items that are both.</p>
+<p class="text-muted">Summaries I have written from sources, each linking back to the full article. Click a title to read it in place. Use the tiles to filter; "TFHE on FPGA" shows items that are both.</p>
 
 {% if sums and sums.size > 0 %}
   {% assign tfhe_n = 0 %}
@@ -25,34 +25,44 @@ layout: page
 
   <ul id="summaries-content" class="conf-list list-unstyled">
     {% for s in sums %}
-      <li class="conf-card card-wrapper card" data-tags="{{ s.tags | join: ' ' }}">
+      <li class="conf-card card-wrapper card" data-tags="{{ s.tags | join: ' ' }}"
+          data-url="{{ s.url | relative_url }}" data-title="{{ s.title | escape }}" data-src="{{ s.source_url }}">
         <div class="card-body">
-          <h2 class="conf-name"><a href="{{ s.url | relative_url }}">{{ s.title }}</a></h2>
+          <h2 class="conf-name"><a class="summary-open" href="{{ s.url | relative_url }}">{{ s.title }}</a></h2>
           <div class="conf-meta mb-2">
             <span class="paper-topic">Summary</span>
-            {% if s.date and s.date != '' %}<span class="conf-bit"><i class="far fa-calendar fa-fw"></i> {{ s.date }}</span>{% endif %}
+            {% if s.pub and s.pub != '' %}<span class="conf-bit"><i class="far fa-calendar fa-fw"></i> Published {{ s.pub }}</span>
+            {% elsif s.date and s.date != '' %}<span class="conf-bit"><i class="far fa-calendar fa-fw"></i> {{ s.date }}</span>{% endif %}
             {% if s.source_url and s.source_url != '' %}
-              <span class="conf-bit"><a href="{{ s.source_url }}" target="_blank" rel="noopener noreferrer">Source</a></span>
+              <span class="conf-bit"><a href="{{ s.source_url }}" target="_blank" rel="noopener noreferrer">Read the full article</a></span>
             {% elsif s.pdf and s.pdf != '' %}
               <span class="conf-bit"><a href="{{ s.pdf | relative_url }}" target="_blank" rel="noopener noreferrer">Source PDF</a></span>
             {% endif %}
           </div>
-          {% if s.source_type and s.source_type != '' %}<p class="conf-about mb-0">{{ s.source_type }}</p>{% endif %}
         </div>
       </li>
     {% endfor %}
   </ul>
+
+  <div id="summary-modal" hidden>
+    <div class="sm-backdrop" data-smclose></div>
+    <div class="sm-dialog">
+      <div class="sm-head">
+        <span class="sm-title"></span>
+        <a class="sm-source" target="_blank" rel="noopener noreferrer" hidden>Read the full article &rarr;</a>
+        <a class="sm-open" target="_blank" rel="noopener noreferrer" title="Open in new tab">Open &#8599;</a>
+        <button type="button" class="sm-close" data-smclose aria-label="Close">&times;</button>
+      </div>
+      <iframe class="sm-frame" title="Summary" loading="lazy"></iframe>
+    </div>
+  </div>
 {% else %}
   <p>No summaries published yet. Create one in your research-material directory and it will appear here.</p>
 {% endif %}
 
 <style>
   .topic-filter { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 1.5rem; }
-  .topic-tile {
-    border: 1px solid var(--btn-border-color, rgba(128,128,128,.35));
-    background: var(--card-bg); color: var(--text-color);
-    border-radius: .6rem; padding: .45rem .85rem; font-size: .9rem; font-weight: 600; cursor: pointer;
-  }
+  .topic-tile { border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); background: var(--card-bg); color: var(--text-color); border-radius: .6rem; padding: .45rem .85rem; font-size: .9rem; font-weight: 600; cursor: pointer; }
   .topic-tile .n { color: var(--text-muted-color); font-weight: 400; margin-left: .3rem; }
   .topic-tile:hover { border-color: var(--link-color); }
   .topic-tile.active { background: var(--link-color); color: #fff; border-color: var(--link-color); }
@@ -60,43 +70,72 @@ layout: page
   .conf-list { margin-top: 1rem; }
   .conf-card.card { margin-bottom: 1rem; background: var(--card-bg); box-shadow: var(--card-shadow); border: 0; }
   .conf-name { font-size: 1.15rem; margin: 0 0 .5rem; }
-  .conf-name a { color: var(--heading-color); text-decoration: none; }
+  .conf-name a { color: var(--heading-color); text-decoration: none; cursor: pointer; }
   .conf-name a:hover { text-decoration: underline; }
   .conf-meta { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; font-size: .9rem; }
   .conf-bit { color: var(--text-muted-color); }
-  .conf-about { color: var(--text-muted-color); line-height: 1.6; }
-  .paper-topic {
-    display: inline-block; font-size: .75rem; font-weight: 600; letter-spacing: .02em;
-    padding: .12rem .6rem; border-radius: 1rem; background: transparent;
-    border: 1px solid var(--btn-border-color, rgba(128,128,128,.35));
-    color: var(--text-muted-highlight-color) !important; text-decoration: none;
-  }
+  .paper-topic { display: inline-block; font-size: .75rem; font-weight: 600; letter-spacing: .02em; padding: .12rem .6rem; border-radius: 1rem; background: transparent; border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); color: var(--text-muted-highlight-color) !important; text-decoration: none; }
+  /* summary modal */
+  #summary-modal[hidden] { display: none; }
+  #summary-modal { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1.2rem; }
+  .sm-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.6); }
+  .sm-dialog { position: relative; z-index: 1; width: min(1100px, 100%); height: 90vh; display: flex; flex-direction: column; background: var(--card-bg); border-radius: .6rem; overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,.4); }
+  .sm-head { display: flex; align-items: center; gap: 1rem; padding: .6rem 1rem; border-bottom: 1px solid var(--main-border-color, rgba(128,128,128,.25)); }
+  .sm-title { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sm-head a { white-space: nowrap; font-size: .9rem; }
+  .sm-close { border: 0; background: transparent; font-size: 1.6rem; line-height: 1; cursor: pointer; color: var(--text-muted-color); }
+  .sm-frame { flex: 1; width: 100%; border: 0; background: #fff; }
+  body.sm-open { overflow: hidden; }
 </style>
 
 <script>
   (function () {
     var tiles = document.querySelectorAll('.topic-tile');
     var content = document.getElementById('summaries-content');
-    if (!tiles.length || !content) return;
-    var items = content.querySelectorAll('[data-tags]');
-    tiles.forEach(function (t) {
-      t.addEventListener('click', function () {
-        tiles.forEach(function (x) { x.classList.remove('active'); });
-        t.classList.add('active');
-        var f = t.getAttribute('data-filter');
-        items.forEach(function (el) {
-          var tags = (el.getAttribute('data-tags') || '').split(/\s+/);
-          var show;
-          if (f === 'all') {
-            show = true;
-          } else if (f.indexOf('+') >= 0) {
-            show = f.split('+').every(function (x) { return tags.indexOf(x) >= 0; });
-          } else {
-            show = tags.indexOf(f) >= 0;
-          }
-          el.style.display = show ? '' : 'none';
+    if (content && tiles.length) {
+      var items = content.querySelectorAll('[data-tags]');
+      tiles.forEach(function (t) {
+        t.addEventListener('click', function () {
+          tiles.forEach(function (x) { x.classList.remove('active'); });
+          t.classList.add('active');
+          var f = t.getAttribute('data-filter');
+          items.forEach(function (el) {
+            var tags = (el.getAttribute('data-tags') || '').split(/\s+/);
+            var show;
+            if (f === 'all') { show = true; }
+            else if (f.indexOf('+') >= 0) { show = f.split('+').every(function (x) { return tags.indexOf(x) >= 0; }); }
+            else { show = tags.indexOf(f) >= 0; }
+            el.style.display = show ? '' : 'none';
+          });
         });
       });
+    }
+
+    var modal = document.getElementById('summary-modal');
+    if (!modal) return;
+    var frame = modal.querySelector('.sm-frame');
+    var titleEl = modal.querySelector('.sm-title');
+    var srcEl = modal.querySelector('.sm-source');
+    var openEl = modal.querySelector('.sm-open');
+    function open(url, title, src) {
+      titleEl.textContent = title || 'Summary';
+      frame.src = url;
+      openEl.href = url;
+      if (src) { srcEl.href = src; srcEl.removeAttribute('hidden'); } else { srcEl.setAttribute('hidden', ''); }
+      modal.removeAttribute('hidden');
+      document.body.classList.add('sm-open');
+    }
+    function close() { modal.setAttribute('hidden', ''); frame.src = 'about:blank'; document.body.classList.remove('sm-open'); }
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest('.summary-open');
+      if (a) {
+        var card = a.closest('.conf-card');
+        e.preventDefault();
+        open(card.getAttribute('data-url'), card.getAttribute('data-title'), card.getAttribute('data-src'));
+        return;
+      }
+      if (e.target.closest('[data-smclose]')) close();
     });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hasAttribute('hidden')) close(); });
   })();
 </script>

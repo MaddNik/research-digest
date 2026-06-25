@@ -25,8 +25,18 @@ figure img{max-width:100%;height:auto;background:#fff;padding:10px;
 .figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
 .missing{color:var(--muted);font-style:italic;font-size:13px}
 @media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
-</style></head>
-<body><main class="doc">
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:#15151a;border-bottom:1px solid #333;font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:#8ab4f8;text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://eprint.iacr.org/2016/870" target="_blank" rel="noopener noreferrer">Read the full article &#8594;</a></div><main class="doc">
 <header><h1>Faster Fully Homomorphic Encryption: Bootstrapping in Less Than 0.1 Seconds</h1><p class="meta">PDF, IACR ePrint 2016/870 · full view</p></header>
 <section><h2>Motivation: improving on FHEW</h2><p>Fully homomorphic encryption (FHE) lets one compute on encrypted data. Since Gentry's 2009 breakthrough, the cost of <em>bootstrapping</em> (homomorphically evaluating the decryption function to reset accumulated noise) has been the practical bottleneck. The state of the art at the time was the FHEW scheme of Ducas and Micciancio, which bootstrapped a single NAND gate in about 0.69 seconds with a roughly 1 GB bootstrapping key.</p><p>This paper (the first TFHE paper, by Chillotti, Gama, Georgieva and Izabachene) revisits GSW-based FHE and makes a key observation: the expensive <strong>internal product</strong> of GSW (a matrix-by-matrix product, GSW times GSW) can be replaced by a much cheaper <strong>external product</strong> between a GSW ciphertext and an LWE ciphertext (a matrix-by-vector product). Because a GSW sample is just a stack of LWE samples, the external product is to the internal product roughly what a matrix-vector product is to a matrix-matrix product.</p><p>Re-expressing the whole FHEW bootstrapping purely in terms of this external product yields the headline results:</p><ul><li>Gate bootstrapping speeds up from under 1 second to <strong>under 0.1 seconds</strong> (measured 52 ms), about a 12x speedup.</li><li>The bootstrapping key shrinks from about 1 GB to about <strong>24 MB</strong> (46x smaller), at the same noise overhead.</li><li>Exact gadget decompositions are replaced with <strong>approximate</strong> ones, trading a little extra noise for speed and memory.</li><li>The external product also explains the asymmetry in GSW noise propagation and enables efficient leveled evaluation of deterministic automata (up to about 5000 transitions/second, vs. about 10/second before), with noise overhead only linear in word length.</li></ul><p>The paper also gives a self-contained practical security analysis that expresses the security parameter directly as a function of the secret entropy n and the LWE error rate alpha, with no modulus q in the picture.</p></section>
 <section><h2>Working over the torus: TLWE, TRLWE and TGSW</h2><p>Everything is defined over the <strong>real torus</strong> T = R/Z (reals mod 1). T is not a ring, but it is a Z-module, so the external product of an integer by a torus element is well defined. The ring is R = Z[X]/(X^N + 1) and T_N[X] = R[X]/(X^N+1) mod 1. This unifies LWE and RingLWE into a single family.</p><p><strong>TLWE samples.</strong> Fix an integer k &gt;= 1, N a power of 2, and noise parameter alpha. A TLWE secret key is s in B_N[X]^k (k polynomials with binary coefficients, about n = Nk bits of entropy). A fresh TLWE sample of a message mu in T_N[X] is a pair (a, b) in T_N[X]^k x T_N[X], where the mask a is uniform and b is Gaussian (parameter alpha) around mu + s . a. Choosing N large, k = 1 gives RingLWE; N = 1, k large gives plain LWE; intermediate choices interpolate between ideal-lattice and general-lattice security. The <strong>phase</strong> of a sample is phi_s(a,b) = b - s . a; it is linear and (kN+1)-Lipschitz, so samples that are close on the torus behave identically. The <strong>message</strong> msg(c) is the expectation of the phase, and the error Err(c) = phi_s(c) - msg(c). When the noise amplitude stays below 1/4, the message function is exactly linear, which makes noise analysis clean.</p><p><strong>TRLWE</strong> is simply the ring instantiation of TLWE (the paper writes everything as TLWE over T_N[X] and recovers RingLWE as the N large, k = 1 case).</p><p><strong>TGSW samples.</strong> TGSW is the scale-invariant, torus generalization of GSW. It depends on an integer decomposition depth l, and a fixed <strong>gadget matrix</strong> h in M_{d,k+1}(T_N[X]) with d = (k+1)l, whose columns hold the super-increasing sequence 1/B_g, 1/B_g^2, ..., 1/B_g^l. A fresh TGSW sample of an integer-polynomial message mu in R/h-perp is C = Z + mu . h, where every row of Z is a homogeneous (message-0) TLWE sample of noise alpha. Equivalently, a TGSW sample is a stack of (k+1)l TLWE samples, so all linear-combination, phase, message and error notions extend row-wise.</p></section>
@@ -105,4 +115,31 @@ eta_eps(Z)        ~= sqrt( (1/pi) ln(1/eps) )
   with S = ||s|| / sqrt(n) ~= 1/sqrt(2),
        q_best = (pi S^2 / 2 alpha^2)^{ m / 2(m+n) },
        t_best = l1 / (2(l1 - l2)),  where l1 = ln(eta_eps^2 / alpha^2), l2 = ln(2 eta_eps^2 / (pi S^2)).</code></pre><p>Evaluated on the chosen parameters, the model predicts <strong>194 bits</strong> of security for the bootstrapping key (n = 1024, alpha = 9.0e-9) and <strong>136 bits</strong> for the key-switching key (n = 500, alpha = 2^{-15}), so the key-switching key is the bottleneck. The same model re-scores FHEW's parameter set at 136 bits (above the &gt;=100 bits FHEW originally claimed), the gap coming from counting how many times the SIS-distinguisher must be rerun to gain non-negligible advantage. The main remaining drawback noted in the conclusion is the large ciphertext expansion factor (about 400000) with limited batching.</p></section>
-</main></body></html>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  var n=0;
+  Array.prototype.forEach.call(document.querySelectorAll('figure'),function(fig){
+    var img=fig.querySelector('img');if(!img)return;n++;
+    if(!fig.id)fig.id='fig'+n;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+n;fig.appendChild(cap);}
+    img.addEventListener('click',function(){lb.firstChild.src=img.src;lb.style.display='flex';});
+    img.addEventListener('mousemove',function(e){
+      prev.src=img.src;prev.style.display='block';
+      var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);
+      var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);
+      prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';
+    });
+    img.addEventListener('mouseleave',function(){prev.style.display='none';});
+  });
+})();
+</script>
+<script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>
