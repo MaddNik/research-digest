@@ -1,0 +1,76 @@
+{%- comment -%}
+  Per-paper "Generate summary" button. Static site has no backend, so the button
+  opens a prefilled GitHub issue (a summary request) that the WSL poller picks up.
+  If a summary already exists for the paper (matched by arXiv id against the
+  published summaries manifest), the button instead flips to "View summary".
+  Site rules: no // line comments in inline scripts (use block comments), no em
+  dashes, no emojis. Single event-delegated click listener, like bookmarks-js.html.
+{%- endcomment -%}
+
+<style>
+  .paper-card__summary{align-self:flex-start;margin-left:.4rem;border:1px solid var(--btn-border-color,rgba(128,128,128,.35));background:transparent;color:var(--link-color,#2a408e);border-radius:.5rem;padding:.25rem .75rem;font-size:.85rem;cursor:pointer}
+  .paper-card__summary:hover{background:var(--btn-backtotop-color,rgba(128,128,128,.12))}
+  .paper-card__summary.is-done{font-weight:600}
+</style>
+
+<script>
+  (function () {
+    var REPO = 'MaddNik/research-digest';
+    var SUMMARIES = {{ site.data.summaries | jsonify }};
+
+    /* Normalize an arXiv URL variant to its bare id:
+       https://arxiv.org/abs/2606.15093  -> 2606.15093
+       https://arxiv.org/pdf/2606.15093v2 -> 2606.15093 */
+    function arxivId(u) {
+      if (!u) return '';
+      var s = String(u);
+      var m = s.match(/arxiv\.org\/(?:abs|pdf)\/(\d{4}\.\d{4,5})/i);
+      if (m) return m[1];
+      m = s.match(/(\d{4}\.\d{4,5})/);
+      return m ? m[1] : '';
+    }
+
+    /* Build an arXiv-id -> summary-url map from the published manifest. */
+    var byId = {};
+    (SUMMARIES || []).forEach(function (s) {
+      var id = arxivId(s.source_url);
+      if (id && s.url) byId[id] = s.url;
+    });
+
+    /* Flip any card whose paper already has a published summary. */
+    Array.prototype.forEach.call(document.querySelectorAll('.rt-summary-btn'), function (btn) {
+      var id = arxivId(btn.getAttribute('data-pf-link'));
+      var url = id ? byId[id] : '';
+      if (url) {
+        btn.textContent = 'View summary';
+        btn.classList.add('is-done');
+        btn.setAttribute('data-pf-view', url);
+      }
+    });
+
+    function issueUrl(title, link, cat) {
+      var base = 'https://github.com/' + REPO + '/issues/new';
+      var q = '?labels=' + encodeURIComponent('summary-request')
+        + '&template=' + encodeURIComponent('summary-request.yml')
+        + '&title=' + encodeURIComponent('Summary request: ' + (title || link || ''))
+        + '&source-url=' + encodeURIComponent(link || '')
+        + '&paper-title=' + encodeURIComponent(title || '')
+        + '&category=' + encodeURIComponent(cat || 'Other');
+      return base + q;
+    }
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.rt-summary-btn');
+      if (!btn) return;
+      e.preventDefault();
+      var view = btn.getAttribute('data-pf-view');
+      if (view) { window.location.href = view; return; }
+      var url = issueUrl(
+        btn.getAttribute('data-pf-title'),
+        btn.getAttribute('data-pf-link'),
+        btn.getAttribute('data-pf-cat')
+      );
+      window.open(url, '_blank', 'noopener');
+    });
+  })();
+</script>

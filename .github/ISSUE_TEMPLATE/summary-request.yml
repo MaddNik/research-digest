@@ -1,0 +1,49 @@
+name: Summary request
+description: Request an automated extensive summary of a paper or source
+title: "Summary request: "
+labels: ["summary-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Request a summary. The poller picks this up during the next weekday run window and publishes it to the Summaries section. You will get a comment with the link when it is done.
+  - type: input
+    id: source-url
+    attributes:
+      label: Source URL
+      description: arXiv abs URL, IACR ePrint URL, DOI, or other source link.
+      placeholder: https://arxiv.org/abs/2606.15093
+    validations:
+      required: true
+  - type: input
+    id: paper-title
+    attributes:
+      label: Paper title
+      placeholder: Title of the paper
+    validations:
+      required: false
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Photonics
+        - PQC
+        - FHE
+        - Cryptography
+        - Hardware Security
+        - Other
+    validations:
+      required: false
+  - type: dropdown
+    id: level
+    attributes:
+      label: Summary level
+      description: deep is the most extensive; full is lighter; page is one page.
+      options:
+        - deep
+        - full
+        - page
+      default: 0
+    validations:
+      required: false
