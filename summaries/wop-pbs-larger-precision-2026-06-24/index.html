@@ -36,7 +36,7 @@ figure img{cursor:zoom-in}
 #rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
 </style>
 </head>
-<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://eprint.iacr.org/2021/729" target="_blank" rel="noopener noreferrer">Read the full article &#8594;</a></div><main class="doc">
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://eprint.iacr.org/2021/729" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
 <header><h1>Improved Programmable Bootstrapping with Larger Precision and Efficient Arithmetic Circuits for TFHE</h1><p class="meta">PDF, IACR ePrint 2021/729 · full view</p></header>
 <section><h2>Overview and Motivation</h2><p>By Ilaria Chillotti, Damien Ligier, Jean-Baptiste Orfila and Samuel Tap (Zama, Paris, November 2021). TFHE is an (R)LWE-based fully homomorphic encryption scheme whose distinguishing feature is a very fast <strong>programmable bootstrapping (PBS)</strong>: a single operation that both reduces ciphertext noise and evaluates a univariate function expressed as a look-up table (LUT). In TFHE a message <code>m</code> is encoded in the most significant bits, rescaled by a factor &#916; and reduced modulo <code>q</code>, with small noise <code>e</code> added in the least significant bits, so a noisy plaintext looks like &#916;&#183;m + e mod q. The <em>precision</em> is defined as p = log2(q/&#916;).</p><p>The paper attacks a list of concrete TFHE limitations (labelled A through H in the introduction):</p><ul><li><strong>A</strong> To bootstrap correctly the MSB of the plaintext must be known (set to zero), unless the evaluated function is negacyclic. This costs one bit of message space (a "bit of padding").</li><li><strong>B</strong> One cannot efficiently bootstrap a large-precision message (more than about 6 bits): the bootstrapped precision is tied to the ring dimension N, so more precision forces larger N and slower computation (FFT cost N&#183;log2 N).</li><li><strong>C</strong> The PBS is a sequential accumulator loop and is not multi-thread friendly.</li><li><strong>D</strong> There is no native LWE-by-LWE multiplication; existing approaches use PBS (the x &#8614; x&#178;/4 trick) or circuit bootstrapping, both inheriting limitations A and B.</li><li><strong>E</strong> Because of A and B one cannot efficiently split a single ciphertext into several ciphertexts each holding a chunk of the message.</li><li><strong>F</strong> A PBS evaluates a single function per call; the multi-value trick of [CIM19] adds function-dependent noise.</li><li><strong>G</strong> Gate bootstrapping requires a PBS per Boolean gate (costly), with no native solution for larger integers.</li><li><strong>H</strong> Circuit bootstrapping needs &#8467; PBS plus many key switches.</li></ul><p>The contributions remove these limitations by adding a BFV-like multiplication directly into the TFHE context (no scheme switching as in Chimera), generalizing the PBS, and combining the two into a <strong>Programmable Bootstrapping Without Padding (WoP-PBS)</strong>. The result also yields fast Boolean/arithmetic circuits, a faster circuit bootstrapping, and large-precision bootstrapping with much smaller parameters than naively scaled TFHE.</p></section>
 <section><h2>Background and Notation</h2><p>q is the integer modulus; N is a power of two and R_q = Z_q[X]/(X^N+1). &#967;_&#963; is a centered Gaussian with standard deviation &#963;. The paper works over Z_q (q = 2^32 or 2^64) rather than the torus T, using the isomorphism between Z_q and (1/q)Z/Z.</p><p><strong>Ciphertext families.</strong> A <em>GLWE</em> ciphertext of M &#8712; R_q with scaling factor &#916; under secret key S = (S_1,...,S_k) is CT = (A_1,...,A_k, B = &#8721; A_i&#183;S_i + round(M&#183;&#916;) + E). Setting N = 1 gives an <em>LWE</em> ciphertext (with key size n = k); setting k = 1, N &gt; 1 gives RLWE. <em>GLev</em> ciphertexts are vectors of &#8467; GLWE ciphertexts encrypting M&#183;q/B^i for a base B and &#8467; levels. <em>GGSW</em> ciphertexts are vectors of k+1 GLev ciphertexts encrypting -S_i&#183;M (with S_{k+1} = -1).</p><p><strong>Decomposition.</strong> dec^(B,&#8467;)(x) returns the MSB-first base-B decomposition vector of an integer (or polynomial) x. <strong>Key switching</strong> changes keys/parameters using a public key-switching key; the paper uses three flavours: PrivateKS (applies a private linear function), PublicKS (public linear function; the identity-function LWE instance is used inside TFHE PBS), and PackingKS (packs several LWE ciphertexts into one GLWE at chosen monomial indices i_j).</p><p><strong>TFHE PBS</strong> has three steps: (1) <em>Modulus Switching</em> from Z_q^{n+1} to Z_{2N}^{n+1}; (2) <em>Blind Rotation</em> of a GLWE-encrypted redundant LUT by a CMux loop driven by the LWE coefficients and the bootstrapping key (a list of GGSW encryptions of the secret-key bits); (3) <em>Sample Extraction</em> of the constant coefficient as an LWE ciphertext. A redundant LUT repeats each entry r times so the rounding/noise removal works during the rotation. <strong>TFHE circuit bootstrapping</strong> [CGGI17, Alg. 6] converts an LWE ciphertext into a GGSW with &#8467; PBS followed by (k+1)&#8467; private key switchings.</p></section>
@@ -326,20 +326,35 @@ Output:
   var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
   lb.addEventListener('click',function(){lb.style.display='none';});
   var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
-  var n=0;
-  Array.prototype.forEach.call(document.querySelectorAll('figure'),function(fig){
-    var img=fig.querySelector('img');if(!img)return;n++;
-    if(!fig.id)fig.id='fig'+n;
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
     var cap=fig.querySelector('figcaption');
-    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+n;fig.appendChild(cap);}
-    img.addEventListener('click',function(){lb.firstChild.src=img.src;lb.style.display='flex';});
-    img.addEventListener('mousemove',function(e){
-      prev.src=img.src;prev.style.display='block';
-      var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);
-      var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);
-      prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';
-    });
-    img.addEventListener('mouseleave',function(){prev.style.display='none';});
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/fig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
   });
 })();
 </script>

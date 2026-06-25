@@ -36,7 +36,7 @@ figure img{cursor:zoom-in}
 #rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
 </style>
 </head>
-<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://eprint.iacr.org/2014/816" target="_blank" rel="noopener noreferrer">Read the full article &#8594;</a></div><main class="doc">
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://eprint.iacr.org/2014/816" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
 <header><h1>FHEW: Bootstrapping Homomorphic Encryption in Less Than a Second</h1><p class="meta">PDF, IACR ePrint 2014/816 · full view</p></header>
 <section><h2>Motivation: bootstrapping is the FHE bottleneck</h2><p>Every fully homomorphic encryption (FHE) scheme since Gentry's 2009 construction relies on noisy lattice ciphertexts. Each homomorphic operation grows the noise, and once it crosses a threshold the ciphertext stops decrypting. Gentry's <em>bootstrapping</em> fixes this by homomorphically evaluating the decryption circuit on an encrypted secret key, refreshing the ciphertext back to a low noise level. It is what makes unbounded computation possible, and it is the dominant cost in every practical implementation. At the time of writing, the fastest reference implementation (HElib, Halevi and Shoup, Crypto 2014) needed about six minutes per bootstrap.</p><p>Ducas and Micciancio study bootstrapping "in vitro": the simplest useful setting. Given two LWE-encrypted bits E(b1) and E(b2), compute an encryption of their logical NAND and return it refreshed to the same low-noise form as the inputs. NAND is complete for boolean circuits, so a fast bootstrapped NAND yields a full FHE. Their prototype performs one homomorphic NAND plus a full refresh in about 0.69 seconds on a single 3 GHz core, roughly 500x faster than HElib's per-bootstrap time, in about 600 lines of C++ (released as FHEW on GitHub). Security rests on worst-case hardness of standard lattice problems (LWE / Ring-LWE) plus the usual circular-security assumption needed to publish a compact evaluation key.</p></section>
 <section><h2>LWE encryption, modulus switching, key switching</h2><p>The base scheme is plain symmetric LWE. With dimension n, message modulus t, ciphertext modulus q and randomized rounding function chi, a message m in Z_t is encrypted under secret key s in Z_q^n as</p><pre><code>LWE_s^{t/q}(m) = (a, chi(a.s + m*q/t) mod q)  in  Z_q^{n+1},   a &lt;- Z_q^n uniform</code></pre><p>When t divides q this is (a, a.s + e + m*q/t mod q). Decryption computes m' = round( t*(b - a.s) / q ) mod t. A ciphertext decrypts correctly whenever its error satisfies |err| &lt; q/(2t). The notation LWE_s^{t/q}(m, E) means the subset of encryptions of m whose error is bounded by E.</p><p>Two helper conversions are central to the pipeline. <strong>Modulus switching</strong> rescales a ciphertext from modulus Q to q with the scaled randomized rounding [x]_{Q:q} = floor(q*x/Q) + B, B a Bernoulli rounding bit; the resulting rounding error is subgaussian of parameter sqrt(2*pi). Lemma 5 gives the output error parameter sqrt( (q*sigma/Q)^2 + 2*pi*(||s||^2 + 1) ). <strong>Key switching</strong> converts a ciphertext under key z into one under a different key s using auxiliary encryptions k_{i,j,v} = LWE_s^{q/q}(v*z_i*B_ks^j); it expands each coordinate a_i in base B_ks and computes</p><pre><code>KeySwitch((a,b), K) = (0, b) - sum_{i,j} k_{i,j, a_{i,j}}</code></pre><p>Lemma 6: this yields an encryption of the same message with output error parameter sqrt( alpha^2 + N*d_ks*sigma^2 ). To keep key-switching noise small the LWE secret s is taken <em>binary</em>, which is proven as hard as standard LWE (Brakerski et al. 2013).</p></section>
@@ -82,20 +82,35 @@ Require: switching key  k_{i,j,w} &lt;- LWE_s^{q/q}( w * z_i * d_ks^j )  from z 
   var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
   lb.addEventListener('click',function(){lb.style.display='none';});
   var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
-  var n=0;
-  Array.prototype.forEach.call(document.querySelectorAll('figure'),function(fig){
-    var img=fig.querySelector('img');if(!img)return;n++;
-    if(!fig.id)fig.id='fig'+n;
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
     var cap=fig.querySelector('figcaption');
-    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+n;fig.appendChild(cap);}
-    img.addEventListener('click',function(){lb.firstChild.src=img.src;lb.style.display='flex';});
-    img.addEventListener('mousemove',function(e){
-      prev.src=img.src;prev.style.display='block';
-      var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);
-      var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);
-      prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';
-    });
-    img.addEventListener('mouseleave',function(){prev.style.display='none';});
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/fig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
   });
 })();
 </script>

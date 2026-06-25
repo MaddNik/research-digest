@@ -36,7 +36,7 @@ figure img{cursor:zoom-in}
 #rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
 </style>
 </head>
-<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://arxiv.org/abs/2207.11872" target="_blank" rel="noopener noreferrer">Read the full article &#8594;</a></div><main class="doc">
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://arxiv.org/abs/2207.11872" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
 <header><h1>FAB: An FPGA-based Accelerator for Bootstrappable Fully Homomorphic Encryption</h1><p class="meta">PDF (text-layer), arXiv:2207.11872 · full view</p></header>
 <section><h2>Motivation: why FHE bootstrapping needs hardware acceleration</h2><p>Fully Homomorphic Encryption (FHE) lets a third-party cloud compute directly on encrypted data, and is regarded as the gold standard for privacy-preserving machine learning. The obstacle is cost. The authors note that training a logistic regression (LR) model for 30 iterations on plaintext (11,982 samples, 196 features) takes about 1.05 sec on a CPU, whereas the same training on encrypted data takes about 124 minutes on the same CPU, a slowdown of roughly 7086x; the encrypted dataset (198 MB) is 152x larger than the plaintext (1.3 MB).</p><p>To support general-purpose unbounded computation, every FHE scheme needs a periodic, expensive operation called bootstrapping, which is both compute-heavy and memory-bandwidth-heavy. Prior accelerators do not solve this: CPUs cannot exploit FHE's parallelism; GPUs have large floating-point units that go unused because FHE is almost entirely integer arithmetic, and neither CPU nor GPU supplies enough main-memory bandwidth. The custom ASIC proposals F1 (Samardzic et al.) and BTS (Kim et al.) use a massive number of processing elements (8192 to 18432) and large on-chip memory (64 to 512 MB), yet still cannot hold the full FHE working set on chip, so they remain bottlenecked by main-memory bandwidth and leave compute units idle.</p><p>FAB is the first FPGA accelerator to support full, fully-packed CKKS bootstrapping at a secure, practical parameter set. Its central thesis is that the right design point is not more compute, but a balanced design that is not memory bound: a minimal number of functional units, a low clock frequency, high data rates to and from main memory, careful use of the limited on-chip memory, and careful operation scheduling. FAB uses only commercially available FPGAs (e.g. AWS F1 cloud), making near-ASIC performance broadly accessible.</p></section>
 <section><h2>Background: the CKKS scheme, RNS, NTT, and key switching</h2><p>FAB targets the CKKS scheme, which operates over vectors of complex numbers. A plaintext is an element of C^n. CKKS is parameterized by the plaintext slot count n, a ciphertext coefficient modulus Q, and a polynomial modulus x^N + 1 with N a power of two. Ciphertexts live in R_Q^2 where R_Q = Z_Q[x]/(x^N + 1); an encryption of m is written as a pair (a_m, b_m). The supported homomorphic operations are component-wise Add, component-wise Mult, Rotate (rotate the vector by k slots), and Conjugate (complex conjugate). For example, the k=1 rotation of (x_0, x_1, ..., x_{n-2}, x_{n-1}) is (x_{n-1}, x_0, ..., x_{n-3}, x_{n-2}).</p><p><strong>RNS representation and levels.</strong> Q is written as a product of word-sized primes q_1, ..., q_l (the RNS basis B). Each q_i is a limb; a modulus Q with l factors has l-1 levels. Each multiplication consumes one limb (one level); Add, Rotate, and Conjugate do not change the level. A value x in Z_Q is stored as a length-l vector [x]_B = (x_1, ..., x_l) with x_i = x mod q_i, so add and multiply are done limb-wise on machine words: x_i + y_i = x + y (mod q_i) and x_i * y_i = x * y (mod q_i). RNS recombination (converting to a new modulus p in an extended basis) is given by:</p><pre><code>[x]_p = sum_{i=1..l} [ x_i * Qtilde_i ]_{q_i} * Q*_i   (mod p)
@@ -76,20 +76,35 @@ where  Q*_i = Q / q_i   and   Qtilde_i = (Q*_i)^{-1} (mod q_i)</code></pre><p>In
   var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
   lb.addEventListener('click',function(){lb.style.display='none';});
   var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
-  var n=0;
-  Array.prototype.forEach.call(document.querySelectorAll('figure'),function(fig){
-    var img=fig.querySelector('img');if(!img)return;n++;
-    if(!fig.id)fig.id='fig'+n;
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
     var cap=fig.querySelector('figcaption');
-    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+n;fig.appendChild(cap);}
-    img.addEventListener('click',function(){lb.firstChild.src=img.src;lb.style.display='flex';});
-    img.addEventListener('mousemove',function(e){
-      prev.src=img.src;prev.style.display='block';
-      var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);
-      var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);
-      prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';
-    });
-    img.addEventListener('mouseleave',function(){prev.style.display='none';});
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/fig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
   });
 })();
 </script>

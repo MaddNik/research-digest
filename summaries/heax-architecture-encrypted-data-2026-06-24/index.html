@@ -36,7 +36,7 @@ figure img{cursor:zoom-in}
 #rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
 </style>
 </head>
-<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://arxiv.org/abs/1909.09731" target="_blank" rel="noopener noreferrer">Read the full article &#8594;</a></div><main class="doc">
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://arxiv.org/abs/1909.09731" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
 <header><h1>HEAX: An Architecture for Computing on Encrypted Data</h1><p class="meta">PDF (text-layer), arXiv:1909.09731 · full view</p></header>
 <section><h2>Motivation and Contributions</h2><p>Cloud computing introduces serious data-privacy and confidentiality risks, and regulations such as GDPR, HIPAA, and CCPA make it impossible for some data owners to outsource computation in the clear. Fully Homomorphic Encryption (FHE), introduced by Gentry in 2009, lets a cloud server evaluate arbitrary functions directly on ciphertexts without ever decrypting them, giving end-to-end encryption where only the client (holding the secret key) can recover results. The central obstacle to deploying FHE at scale is its enormous computation overhead compared to plaintext computation.</p><p>HEAX (Homomorphic Encryption Acceleration) is a hardware architecture targeting this overhead. The paper focuses on the CKKS scheme, which performs approximate computation on real/fixed-point numbers and supports efficient truncation, making it the prime candidate for machine learning on encrypted data (for example oblivious neural-network inference in MLaaS). The authors are from UC San Diego and Microsoft Research; the work appeared at ASPLOS 2020.</p><p>Three main contributions:</p><ul><li>A novel, highly parallelizable architecture for the Number-Theoretic Transform (NTT) that processes arbitrary-sized polynomials with adjustable throughput. NTT is the usual bottleneck across lattice-based cryptosystems, so the design is of independent interest.</li><li>The first hardware architecture for the CKKS homomorphic encryption scheme, leveraging multi-layer parallelism from the ciphertext level down to fine-grained modular-arithmetic engines, and scalable across different FPGA chips because it is not custom-built for one fixed parameter set.</li><li>A proof-of-concept on two Intel FPGAs (Arria 10 and Stratix 10), implementing all high-level CKKS operations and evaluated across three FHE parameter sets, demonstrating more than two orders of magnitude speedup over the heavily optimized Microsoft SEAL library on CPU.</li></ul><p>Encoding/decoding and encryption/decryption are cheap and stay on the client side; HEAX accelerates the computationally intensive server-side operations: addition, multiplication, key switching, relinearization, rescaling, and rotation.</p></section>
 <section><h2>Design Challenges and Prior Art</h2><p>A ciphertext in FHE is a set (usually a pair) of polynomials of degree n-1 (vectors of n integers) modulo a large integer. Homomorphic operations involve computationally intensive modular arithmetic on big integers (hundreds of bits) with convoluted data dependencies, and the polynomial degree n is large (thousands), so storing entire intermediate results on the FPGA chip is prohibitive.</p><p>Prior FPGA work for non-CKKS schemes took one of three approaches, each with drawbacks: (i) co-processors that accelerate only low-level ring operations while high-level operations stay on the CPU, limiting practical use; (ii) storing intermediate results in off-chip memory, which degrades performance so severely it can be worse than naive software execution; or (iii) hardware fixed to a single modest parameter (e.g. n = 2^12), even though encryption parameters determine both security level and multiplication depth and are application dependent. A primary HEAX design goal is therefore an architecture usable across a wide range of parameters, together with techniques to efficiently store/access data on-chip and minimize (or for some parameter sets eliminate) off-chip memory accesses.</p></section>
@@ -160,20 +160,35 @@ Stratix  C      16    2616   163.5          15    2616   174.4</code></pre><p>On
   var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
   lb.addEventListener('click',function(){lb.style.display='none';});
   var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
-  var n=0;
-  Array.prototype.forEach.call(document.querySelectorAll('figure'),function(fig){
-    var img=fig.querySelector('img');if(!img)return;n++;
-    if(!fig.id)fig.id='fig'+n;
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
     var cap=fig.querySelector('figcaption');
-    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+n;fig.appendChild(cap);}
-    img.addEventListener('click',function(){lb.firstChild.src=img.src;lb.style.display='flex';});
-    img.addEventListener('mousemove',function(e){
-      prev.src=img.src;prev.style.display='block';
-      var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);
-      var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);
-      prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';
-    });
-    img.addEventListener('mouseleave',function(){prev.style.display='none';});
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/fig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
   });
 })();
 </script>

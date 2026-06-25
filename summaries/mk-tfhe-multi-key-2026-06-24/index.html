@@ -36,7 +36,7 @@ figure img{cursor:zoom-in}
 #rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
 </style>
 </head>
-<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://eprint.iacr.org/2019/116" target="_blank" rel="noopener noreferrer">Read the full article &#8594;</a></div><main class="doc">
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://eprint.iacr.org/2019/116" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
 <header><h1>Multi-Key Homomorphic Encryption from TFHE</h1><p class="meta">PDF (text-layer; tables and matrix rasterized from the typeset PDF) — IACR ePrint 2019/116, retrieved via Wayback Machine · full view</p></header>
 <section><h2>At a glance</h2><p><strong>Authors:</strong> Hao Chen (Microsoft Research), Ilaria Chillotti (imec-COSIC, KU Leuven), Yongsoo Song (Microsoft Research). <strong>Venue:</strong> ASIACRYPT 2019 (IACR ePrint 2019/116).</p><p><strong>One sentence:</strong> The paper builds the first <em>practical, implemented</em> Multi-Key Homomorphic Encryption (MKHE) scheme by generalizing TFHE's gate bootstrapping so a single bootstrapped binary gate can be evaluated on ciphertexts encrypted under <em>different parties' independently generated keys</em>, with a new "hybrid product" that multiplies one party's bootstrapping key into a multi-key ciphertext.</p><p><strong>Headline results</strong> (single thread, Intel Core i7-4910MQ @ 2.90 GHz; the same machine bootstraps a single-key TFHE gate in 13 ms):</p><ul><li>Bootstrapped NAND across <strong>k = 2 / 4 / 8</strong> parties: <strong>0.27 s / 1.45 s / 7.16 s</strong>.</li><li>Ciphertext length grows <strong>linearly</strong> in k; gate cost grows <strong>quadratically</strong> in k (O&#771;(k<sup>2</sup>n<sup>2</sup>)).</li><li>Per-party multi-key ciphertext: 2.19 KB; combined NAND-input ciphertext 4.38 KB (k=2) to 17.32 KB (k=8); bootstrapping key 0.62-1.03 MB.</li><li>At least <strong>110-bit</strong> security (LWE Estimator); two hybrid-product algorithms, the second with better complexity and lower noise.</li></ul><p><strong>Significance:</strong> the first MKHE scheme ever implemented &mdash; prior MKHE constructions (Lopez-Alt et al., Clear-McGoldrick, Mukherjee-Wichs, Peikert-Shiehian, Brakerski-Perlman, Chen-Zhang-Wang) were all purely asymptotic and impractical. Open-sourced as <strong>MK-TFHE</strong>, built on the TFHE library.</p><p><strong>Keywords:</strong> Multi-key homomorphic encryption, bootstrapping, TFHE, LWE/RLWE, external product, GSW ciphertext extension.</p></section>
 <section><h2>The multi-key problem and why it matters</h2><p>Ordinary Homomorphic Encryption lets a cloud compute on encrypted data, but every data provider must encrypt under <em>the same</em> public key &mdash; so someone must own the matching secret key, which is awkward for joint computation between mutually distrustful parties. Multi-Party Computation (MPC) avoids a single key owner but pays in communication and rounds.</p><p><strong>Multi-Key HE</strong> (MKHE), introduced by Lopez-Alt et al. (2012), sits between the two: parties encrypt under their <em>own independently generated keys</em>, the server homomorphically computes a function whose result depends on several parties' inputs, and decryption requires the cooperation of (only) the relevant parties' secret keys. It enables round-efficient MPC and spooky encryption. The catch had always been efficiency: every prior MKHE was GSW-based with ciphertext size growing at least quadratically in the number of parties k, and none had ever been implemented.</p><p>This paper makes the multi-key setting concrete. A multi-key ciphertext of a bit m is a vector <em>ct</em> = (b, a<sub>1</sub>, ..., a<sub>k</sub>) &isin; T<sup>kn+1</sup> such that b + &lt;a<sub>1</sub>,s<sub>1</sub>&gt; + ... + &lt;a<sub>k</sub>,s<sub>k</sub>&gt; &asymp; (1/4)m (mod 1), where each party i contributes its own LWE secret s<sub>i</sub>. The <em>length grows linearly in k</em> (one a<sub>i</sub> block per party), and any two parties' ciphertexts are merged simply by rearranging blocks and zero-padding the empty slots so they share the concatenated secret s = (s<sub>1</sub>, ..., s<sub>k</sub>).</p></section>
@@ -55,20 +55,35 @@ figure img{cursor:zoom-in}
   var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
   lb.addEventListener('click',function(){lb.style.display='none';});
   var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
-  var n=0;
-  Array.prototype.forEach.call(document.querySelectorAll('figure'),function(fig){
-    var img=fig.querySelector('img');if(!img)return;n++;
-    if(!fig.id)fig.id='fig'+n;
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
     var cap=fig.querySelector('figcaption');
-    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+n;fig.appendChild(cap);}
-    img.addEventListener('click',function(){lb.firstChild.src=img.src;lb.style.display='flex';});
-    img.addEventListener('mousemove',function(e){
-      prev.src=img.src;prev.style.display='block';
-      var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);
-      var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);
-      prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';
-    });
-    img.addEventListener('mouseleave',function(){prev.style.display='none';});
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/fig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
   });
 })();
 </script>
