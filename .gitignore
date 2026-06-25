@@ -28,3 +28,6 @@ assets/js/dist
 
 # weekly runner logs
 automation/logs/
+
+# summary poller runtime
+automation/.poll.lock
