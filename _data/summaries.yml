@@ -45,6 +45,17 @@
   source_url: ""
   pdf: ""
   tags: ["concepts", "fhe-fpga"]
+- slug: "mipsbleed-2026-06-25"
+  title: "MIPSBLEED: Uncovering Microarchitectural Timing Leaks in Pervasive Embedded Processors"
+  url: "/summaries/mipsbleed-2026-06-25/"
+  date: "2026-06-25"
+  pub: "June 2026"
+  publisher: "arXiv"
+  meta_line: "arXiv · June 2026"
+  source_type: "PDF (text-layer)"
+  source_url: "https://arxiv.org/abs/2606.16372"
+  pdf: ""
+  tags: ["microarchitectural attacks", "side-channel attacks", "MIPS architecture", "timing attacks", "cache-timing attacks", "cryptographic implementation attacks", "embedded security", "hardware security", "simultaneous multithreading", "elliptic curve cryptography"]
 - slug: "tfhe-fast-fhe-over-torus-2026-06-24"
   title: "TFHE: Fast Fully Homomorphic Encryption over the Torus"
   url: "/summaries/tfhe-fast-fhe-over-torus-2026-06-24/"

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MIPSBLEED: Uncovering Microarchitectural Timing Leaks in Pervasive Embedded Processors</title>
+<style>
+:root{--bg:#0f1115;--surface:#181b20;--ink:#e6e8eb;--muted:#9aa0a8;
+ --line:#2a2f37;--accent:#6ea8fe}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+code{background:#0b0d11;border:1px solid var(--line);border-radius:4px;
+ padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:#15151a;border-bottom:1px solid #333;font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:#8ab4f8;text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+#rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
+#rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
+a.rt-figref,a.rt-eqref{color:#1a73e8;text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+body{counter-reset:rt-eq}
+mjx-container[display="true"]{position:relative;padding-right:2.4em}
+mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Deep Summaries</a><a href="https://arxiv.org/abs/2606.16372" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
+<header><h1>MIPSBLEED: Uncovering Microarchitectural Timing Leaks in Pervasive Embedded Processors</h1><p class="meta">arXiv · June 2026 &middot; <a href="https://arxiv.org/abs/2606.16372" target="_blank" rel="noopener noreferrer">full view &#8599;</a></p></header>
+<section><h2>Introduction</h2><p>Microarchitectural side-channel attacks have become one of the most consequential classes of hardware security vulnerability, exposing cryptographic secrets through physical phenomena such as cache access timing, execution latency, and resource contention. While the research community has extensively characterized these channels on x86 (Intel, AMD) and, more recently, ARM, the MIPS architecture has received comparatively little scrutiny despite being embedded in an estimated 8.5 billion shipped chips as of 2024, powering routers, industrial controllers, IoT sensors, and network equipment worldwide.</p><p>This paper introduces MIPSBLEED, the first comprehensive framework for systematically uncovering microarchitectural timing leaks in SMT-enabled MIPS processors. By instrumenting three distinct channels (L1 data cache, L1 instruction cache, and execution engine), and by quantifying leakage rigorously with the NICV statistical metric, the authors demonstrate that an unprivileged attacker can recover cryptographic secrets from a co-located victim process with no kernel access, no hardware privilege escalation, and no reliance on speculative execution bugs.</p></section>
+<section><h2>Background</h2><p>The evaluation platform is the MIPS32 1004K, a multi-threaded embedded processor core used in routers and network SoCs. Its L1 caches are 32 KB each, 4-way set-associative with 256 sets and 32-byte lines. The cache stride (distance between same-set, different-way addresses) is $256 \times 32\ \text{B} = 8192\ \text{B} = 8\ \text{KB}$.</p><p>SMT on the 1004K shares the L1 data cache, L1 instruction cache, and execution engine (ALU and MDU) between two logical cores. Each logical core maintains its own register file and program counter. This sharing is the root cause of cross-thread timing channels: when the victim thread accesses a shared resource, the attacker thread on the other logical core observes a measurable latency increase.</p><p>MIPS provides the RDHWR (Read Hardware Register) instruction for unprivileged access to the cycle counter. This differs significantly from ARM (requires privilege) and x86 (rdtsc available in user space but with serialization caveats). This capability is critical for the attacker: high-resolution timing measurements can be taken from ordinary user-space code without system calls or privilege elevation.</p><p>The paper evaluates SECCURE 0.5, a lightweight elliptic curve toolkit distributed in mainstream Linux packages. SECCURE implements scalar multiplication via the classical left-to-right double-and-add algorithm, which has a secret-dependent branch creating timing variation.</p></section>
+<section><h2>Threat Model</h2><p>The MIPSBLEED threat model assumes an attacker capable of executing unprivileged user-space code on the victim system, with SMT enabled and the attacker and victim co-located on the same physical processor core. The attacker and victim share the L1 data cache, L1 instruction cache, and execution engine. The attacker can invoke rdhwr to read the cycle counter with nanosecond-level precision.</p><p>The attacker does NOT require shared memory mappings with the victim, root or kernel privileges, hardware performance counter access via kernel API, knowledge of the victim's virtual address space layout, or any speculative execution exploitation. This threat model is realistic for embedded Linux deployments on routers or industrial controllers where multiple services run on the same CPU with SMT enabled and minimal process isolation.</p></section>
+<section><h2>Methodology</h2><p><strong>Framework Overview:</strong> MIPSBLEED consists of three phases: (1) Probe construction—write assembly loops that exercise one shared microarchitectural resource and measure cycle-accurate time via rdhwr; (2) Leakage quantification—use NICV (Normalized Inter-Class Variance) to determine whether timing measurements statistically correlate with victim behavior; (3) Exploitation—map the timing trace onto the victim's secret-dependent control flow to recover key bits.</p><p><strong>NICV Definition:</strong> NICV measures the fraction of total timing variance explained by a class label $Z$ (e.g., a secret bit): $\text{NICV} = \frac{\text{Var}_{z \in \mathcal{Z}}[\mathbb{E}[T \mid Z = z]]}{\text{Var}[T]}$. NICV ranges in $[0, 1]$; high NICV indicates strong, exploitable leakage.</p><p><strong>L1 Data Cache Probe:</strong> The attacker issues loads to four cache lines per set at 8 KB intervals, covering all 4 ways of each of the 256 sets. Multiplication instructions form a dependency chain to prevent out-of-order execution from collapsing timing measurements. When the victim accesses a cache set, it displaces the attacker's probe lines via LRU eviction, creating measurable latency spikes.</p><p><strong>L1 Instruction Cache Probe:</strong> The attacker places jump targets at 8 KB-aligned code addresses and measures the latency of instruction fetches. If the victim's instruction stream causes fetches from cache set $s_v$, those fetches evict the attacker's probe instructions from that set, creating the same horizontal-band timing signature as the D-cache probe.</p><p><strong>Execution Engine Probe:</strong> Two variants: (1) ALU variant—execute 25 iterations of dependent add/subtract pairs to saturate the shared ALU; (2) MDU variant—execute dependent multiply instructions to saturate the Multiply/Divide Unit. Victim instruction execution creates contention, increasing measured latency.</p></section>
+<section><h2>Experimental Results</h2><p><strong>L1 Data Cache Leakage:</strong> Running the D-cache probe concurrently with a victim that accesses a specific cache set (set 50 in the paper's examples) reveals a persistent horizontal band of elevated latency at that set index. This pattern is reproducible across many probe passes and confirmed by high NICV values, indicating significant exploitable information leakage through the data cache channel.</p><p><strong>L1 Instruction Cache Leakage:</strong> The I-cache probe exhibits an analogous pattern. Critically, it can distinguish between two code paths: the double-only path (executed when scalar bit is 0) and the double+add path (executed when scalar bit is 1). These paths touch different I-cache sets, creating a binary timing signal that directly encodes the key bit stream. NICV values confirm high leakage comparable to the D-cache.</p><p><strong>Execution Engine Leakage:</strong> Both ALU and MDU contention probes show very high NICV values, with the MDU probe exhibiting the strongest leakage signal of all three channels. Shared functional unit contention creates highly visible latency spikes when the victim issues arithmetic instructions.</p><p><strong>Summary:</strong> All three channels exhibit high, exploitable NICV. The execution engine (particularly MDU) shows the strongest signal. Combined, the three channels provide complementary views into victim execution and memory access patterns.</p></section>
+<section><h2>End-to-End Attack: SECCURE Key Recovery</h2><p><strong>Target:</strong> SECCURE 0.5 implements P-256 scalar multiplication using the classical left-to-right double-and-add algorithm. The vulnerable function is pointmul(), which iterates over 256 scalar bits: it unconditionally calls point_double() for each bit, then conditionally calls point_add() only when the current bit is 1.</p><p><strong>Vulnerability:</strong> The conditional branch is secret-dependent. point_double() and point_add() are separate code paths that fetch different I-cache lines. An attacker monitoring the I-cache observes: (1) When bit = 0: only point_double instructions are fetched; fewer I-cache sets disturbed; lower probe latency. (2) When bit = 1: both point_double and point_add instructions are fetched; more I-cache sets disturbed; higher probe latency. This is a timing-based variant of Simple Power Analysis (SPA).</p><p><strong>Key Generation:</strong> For visual demonstration, the authors modified SECCURE to generate a deterministic scalar with alternating 8-bit blocks: 11111111 00000000 11111111... The authors explicitly note this structured key is for visual clarity only; the attack works equally on random keys.</p><p><strong>Attack Execution:</strong> (1) Attacker pinned to logical core 0; SECCURE key generation on logical core 1. (2) Attacker runs I-cache probe continuously, recording per-set cycle counts. (3) Single trace (one pointmul execution) is sufficient to recover all key bits. (4) Probe trace segmented into 256 time windows matching scalar multiplication loop iterations. (5) Each window's probe latency classified as high (bit=1) or low (bit=0).</p><p><strong>Results:</strong> The partial trace clearly shows eight consecutive high-latency windows (bits 1-8: 11111111) followed by eight low-latency windows (bits 9-16: 00000000), matching the demo key's design. The binary pattern is directly readable from a single trace without statistical averaging. Recovery of the 256-bit P-256 private scalar enables full ECDH session decryption or signature forgery.</p></section>
+<section><h2>Mitigations and Defenses</h2><p><strong>Software-Level Countermeasures:</strong></p><p><em>Constant-Time Scalar Multiplication:</em> The fundamental vulnerability is the secret-dependent branch in pointmul(). The standard fix is the Montgomery ladder formulation, which performs the same operations regardless of scalar bit value using a branchless conditional swap (cswap) primitive. A constant-time implementation causes both I-cache and D-cache channels to observe identical patterns regardless of key bits, eliminating the leakage.</p><p><em>Timing Noise Injection:</em> Adding artificial random delays degrades SNR. However, since MIPSBLEED's I-cache attack is single-trace (not averaging-based), noise must be large enough to mask the signal in a single observation, which is difficult without unacceptable performance degradation.</p><p><strong>Hardware-Level Countermeasures:</strong></p><p><em>Cache Partitioning:</em> Assigning disjoint cache set ranges to different SMT threads via cache coloring would prevent cross-thread contention. However, most MIPS embedded platforms lack hardware support (e.g., Intel CAT), and software-based cache coloring is complex in embedded Linux.</p><p><em>SMT Disabling:</em> Disabling SMT eliminates the shared-resource attack surface entirely but imposes a performance penalty.</p><p><em>Privilege-Gating the Cycle Counter:</em> Requiring kernel-level privilege to access the cycle counter (as ARM does by default) would eliminate the attacker's ability to make high-resolution timing measurements from user space. This significantly raises the attacker's privilege requirement without disabling SMT or degrading non-attacker performance.</p><p><em>Lightweight Isolation in Embedded SMT:</em> The authors call for future research into lightweight isolation mechanisms tailored to resource-constrained embedded systems, unlike server-class x86 with many hardware security features.</p></section>
+<section><h2>Limitations</h2><p>The paper acknowledges several important limitations: (1) All experiments are on the MIPS32 1004K; generalization to other MIPS cores is unvalidated. (2) The attack requires attacker-victim co-location on the same physical core; multi-core systems require co-location assurance. (3) The SECCURE demo uses a structured (non-random) key for visual clarity; success rate on random keys is not quantified. (4) Only SECCURE is evaluated as an end-to-end target; other implementations may have different structures or mitigations. (5) No remote timing attack scenarios are explored. (6) Proposed hardware mitigations are not empirically evaluated.</p></section>
+<section><h2>Conclusion</h2><p>MIPSBLEED establishes MIPS as a critical and underexplored target in microarchitectural security. By systematically characterizing three independent timing channels (L1 data cache, L1 instruction cache, execution engine) on the MIPS32 1004K, the paper demonstrates that SMT-enabled MIPS platforms are vulnerable to cross-thread side-channel attacks without special privileges. The NICV-based leakage quantification confirms high exploitable leakage on all three channels, with the execution engine exhibiting the strongest signal.</p><p>The end-to-end SECCURE key recovery attack demonstrates this leakage is not merely theoretical: an attacker can recover a P-256 private key bit-by-bit from a single scalar multiplication trace using only user-space code and the rdhwr cycle counter instruction. The 8.5 billion deployed MIPS chips include long-lifecycle embedded devices unlikely to receive patches. Near-term practical mitigations are software-level (constant-time cryptographic implementations, SMT disabling for security-critical workloads). The paper calls for the research community to design lightweight, low-cost isolation primitives for the embedded MIPS ecosystem.</p></section>
+<section><h2>Algorithms</h2><p><strong>Algorithm 1: L1 Data Cache Probe</strong><br>An assembly loop that reads four cache lines per set at 8 KB intervals, covering all 4 ways of each of the 256 cache sets. Cycle counts measured via rdhwr before and after each per-set block. A multiplication dependency chain prevents out-of-order execution. Output: a 256-element timing vector per probe invocation.</p><p><strong>Algorithm 2: L1 Instruction Cache Probe</strong><br>A code traversal loop that jumps through four 8 KB-aligned code blocks per cache set, executing from addresses that map to all 4 ways of each set. Timing measured via rdhwr. Output: a 256-element timing vector per probe invocation.</p><p><strong>Algorithm 3: ALU Contention Probe</strong><br>Executes 25 iterations of dependent add/subtract instruction pairs to saturate the shared ALU. Timing measured via rdhwr. Output: a scalar cycle count per probe invocation.</p><p><strong>Algorithm 4: MDU Contention Probe</strong><br>Executes a sequence of dependent multiply instructions to saturate the shared Multiply/Divide Unit. Timing measured via rdhwr. Output: a scalar cycle count per probe invocation.</p><p><strong>Algorithm 5: NICV Computation</strong><br>Given $n$ timing traces labeled by secret variable $Z \in \mathcal{Z}$, compute $\text{NICV} = \text{Var}_{z}[\mathbb{E}[T \mid Z=z]] / \text{Var}[T]$ at each sample point. Identifies leakage hotspots in the trace.</p><p><strong>Algorithm 6: SECCURE Scalar Multiplication (Vulnerable Double-and-Add)</strong><br>The standard pointmul function in SECCURE 0.5. Iterates over 256 scalar bits; unconditionally calls point_double(); conditionally calls point_add() only when the current bit is 1. The conditional branch creates the I-cache timing leakage.</p><p><strong>Algorithm 7: Montgomery Ladder (Constant-Time Countermeasure)</strong><br>A secret-independent scalar multiplication that performs the same sequence of point operations regardless of key bits, using a conditional swap (cswap) primitive to avoid data-dependent branches.</p><p><strong>Algorithm 8: End-to-End SECCURE Key Recovery Attack</strong><br>(1) Pin attacker to logical core 0, victim to logical core 1. (2) Victim runs SECCURE P-256 key generation. (3) Attacker runs I-cache probe loop, collecting a continuous timing trace. (4) Segment trace into 256 windows aligned to scalar multiplication iterations. (5) Threshold each window's probe latency to recover the corresponding key bit. (6) Assemble the 256 recovered bits into the full scalar.</p></section>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/\bfig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+})();
+function rtSetupEquations(){
+  var prev=document.getElementById('rt-eqprev');
+  if(!prev){prev=document.createElement('div');prev.id='rt-eqprev';document.body.appendChild(prev);}
+  function showEq(html,e){prev.innerHTML=html;prev.style.display='block';var x=Math.min(e.clientX+20,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+20,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hideEq(){prev.style.display='none';}
+  var eqs=document.querySelectorAll('mjx-container[display="true"]'),htmlByNum={};
+  for(var i=0;i<eqs.length;i++){var n=i+1;eqs[i].id='eq'+n;htmlByNum[n]=eqs[i].outerHTML;}
+  if(!eqs.length)return;
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='script'||tg==='style')continue;
+    if(pn.closest&&pn.closest('mjx-container'))continue;
+    if(/\beq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!htmlByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#eq'+num;a.className='rt-eqref';a.textContent=m[0];
+      (function(h){a.addEventListener('mousemove',function(e){showEq(h,e);});a.addEventListener('mouseleave',hideEq);})(htmlByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+}
+window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],tags:'none'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},startup:{pageReady:function(){return MathJax.startup.defaultPageReady().then(function(){rtSetupEquations();});}}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>
