@@ -4,16 +4,18 @@ layout: page
 
 {% assign sums = site.data.summaries %}
 
-<p class="text-muted">Summaries I have written from sources, each linking back to the full article. Click a title to read it in place. Use the tiles to filter; "TFHE on FPGA" shows items that are both.</p>
+<p class="text-muted">Summaries I have written from sources. Click a title to read it in place, or use Full view. Use the tiles to filter; "TFHE on FPGA" shows items that are both.</p>
 
 {% if sums and sums.size > 0 %}
   {% assign tfhe_n = 0 %}
   {% assign fpga_n = 0 %}
   {% assign both_n = 0 %}
+  {% assign concepts_n = 0 %}
   {% for s in sums %}
     {% if s.tags contains 'tfhe' %}{% assign tfhe_n = tfhe_n | plus: 1 %}{% endif %}
     {% if s.tags contains 'fhe-fpga' %}{% assign fpga_n = fpga_n | plus: 1 %}{% endif %}
     {% if s.tags contains 'tfhe' and s.tags contains 'fhe-fpga' %}{% assign both_n = both_n | plus: 1 %}{% endif %}
+    {% if s.tags contains 'concepts' %}{% assign concepts_n = concepts_n | plus: 1 %}{% endif %}
   {% endfor %}
 
   <div class="topic-filter">
@@ -21,6 +23,7 @@ layout: page
     <button type="button" class="topic-tile" data-filter="tfhe">TFHE <span class="n">{{ tfhe_n }}</span></button>
     <button type="button" class="topic-tile" data-filter="fhe-fpga">FPGA implementations <span class="n">{{ fpga_n }}</span></button>
     <button type="button" class="topic-tile" data-filter="tfhe+fhe-fpga">TFHE on FPGA <span class="n">{{ both_n }}</span></button>
+    {% if concepts_n > 0 %}<button type="button" class="topic-tile" data-filter="concepts">Concepts &amp; background <span class="n">{{ concepts_n }}</span></button>{% endif %}
   </div>
 
   <ul id="summaries-content" class="conf-list list-unstyled">
@@ -29,15 +32,9 @@ layout: page
           data-url="{{ s.url | relative_url }}" data-title="{{ s.title | escape }}" data-src="{{ s.source_url }}">
         <div class="card-body">
           <h2 class="conf-name"><a class="summary-open" href="{{ s.url | relative_url }}">{{ s.title }}</a></h2>
-          <div class="conf-meta mb-2">
-            <span class="paper-topic">Summary</span>
-            {% if s.pub and s.pub != '' %}<span class="conf-bit"><i class="far fa-calendar fa-fw"></i> Published {{ s.pub }}</span>
-            {% elsif s.date and s.date != '' %}<span class="conf-bit"><i class="far fa-calendar fa-fw"></i> {{ s.date }}</span>{% endif %}
-            {% if s.source_url and s.source_url != '' %}
-              <span class="conf-bit"><a href="{{ s.source_url }}" target="_blank" rel="noopener noreferrer">Read the full article</a></span>
-            {% elsif s.pdf and s.pdf != '' %}
-              <span class="conf-bit"><a href="{{ s.pdf | relative_url }}" target="_blank" rel="noopener noreferrer">Source PDF</a></span>
-            {% endif %}
+          <div class="conf-meta">
+            <span class="conf-pub">{% if s.meta_line and s.meta_line != '' %}{{ s.meta_line }}{% elsif s.pub and s.pub != '' %}Published {{ s.pub }}{% elsif s.date and s.date != '' %}{{ s.date }}{% endif %}</span>
+            <a class="conf-fullview" href="{% if s.source_url and s.source_url != '' %}{{ s.source_url }}{% else %}{{ s.url | relative_url }}{% endif %}" target="_blank" rel="noopener noreferrer">Full view &#8599;</a>
           </div>
         </div>
       </li>
@@ -49,8 +46,8 @@ layout: page
     <div class="sm-dialog">
       <div class="sm-head">
         <span class="sm-title"></span>
-        <a class="sm-source" target="_blank" rel="noopener noreferrer" hidden>Read the full article &rarr;</a>
-        <a class="sm-open" target="_blank" rel="noopener noreferrer" title="Open in new tab">Open &#8599;</a>
+        <a class="sm-fulltext" target="_blank" rel="noopener noreferrer" hidden>Full text &#8599;</a>
+        <a class="sm-open" target="_blank" rel="noopener noreferrer">Open in full window &#8599;</a>
         <button type="button" class="sm-close" data-smclose aria-label="Close">&times;</button>
       </div>
       <iframe class="sm-frame" title="Summary" loading="lazy"></iframe>
@@ -72,9 +69,9 @@ layout: page
   .conf-name { font-size: 1.15rem; margin: 0 0 .5rem; }
   .conf-name a { color: var(--heading-color); text-decoration: none; cursor: pointer; }
   .conf-name a:hover { text-decoration: underline; }
-  .conf-meta { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; font-size: .9rem; }
-  .conf-bit { color: var(--text-muted-color); }
-  .paper-topic { display: inline-block; font-size: .75rem; font-weight: 600; letter-spacing: .02em; padding: .12rem .6rem; border-radius: 1rem; background: transparent; border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); color: var(--text-muted-highlight-color) !important; text-decoration: none; }
+  .conf-meta { display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-size: .9rem; }
+  .conf-pub { color: var(--text-muted-color); }
+  .conf-fullview { white-space: nowrap; }
   /* summary modal */
   #summary-modal[hidden] { display: none; }
   #summary-modal { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1.2rem; }
@@ -115,13 +112,13 @@ layout: page
     if (!modal) return;
     var frame = modal.querySelector('.sm-frame');
     var titleEl = modal.querySelector('.sm-title');
-    var srcEl = modal.querySelector('.sm-source');
+    var fullText = modal.querySelector('.sm-fulltext');
     var openEl = modal.querySelector('.sm-open');
     function open(url, title, src) {
       titleEl.textContent = title || 'Summary';
       frame.src = url;
       openEl.href = url;
-      if (src) { srcEl.href = src; srcEl.removeAttribute('hidden'); } else { srcEl.setAttribute('hidden', ''); }
+      if (src) { fullText.href = src; fullText.removeAttribute('hidden'); } else { fullText.setAttribute('hidden', ''); }
       modal.removeAttribute('hidden');
       document.body.classList.add('sm-open');
     }

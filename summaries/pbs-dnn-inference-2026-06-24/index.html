@@ -43,7 +43,7 @@ mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter
 </style>
 </head>
 <body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a><a href="https://github.com/zama-ai/concrete" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
-<header><h1>Programmable Bootstrapping Enables Efficient Homomorphic Inference of Deep Neural Networks</h1><p class="meta">PDF, IACR ePrint 2021/091 · full view · verified</p></header>
+<header><h1>Programmable Bootstrapping Enables Efficient Homomorphic Inference of Deep Neural Networks</h1><p class="meta">IACR ePrint 2021/091 &middot; <a href="https://github.com/zama-ai/concrete" target="_blank" rel="noopener noreferrer">full view &#8599;</a></p></header>
 <section><h2>Overview</h2><p>This paper (Chillotti, Joye, Paillier; Zama) reports the first experiments showing that <strong>deep</strong> neural networks are within reach of fully homomorphic encryption (FHE). It builds on the TFHE scheme and its key enabling technique, the <em>programmable bootstrapping</em> (PBS), which simultaneously refreshes a ciphertext's noise and evaluates an arbitrary function of the underlying plaintext. Crucially, and in contrast to prior work, the framework evaluates the <strong>original</strong> trained model as is: it does not require re-designing operations, altering the network topology, or re-training the model.</p><p>The authors demonstrate homomorphic inference on MNIST with networks of depth 20, 50, and 100 (NN-20, NN-50, NN-100), reaching accuracies close to the in-the-clear baseline. The library is an extended TFHE variant written in Rust and released open source as Concrete (https://github.com/zama-ai/concrete).</p></section>
 <section><h2>Motivation: FHE and noise control</h2><p>Machine learning often processes sensitive data (medical, biometric, communications), and regulations such as GDPR and CCPA require its protection. Traditional encryption protects data only at rest or in transit; the data must be decrypted before processing. FHE, posed as a challenge in 1978 and first realized by Gentry in 2009, instead lets a recipient compute directly on encrypted data.</p><p>All known FHE schemes produce noisy ciphertexts, and homomorphic operations increase that noise. Once the noise exceeds a threshold the ciphertext is no longer decryptable. A scheme limited to a predetermined noise budget is termed <em>leveled</em>. <em>Bootstrapping</em> generically refreshes ciphertexts by homomorphically evaluating the decryption circuit, turning a leveled scheme into a fully homomorphic one. A fast GSW-based bootstrapping by Ducas and Micciancio (sub-second) was refined into TFHE.</p><p>TFHE operates in two modes. The <strong>leveled</strong> mode supports linear combinations and a bounded number of external products, with noise always growing; it suits small-depth circuits. The <strong>bootstrapped</strong> mode finely controls noise and, being <em>programmable</em>, evaluates complex non-linear functions. Large-depth circuits such as deep neural networks require the bootstrapped mode.</p></section>
 <section><h2>Preliminaries: the torus and torus polynomials</h2><p>The letter T in TFHE denotes the real torus $\mathbb{T} = \mathbb{R}/\mathbb{Z}$, the reals modulo 1. $(\mathbb{T}, +)$ is an abelian group, but $\mathbb{T}$ is not a ring since an internal product of torus elements is undefined. An external product between integers and torus elements is well defined: for $k \in \mathbb{Z}$ and $t \in \mathbb{T}$, $k \bullet t \in \mathbb{T}$, giving $\mathbb{T}$ a $\mathbb{Z}$-module structure.</p><p>Polynomials are defined over the torus. With $\Phi(X)$ the $M$-th cyclotomic polynomial of degree $N$, and $M$ a power of 2, one has $N = M/2$ and $\Phi(X) = X^N + 1$. Define $\mathbb{R}_N[X] := \mathbb{R}[X]/(X^N+1)$ and $\mathbb{Z}_N[X] := \mathbb{Z}[X]/(X^N+1)$, and the $\mathbb{Z}_N[X]$-module $\mathbb{T}_N[X] := \mathbb{R}_N[X]/\mathbb{Z}_N[X] = \mathbb{T}[X]/(X^N+1)$. Elements of $\mathbb{T}_N[X]$ are polynomials modulo $X^N+1$ with torus coefficients; they can be added and externally multiplied by polynomials of $\mathbb{Z}_N[X]$.</p><p>Two distributions are used: the uniform distribution $\mathcal{U}$ and the normal distribution $\mathcal{N}(\mu, \sigma^2)$. A real normal distribution induces a discretized version over $\mathbb{Z}$ via $Z = \lfloor X q \rceil$. The shorthand $s \xleftarrow{\$} S$ means $s \leftarrow \mathcal{U}(S)$.</p></section>
@@ -128,10 +128,10 @@ Result: a low-noise ciphertext encoding f(x).</code></pre><p><strong>Remark.</st
   while(nd=walker.nextNode()){
     var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
     if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
-    if(/fig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+    if(/\bfig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
   }
   nodes.forEach(function(node){
-    var txt=node.nodeValue,re=/(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    var txt=node.nodeValue,re=/\b(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
     while(m=re.exec(txt)){
       var num=parseInt(m[2],10);if(!srcByNum[num])continue;
       if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
@@ -155,10 +155,10 @@ function rtSetupEquations(){
     var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
     if(tg==='a'||tg==='pre'||tg==='code'||tg==='script'||tg==='style')continue;
     if(pn.closest&&pn.closest('mjx-container'))continue;
-    if(/eq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+    if(/\beq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
   }
   nodes.forEach(function(node){
-    var txt=node.nodeValue,re=/(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    var txt=node.nodeValue,re=/\b(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
     while(m=re.exec(txt)){
       var num=parseInt(m[2],10);if(!htmlByNum[num])continue;
       if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
