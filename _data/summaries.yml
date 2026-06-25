@@ -8,7 +8,7 @@
   pub: "2018"
   publisher: "IACR ePrint 2018/421 (unified journal version of the authors' Asiacrypt 2016 and 2017 papers)"
   meta_line: "IACR ePrint 2018/421 (unified journal version of the authors' Asiacrypt 2016 and 2017 papers)"
-  source_type: "PDF (text-layer, figures rasterized from vector diagrams)  -  IACR ePrint 2018/421, retrieved via Wayback Machine"
+  source_type: "PDF (text-layer, figures rasterized from vector diagrams) - IACR ePrint 2018/421, retrieved via Wayback Machine"
   source_url: "https://eprint.iacr.org/2018/421"
   pdf: ""
   tags: ["tfhe"]
