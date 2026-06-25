@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FHE Building Blocks: LWE, RLWE, GLWE, Gadget Decomposition</title>
+<style>
+:root{--bg:#0f1115;--surface:#181b20;--ink:#e6e8eb;--muted:#9aa0a8;
+ --line:#2a2f37;--accent:#6ea8fe}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+code{background:#0b0d11;border:1px solid var(--line);border-radius:4px;
+ padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:#15151a;border-bottom:1px solid #333;font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:#8ab4f8;text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+#rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
+#rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
+a.rt-figref,a.rt-eqref{color:#1a73e8;text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+body{counter-reset:rt-eq}
+mjx-container[display="true"]{position:relative;padding-right:2.4em}
+mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a></div><main class="doc">
+<header><h1>FHE Building Blocks: LWE, RLWE, GLWE, Gadget Decomposition</h1><p class="meta">Research Tracker - background note</p></header>
+<section><h2>Overview and notation</h2><p>This note collects the linear-algebra primitives that underlie the TFHE family of fully homomorphic encryption (FHE) schemes. Almost every operation in TFHE is built from four ingredients: the hardness assumptions <strong>LWE</strong>, <strong>RLWE</strong> and their common generalization <strong>GLWE</strong>; the <strong>gadget (digit) decomposition</strong> operator $g^{-1}$ and its companion gadget matrix $G$; <strong>modulus switching</strong>; and <strong>key switching</strong>. From these we obtain encryption, homomorphic addition, and the <strong>external product</strong> that drives the bootstrapping CMux.</p>
+<p>Notation used throughout. Let $q$ be the ciphertext modulus (in TFHE typically a power of two such as $2^{32}$ or $2^{64}$, so arithmetic is native machine arithmetic). Let $N$ be a power of two and define the polynomial ring $R = \mathbb{Z}[X]/(X^N+1)$ and $R_q = \mathbb{Z}_q[X]/(X^N+1)$, the cyclotomic ring of the $2N$-th roots of unity. We write vectors in bold, $\mathbf{a} = (a_0, \dots, a_{n-1})$, and the inner product as $\langle \mathbf{a}, \mathbf{s} \rangle = \sum_{i=0}^{n-1} a_i s_i$. The secret key is $\mathbf{s}$, drawn with small (often binary or ternary) coefficients. The noise (error) $e$ is sampled from a discrete Gaussian $\chi$ with small standard deviation $\sigma$. We write $\lfloor x \rceil$ for rounding to the nearest integer and $\lVert x \rVert$ for a norm (typically $\ell_\infty$ on coefficients).</p>
+<p>The single idea that ties everything together: a ciphertext is a noisy linear equation in the secret key whose constant term hides $\Delta m$, where $\Delta = q/p$ is a scaling factor and $m \in \mathbb{Z}_p$ is the plaintext. Decryption recovers $\langle \text{ciphertext}, (\mathbf{s}, 1)\rangle \approx \Delta m + e$ and then rounds away $e$. Correctness holds exactly while $\lVert e \rVert < \Delta/2$.</p></section>
+<section><h2>The LWE problem and LWE ciphertexts</h2><p>The <strong>Learning With Errors</strong> (LWE) problem, introduced by Regev, asks one to recover a secret $\mathbf{s} \in \mathbb{Z}_q^n$ given many noisy linear samples $(\mathbf{a}_i, b_i)$ where $\mathbf{a}_i$ is uniform in $\mathbb{Z}_q^n$ and</p>
+<p>$$ b_i = \langle \mathbf{a}_i, \mathbf{s} \rangle + e_i \pmod q . $$</p>
+<p>Equation 1 is a single LWE sample. The <em>search</em> LWE problem is to find $\mathbf{s}$; the <em>decision</em> problem is to distinguish such samples from uniform pairs $(\mathbf{a}_i, u_i)$. Without the error $e_i$ this is trivial Gaussian elimination; the small noise is what makes the problem hard, with hardness backed by worst-case lattice reductions.</p>
+<p>An <strong>LWE ciphertext</strong> encrypting a message $m \in \mathbb{Z}_p$ under $\mathbf{s}$ is the pair $(\mathbf{a}, b) \in \mathbb{Z}_q^{n+1}$ with $\mathbf{a}$ uniform and</p>
+<p>$$ b = \langle \mathbf{a}, \mathbf{s} \rangle + \Delta m + e \pmod q, \qquad \Delta = \frac{q}{p} . $$</p>
+<p>Equation 2 is the encryption identity. To decrypt, compute the <em>phase</em> $\varphi = b - \langle \mathbf{a}, \mathbf{s}\rangle = \Delta m + e$ and round: $m = \lfloor \varphi / \Delta \rceil \bmod p$. This is exact as long as $\lvert e \rvert < \Delta/2$. The message lives in the high-order bits of each $\mathbb{Z}_q$ slot and the noise lives in the low-order bits, as sketched below.</p>
+<pre><code>q-1  +-------------------+
+     |   msg bits (m)    |   <- recovered by rounding to nearest multiple of Delta
+Delta+-------------------+
+     |   noise bits (e)  |   <- must stay below Delta/2
+  0  +-------------------+</code></pre>
+<p>It is convenient to think of the key as the extended vector $\bar{\mathbf{s}} = (\mathbf{s}, 1)$ and the ciphertext as $\mathbf{c} = (\mathbf{a}, b)$, so that decryption is simply $\langle \mathbf{c}, \bar{\mathbf{s}} \rangle = \Delta m + e$ up to a sign convention. LWE ciphertexts are the <em>scalar</em> carriers in TFHE: the bootstrapping pipeline extracts a single LWE sample, refreshes it, and key-switches it back.</p></section>
+<section><h2>Ring-LWE (RLWE) and packing</h2><p><strong>Ring-LWE</strong> (RLWE) replaces vectors over $\mathbb{Z}_q$ with elements of the polynomial ring $R_q = \mathbb{Z}_q[X]/(X^N+1)$. A sample is a pair $(a, b) \in R_q^2$ with $a$ uniform and</p>
+<p>$$ b = a \cdot s + e \pmod{X^N+1, \; q}, $$</p>
+<p>where the secret $s \in R_q$ and error $e \in R_q$ both have small coefficients. Equation 3 is the RLWE relation; the product $a \cdot s$ is a negacyclic polynomial multiplication, meaning that the wrap-around term picks up a minus sign because $X^N \equiv -1$.</p>
+<p>An <strong>RLWE ciphertext</strong> of a plaintext polynomial $\mu \in R_p$ is</p>
+<p>$$ (a,\, b) = \bigl(a,\; a \cdot s + \Delta\mu + e\bigr) \in R_q^2 . $$</p>
+<p>Equation 4 packs up to $N$ scalar messages into the $N$ coefficients of $\mu$ at the cost of a single ciphertext, which is the central efficiency advantage of RLWE over plain LWE: one polynomial multiplication does $N$ slots of work. The price is that homomorphic multiplication mixes coefficients negacyclically, and that the fast multiplication algorithm (the NTT) is now on the critical path.</p>
+<p>RLWE is the workhorse of TFHE bootstrapping: the lookup-table (test polynomial) used in the programmable bootstrap is an RLWE-encrypted polynomial, and the blind rotation that evaluates the table is a sequence of operations on RLWE ciphertexts.</p></section>
+<section><h2>Generalized GLWE: one definition to rule them all</h2><p><strong>GLWE</strong> (Generalized LWE) unifies LWE and RLWE with two parameters: the ring dimension $N$ (a power of two) and the number of polynomials $k$. The secret key is a vector of small polynomials $\mathbf{S} = (S_1, \dots, S_k) \in R_q^k$, and a GLWE ciphertext of $\mu \in R_q$ is the tuple</p>
+<p>$$ \mathbf{C} = (A_1, \dots, A_k,\, B) \in R_q^{k+1}, \qquad B = \sum_{i=1}^{k} A_i \cdot S_i + \Delta\mu + E . $$</p>
+<p>Equation 5 is the GLWE encryption identity, with each $A_i$ uniform in $R_q$ and $E$ a small error polynomial. The two familiar cases fall out immediately:</p>
+<ul>
+<li><strong>LWE</strong> is GLWE with $N = 1$ and $k = n$: the ring degenerates to $\mathbb{Z}_q$ and the $k$ "polynomials" are scalars, recovering $b = \langle \mathbf{a},\mathbf{s}\rangle + \Delta m + e$.</li>
+<li><strong>RLWE</strong> is GLWE with $k = 1$ and $N$ a power of two: a single polynomial pair $(A_1, B)$ over $R_q$, recovering Equation 4.</li>
+</ul>
+<p>Decryption is the obvious generalization of Equation 2: compute the phase $\varphi = B - \sum_i A_i S_i = \Delta\mu + E$ and round each coefficient to the nearest multiple of $\Delta$. The whole TFHE stack can therefore be described once in GLWE terms and specialized to LWE or RLWE as needed, and the parameter pair $(N,k)$ becomes a single security/performance knob: total LWE dimension is $kN$.</p></section>
+<section><h2>Homomorphic addition and plaintext-scalar multiplication</h2><p>GLWE ciphertexts are additively homomorphic by construction. Given two ciphertexts $\mathbf{C} = (A_i, B)$ and $\mathbf{C}' = (A_i', B')$ of $\mu$ and $\mu'$ under the same key, their componentwise sum decrypts to $\mu + \mu'$:</p>
+<p>$$ \mathbf{C} + \mathbf{C}' = \Bigl(A_i + A_i',\; B + B'\Bigr), \qquad \varphi(\mathbf{C}+\mathbf{C}') = \Delta(\mu+\mu') + (E + E') . $$</p>
+<p>Equation 6 shows that the noises add: $\lVert E + E' \rVert \le \lVert E \rVert + \lVert E' \rVert$, so additive depth is cheap but not free. Multiplying a ciphertext by a known small integer (or known plaintext polynomial) $\lambda$ scales the message and the noise alike:</p>
+<p>$$ \lambda \cdot \mathbf{C} = (\lambda A_i,\; \lambda B), \qquad \varphi(\lambda \mathbf{C}) = \Delta(\lambda\mu) + \lambda E . $$</p>
+<p>Equation 7 is plaintext-ciphertext multiplication. The danger is that $\lambda E$ grows linearly with $\lambda$, so multiplying by a large or high-norm cleartext can blow the noise budget. This is precisely the problem the gadget decomposition solves: to multiply by something large with controlled noise growth, we first decompose into small digits.</p></section>
+<section><h2>Gadget decomposition g^{-1} and the gadget matrix G</h2><p>The <strong>gadget decomposition</strong> is the trick that keeps noise small when we must multiply ciphertext data by large values. Fix a base $B$ (often a power of two, $B = 2^b$) and a number of levels $\ell$. The <strong>gadget vector</strong> is</p>
+<p>$$ \mathbf{g} = \left( \frac{q}{B}, \; \frac{q}{B^2}, \; \dots, \; \frac{q}{B^\ell} \right) , $$</p>
+<p>Equation 8 lists the gadget powers; equivalently for a power-of-two modulus these are shifts. The <strong>decomposition operator</strong> $g^{-1}$ takes a ring element $a \in R_q$ and returns a vector of small <em>digit</em> polynomials $(a_1, \dots, a_\ell)$ each with balanced coefficients in $(-B/2, B/2]$ such that</p>
+<p>$$ \langle g^{-1}(a),\, \mathbf{g} \rangle = \sum_{j=1}^{\ell} a_j \cdot \frac{q}{B^j} \approx a \pmod q . $$</p>
+<p>Equation 9 is the defining approximation: $g^{-1}$ is an approximate right inverse of multiplication by $\mathbf{g}$. The reconstruction is exact only down to the $\ell$-th digit; the truncated low bits contribute a small, bounded rounding error $\varepsilon$ with $\lVert \varepsilon \rVert \le \tfrac{1}{2}\,q/B^\ell$. The key property is that the output digits are <em>small</em>: $\lVert g^{-1}(a) \rVert \le B/2$ regardless of how large $a$ was.</p>
+<p>Arranged as a matrix, the <strong>gadget matrix</strong> $G$ is the $(k+1)\ell \times (k+1)$ block-diagonal matrix that stacks $\mathbf{g}$ on each of the $k+1$ ciphertext components:</p>
+<p>$$ G = I_{k+1} \otimes \mathbf{g}^{\top} = \begin{pmatrix} \mathbf{g}^{\top} & & \\ & \ddots & \\ & & \mathbf{g}^{\top} \end{pmatrix} . $$</p>
+<p>Equation 10 defines $G$ via a Kronecker product with the identity. The matrix-level decomposition $G^{-1}(\cdot)$ applies $g^{-1}$ to each of the $k+1$ components of a GLWE ciphertext, producing a length-$(k+1)\ell$ row of small polynomials whose product with $G$ approximately reconstructs the original ciphertext: $G^{-1}(\mathbf{C}) \cdot G \approx \mathbf{C}$. This is the exact mechanism that lets us replace a noisy large multiplication by a sum of $\ell$ small multiplications.</p>
+<pre><code>function gadget_decompose(a, B, l, q):       # a in R_q, returns l digit-polys
+    digits = []
+    acc = round(a / (q / B^l))                # work on the top l digits
+    for j in l down to 1:
+        d = acc mod B                         # least-significant base-B digit
+        if d > B/2: d = d - B                 # balance into (-B/2, B/2]
+        digits[j] = d
+        acc = (acc - d) / B
+    return (digits[1], ..., digits[l])        # each coeff in (-B/2, B/2]</code></pre></section>
+<section><h2>GGSW ciphertexts and the external product</h2><p>The gadget matrix turns a GLWE ciphertext into the building block for ciphertext-ciphertext multiplication. A <strong>GGSW</strong> ciphertext of a message $\mu$ is a list of GLWE ciphertexts encrypting $\mu$ times each row of $G$. Concretely, $\overline{\overline{\mathbf{C}}}$ is a $(k+1)\ell \times (k+1)$ matrix where row $r$ is a GLWE encryption of $\mu \cdot G_{r}$ (the message scaled by the $r$-th gadget entry). It is the GLWE analogue of a GSW ciphertext.</p>
+<p>The <strong>external product</strong> $\boxdot$ multiplies a GGSW ciphertext of $\mu_1$ by a GLWE ciphertext of $\mu_2$ and yields a GLWE ciphertext of the product $\mu_1 \cdot \mu_2$:</p>
+<p>$$ \overline{\overline{\mathbf{C}}}_1 \;\boxdot\; \mathbf{C}_2 \;=\; G^{-1}(\mathbf{C}_2) \cdot \overline{\overline{\mathbf{C}}}_1 \;=\; \mathrm{GLWE}_{\mathbf{S}}(\mu_1 \cdot \mu_2) . $$</p>
+<p>Equation 11 is the external product. The reason it works with low noise: we decompose the operand $\mathbf{C}_2$ into small digits via $G^{-1}$, multiply those small digits against the GGSW rows, and the gadget reconstruction collapses the row scalings back into a single clean GLWE ciphertext. The output noise is governed by $\lVert G^{-1}(\mathbf{C}_2)\rVert \le B/2$ rather than by the full magnitude of $\mathbf{C}_2$, so noise growth is roughly</p>
+<p>$$ \lVert E_{\mathrm{out}} \rVert \;\lesssim\; (k+1)\,\ell\,N\,\frac{B}{2}\,\sigma_{\mathrm{ggsw}} \;+\; \lVert \mu_1 \rVert \cdot \varepsilon_{\mathrm{dec}} , $$</p>
+<p>Equation 12 is the external-product noise bound: the first term is the additive GGSW noise spread over the $(k+1)\ell$ small products, the second is the gadget truncation error from Equation 9. Choosing $(B, \ell)$ trades the two terms: larger $\ell$ shrinks $\varepsilon_{\mathrm{dec}}$ but adds work and additive noise.</p></section>
+<section><h2>CMux and blind rotation</h2><p>The external product gives a homomorphic multiplexer. Given a GGSW encryption of a bit $b \in \{0,1\}$ and two GLWE ciphertexts $\mathbf{C}_0, \mathbf{C}_1$, the <strong>CMux</strong> selects between them:</p>
+<p>$$ \mathrm{CMux}(\overline{\overline{\mathbf{C}}}_b, \mathbf{C}_0, \mathbf{C}_1) = \overline{\overline{\mathbf{C}}}_b \boxdot (\mathbf{C}_1 - \mathbf{C}_0) + \mathbf{C}_0 = \begin{cases} \mathbf{C}_0 & b = 0 \\ \mathbf{C}_1 & b = 1 \end{cases} . $$</p>
+<p>Equation 13 is the CMux identity; it costs exactly one external product plus two GLWE additions. <strong>Blind rotation</strong> is the heart of the programmable bootstrap: it uses the encrypted bits of an LWE ciphertext's mask and body to rotate a test polynomial (lookup table) $\mathrm{tv}(X)$ by the secret phase, without ever learning that phase. Each step multiplies the accumulator by $X^{a_i s_i}$ via a CMux driven by the bootstrapping key $\mathrm{BSK}_i = \mathrm{GGSW}(s_i)$.</p>
+<pre><code>function blind_rotate(acc, (a_1..a_n, b), BSK, twoN):   # acc: GLWE of tv(X)
+    acc = acc * X^(-b mod twoN)                          # rotate by body
+    for i in 1..n:
+        # CMux on encrypted s_i: multiply acc by X^{a_i} only if s_i = 1
+        rotated = acc * X^(a_i mod twoN)
+        acc = CMux(BSK_i, acc, rotated)                  # = BSK_i [x] (rotated-acc)+acc
+    return acc          # GLWE of tv(X) * X^{-(b - sum a_i s_i)} = tv rotated by phase</code></pre>
+<p>After blind rotation, the constant coefficient of the accumulator holds $\mathrm{tv}$ evaluated at the secret phase, i.e. the looked-up value. A <em>sample extraction</em> reads off that coefficient as an LWE ciphertext under the extended RLWE key, and a key switch (next section) brings it back to the original LWE key. The full chain - modulus switch, blind rotate, sample extract, key switch - is one programmable bootstrap and simultaneously evaluates an arbitrary function via the table $\mathrm{tv}$ while resetting the noise.</p></section>
+<section><h2>Modulus switching</h2><p><strong>Modulus switching</strong> rescales a ciphertext from modulus $q$ to a smaller modulus $q'$ (in TFHE typically $q' = 2N$, so the LWE phase indexes a coefficient of the size-$2N$ test polynomial). For an LWE ciphertext $(\mathbf{a}, b)$ each entry is rounded:</p>
+<p>$$ a_i' = \left\lfloor \frac{q'}{q}\, a_i \right\rceil, \qquad b' = \left\lfloor \frac{q'}{q}\, b \right\rceil . $$</p>
+<p>Equation 14 is the per-coordinate rescale. The phase is approximately scaled by $q'/q$, so the encrypted message is preserved, but rounding injects an additional <em>modulus-switching noise</em>. If each coordinate rounds with error up to $1/2$, the added noise in the new scale is bounded by</p>
+<p>$$ \lVert e_{\mathrm{ms}} \rVert \;\le\; \frac{1}{2}\Bigl(1 + \lVert \mathbf{s} \rVert_1 \Bigr) \;=\; \frac{1}{2}\Bigl(1 + \sum_i |s_i|\Bigr) . $$</p>
+<p>Equation 15 bounds the modulus-switch noise; with binary keys this is about half the Hamming weight of $\mathbf{s}$. Modulus switching is what makes blind rotation feasible: the LWE phase must be reduced modulo $2N$ so that $X^{\mathrm{phase}}$ is a meaningful rotation of the test polynomial. It is the first step of every programmable bootstrap.</p></section>
+<section><h2>Key switching</h2><p><strong>Key switching</strong> converts a ciphertext encrypted under key $\mathbf{s}$ into one encrypting the same message under a different key $\mathbf{s}'$, without decrypting. It is needed after sample extraction (the extracted LWE key is the flattened RLWE key, which differs from the input key) and whenever we change dimension. The public <strong>key-switching key</strong> $\mathrm{KSK}$ provides gadget-decomposed encryptions of every coordinate of the old key under the new key:</p>
+<p>$$ \mathrm{KSK}_{i,j} = \mathrm{LWE}_{\mathbf{s}'}\!\left( s_i \cdot \frac{q}{B^j} \right), \qquad i = 1..n,\; j = 1..\ell . $$</p>
+<p>Equation 16 defines the KSK as gadget-scaled encryptions of $s_i$. Given an input ciphertext $(\mathbf{a}, b)$ under $\mathbf{s}$, we cancel the inner product $\langle \mathbf{a}, \mathbf{s}\rangle$ by substituting each $s_i$ with its KSK encryption, summing over the small digits of $a_i$:</p>
+<p>$$ \mathrm{KS}(\mathbf{a}, b) = (\mathbf{0}, b) - \sum_{i=1}^{n} \sum_{j=1}^{\ell} \bigl(g^{-1}(a_i)\bigr)_j \cdot \mathrm{KSK}_{i,j} . $$</p>
+<p>Equation 17 is the key-switch computation; the result is an LWE ciphertext under $\mathbf{s}'$ of the same message. Because we decompose $a_i$ first (Equation 9), each KSK is multiplied only by a small digit, so noise growth is controlled exactly as in the external product. The trade-off in $(B, \ell)$ is identical: more levels means lower truncation error but more additive KSK noise and more work.</p></section>
+<section><h2>The Number Theoretic Transform (NTT)</h2><p>Polynomial multiplication in $R_q$ is the dominant cost in RLWE/GLWE. The naive schoolbook product is $O(N^2)$; the <strong>Number Theoretic Transform</strong> reduces it to $O(N \log N)$ by evaluating polynomials at the $2N$-th roots of unity in $\mathbb{Z}_q$ (when $q$ is NTT-friendly, i.e. $q \equiv 1 \pmod{2N}$). For the negacyclic ring $\mathbb{Z}_q[X]/(X^N+1)$ one uses a <em>negacyclic</em> NTT: premultiply coefficients by powers of a primitive $2N$-th root $\psi$ (with $\psi^2 = \omega$, a primitive $N$-th root), transform, multiply pointwise, inverse-transform, and postmultiply by $\psi^{-i}$. Multiplication becomes</p>
+<p>$$ a \cdot b = \mathrm{NTT}^{-1}\bigl( \mathrm{NTT}(a) \odot \mathrm{NTT}(b) \bigr), $$</p>
+<p>Equation 18 expresses ring multiplication as pointwise ($\odot$) products in the transform domain. The iterative Cooley-Tukey form processes the array in $\log_2 N$ stages of <strong>butterflies</strong>; each butterfly takes a pair $(u, v)$ and a twiddle factor $\omega$ and outputs $(u + \omega v,\; u - \omega v) \bmod q$.</p>
+<pre><code>function ntt(a[0..N-1], psi_powers, q):       # in-place, decimation-in-time
+    bit_reverse_permute(a)
+    len = 2
+    while len <= N:
+        step = N / len
+        for start in 0, len, 2*len, ..., N-len:
+            w_index = 0
+            for k in 0 .. len/2 - 1:
+                w = psi_powers[w_index]            # twiddle factor mod q
+                u = a[start + k]
+                v = (a[start + k + len/2] * w) mod q
+                a[start + k]         = (u + v) mod q     # butterfly
+                a[start + k + len/2] = (u - v) mod q
+                w_index = w_index + step
+        len = len * 2
+    return a</code></pre>
+<p>On hardware accelerators the inner butterfly loop maps naturally onto a pipelined or systolic datapath: modular multipliers feed modular adder/subtractors, and the twiddle factors stream from a small ROM. The systolic dataflow below shows one column of processing elements (PEs) each holding a partial sum and passing data to its neighbor every clock, the standard structure for NTT and for the polynomial MAC arrays used in FHE coprocessors.</p>
+<pre><code>function systolic_butterfly_column(in_top[], in_bot[], twiddle[], q):
+    # each PE_k runs every clock cycle in lockstep (one row per cycle)
+    for k in 0 .. P-1 in parallel:                 # P processing elements
+        load u  <- in_top[k]                       # streamed from west neighbor
+        load v  <- in_bot[k]
+        load w  <- twiddle[k]                      # streamed from twiddle ROM
+        t = mod_mul(v, w, q)                       # 1 modular multiply
+        out_top[k] = mod_add(u, t, q)              # forward east
+        out_bot[k] = mod_sub(u, t, q)
+        forward (out_top[k], out_bot[k]) to PE_k of next column
+    return (out_top, out_bot)</code></pre></section>
+<section><h2>How the pieces compose</h2><p>Putting it together, a single TFHE programmable bootstrap of an input LWE ciphertext $\mathbf{c}$ under key $\mathbf{s}$ runs the following pipeline, each stage using exactly the primitives above:</p>
+<ol>
+<li><strong>Modulus switch</strong> $\mathbf{c}$ from $q$ down to $2N$ (Equation 14), so the phase indexes the test polynomial.</li>
+<li><strong>Blind rotate</strong> an RLWE-encrypted test polynomial $\mathrm{tv}(X)$ by the switched phase using $n$ CMux steps (Equation 13), each a GGSW external product (Equation 11) over $R_q$, with the $R_q$ products done via NTT (Equation 18).</li>
+<li><strong>Sample extract</strong> the constant coefficient as an LWE ciphertext under the flattened RLWE key.</li>
+<li><strong>Key switch</strong> back to the original key $\mathbf{s}$ (Equation 17), restoring the input format with refreshed noise.</li>
+</ol>
+<p>The arithmetic backbone is: encryption and homomorphic addition (Equations 2, 6) build and combine ciphertexts; the gadget decomposition (Equations 9, 10) keeps every ciphertext-by-large-value multiplication low-noise; the external product (Equation 11) turns that into ciphertext-ciphertext multiplication and hence CMux; modulus and key switching (Equations 14, 17) move ciphertexts between scales and keys. Every one of these reduces, in the end, to small modular polynomial multiplies, which is why the NTT and its systolic realizations dominate FHE accelerator design.</p></section>
+<section><h2>Algorithms</h2><p>Complete at-a-glance pseudocode for every algorithm referenced above. All arithmetic is modulo $q$ unless stated; polynomials live in $R_q = \mathbb{Z}_q[X]/(X^N+1)$.</p>
+<p><strong>A1. GLWE encryption / decryption.</strong></p>
+<pre><code>function glwe_encrypt(mu, S=(S_1..S_k), Delta, sigma, q):
+    # Input: plaintext poly mu in R_p, secret key S, scaling Delta=q/p
+    # Output: GLWE ciphertext C = (A_1..A_k, B)
+    for i in 1..k:
+        A_i = uniform_random_poly(R_q)
+    E = sample_error_poly(sigma)
+    B = sum_{i=1..k}(A_i * S_i) + Delta*mu + E      # Equation 5
+    return (A_1..A_k, B)
+
+function glwe_decrypt(C=(A_1..A_k, B), S, Delta, p):
+    phi = B - sum_{i=1..k}(A_i * S_i)               # phase = Delta*mu + E
+    for each coeff c of phi:
+        mu_coeff = round(c / Delta) mod p
+    return mu</code></pre>
+<p><strong>A2. Homomorphic add and plaintext-scalar multiply.</strong></p>
+<pre><code>function glwe_add(C=(A_i,B), C'=(A'_i,B')):
+    return (A_1+A'_1, ..., A_k+A'_k, B+B')          # Equation 6
+
+function glwe_scalar_mul(lambda, C=(A_i,B)):
+    return (lambda*A_1, ..., lambda*A_k, lambda*B)  # Equation 7 (noise scales by lambda)</code></pre>
+<p><strong>A3. Gadget decomposition.</strong></p>
+<pre><code>function gadget_decompose(a, B, l, q):              # a in R_q
+    # Output: (a_1..a_l), each coeff in (-B/2, B/2], with sum a_j*(q/B^j) ~ a
+    digits = array[1..l]
+    acc = round(a / (q / B^l))
+    for j in l down to 1:
+        d = acc mod B
+        if d > B/2: d = d - B                        # balanced digit
+        digits[j] = d
+        acc = (acc - d) / B
+    return digits                                    # Equation 9
+
+function G_inverse(C=(A_1..A_k, B), B_base, l):
+    # apply gadget_decompose to each of the k+1 components
+    return concat( gadget_decompose(A_1,...), ..., gadget_decompose(B,...) )</code></pre>
+<p><strong>A4. External product and CMux.</strong></p>
+<pre><code>function external_product(GGSW_1, C_2, B_base, l):
+    # GGSW_1 is a (k+1)l x (k+1) matrix of GLWE rows encrypting mu_1*G
+    d = G_inverse(C_2, B_base, l)                    # row of (k+1)l small polys
+    return d . GGSW_1                                 # = GLWE(mu_1 * mu_2), Eq 11
+
+function cmux(GGSW_b, C_0, C_1):
+    return glwe_add( external_product(GGSW_b, glwe_sub(C_1, C_0)), C_0 )   # Eq 13</code></pre>
+<p><strong>A5. Blind rotation.</strong></p>
+<pre><code>function blind_rotate(acc, (a_1..a_n, b), BSK, twoN):
+    # acc: GLWE encryption of the test polynomial tv(X); BSK_i = GGSW(s_i)
+    acc = acc * X^(-b mod twoN)
+    for i in 1..n:
+        rotated = acc * X^(a_i mod twoN)
+        acc = cmux(BSK_i, acc, rotated)
+    return acc                                       # tv rotated by the secret phase</code></pre>
+<p><strong>A6. Modulus switch.</strong></p>
+<pre><code>function modulus_switch((a_1..a_n, b), q, q_new):    # q_new typically 2N
+    for i in 1..n:
+        a_i' = round((q_new / q) * a_i)              # Equation 14
+    b'   = round((q_new / q) * b)
+    return (a_1'..a_n', b')</code></pre>
+<p><strong>A7. Key switch.</strong></p>
+<pre><code>function key_switch((a_1..a_n, b), KSK, B_base, l):
+    # KSK[i][j] = LWE_{s'}( s_i * q / B^j )           # Equation 16
+    result = (0..0, b)                               # zero mask, keep body
+    for i in 1..n:
+        (d_1..d_l) = gadget_decompose(a_i, B_base, l)
+        for j in 1..l:
+            result = result - d_j * KSK[i][j]        # Equation 17
+    return result                                    # LWE under s'
+</code></pre>
+<p><strong>A8. Iterative NTT (negacyclic, decimation-in-time).</strong></p>
+<pre><code>function ntt(a[0..N-1], psi_powers, q):
+    bit_reverse_permute(a)
+    len = 2
+    while len <= N:
+        step = N / len
+        for start in 0, len, 2*len, ..., N-len:
+            w_index = 0
+            for k in 0 .. len/2 - 1:
+                w = psi_powers[w_index]
+                u = a[start + k]
+                v = (a[start + k + len/2] * w) mod q
+                a[start + k]         = (u + v) mod q
+                a[start + k + len/2] = (u - v) mod q
+                w_index = w_index + step
+        len = len * 2
+    return a
+
+function poly_mul(a, b, q):
+    return intt( pointwise_mul( ntt(a), ntt(b) ) )   # Equation 18</code></pre>
+<p><strong>A9. Systolic butterfly column (hardware dataflow).</strong></p>
+<pre><code>function systolic_butterfly_column(in_top[], in_bot[], twiddle[], q):
+    for k in 0 .. P-1 in parallel:                   # P processing elements
+        u = in_top[k]; v = in_bot[k]; w = twiddle[k]
+        t = mod_mul(v, w, q)
+        out_top[k] = mod_add(u, t, q)
+        out_bot[k] = mod_sub(u, t, q)
+        forward (out_top[k], out_bot[k]) to next column
+    return (out_top, out_bot)</code></pre></section>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/\bfig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+})();
+function rtSetupEquations(){
+  var prev=document.getElementById('rt-eqprev');
+  if(!prev){prev=document.createElement('div');prev.id='rt-eqprev';document.body.appendChild(prev);}
+  function showEq(html,e){prev.innerHTML=html;prev.style.display='block';var x=Math.min(e.clientX+20,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+20,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hideEq(){prev.style.display='none';}
+  var eqs=document.querySelectorAll('mjx-container[display="true"]'),htmlByNum={};
+  for(var i=0;i<eqs.length;i++){var n=i+1;eqs[i].id='eq'+n;htmlByNum[n]=eqs[i].outerHTML;}
+  if(!eqs.length)return;
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='script'||tg==='style')continue;
+    if(pn.closest&&pn.closest('mjx-container'))continue;
+    if(/\beq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!htmlByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#eq'+num;a.className='rt-eqref';a.textContent=m[0];
+      (function(h){a.addEventListener('mousemove',function(e){showEq(h,e);});a.addEventListener('mouseleave',hideEq);})(htmlByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+}
+window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],tags:'none'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},startup:{pageReady:function(){return MathJax.startup.defaultPageReady().then(function(){rtSetupEquations();});}}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>

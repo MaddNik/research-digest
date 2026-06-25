@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bootstrapping Internals: PBS, Blind Rotation, Sample Extraction</title>
+<style>
+:root{--bg:#0f1115;--surface:#181b20;--ink:#e6e8eb;--muted:#9aa0a8;
+ --line:#2a2f37;--accent:#6ea8fe}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+code{background:#0b0d11;border:1px solid var(--line);border-radius:4px;
+ padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:#15151a;border-bottom:1px solid #333;font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:#8ab4f8;text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+#rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
+#rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
+a.rt-figref,a.rt-eqref{color:#1a73e8;text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+body{counter-reset:rt-eq}
+mjx-container[display="true"]{position:relative;padding-right:2.4em}
+mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a></div><main class="doc">
+<header><h1>Bootstrapping Internals: PBS, Blind Rotation, Sample Extraction</h1><p class="meta">Research Tracker - background note</p></header>
+<section><h2>Why bootstrapping exists: noise growth and the refresh problem</h2><p>Every fully homomorphic encryption (FHE) ciphertext carries a small additive <em>noise</em> (also called error) term that hides the message. Each homomorphic operation enlarges this noise: additions grow it modestly, multiplications and key-switching grow it more aggressively. Once the noise magnitude approaches the gap that separates encrypted message slots, decryption returns garbage. A leveled scheme can only evaluate a circuit of bounded multiplicative depth before this happens.</p><p><strong>Bootstrapping</strong> is the operation that resets the noise to a fixed low level, regardless of how much noise was present beforehand, so that an unbounded-depth circuit can be evaluated. Conceptually, bootstrapping homomorphically evaluates the scheme's own decryption function on an encryption of the secret key, producing a fresh ciphertext that encrypts the same plaintext but with low, parameter-determined noise. Gentry's insight was that if the scheme can evaluate its own decryption circuit homomorphically (it is then <em>bootstrappable</em>), it can refresh ciphertexts indefinitely.</p><p>In the TFHE family (Chillotti, Gama, Georgieva, Izabachene), bootstrapping is unusually cheap and, crucially, can compute an arbitrary function of the message at the same time as it refreshes noise. This combined operation is called <strong>programmable bootstrapping</strong> (PBS). The refresh role is the non-negotiable part: even when no function is needed, PBS is the only way to drive noise back down. We make this explicit throughout: the output noise of a correct PBS depends only on the bootstrapping parameters (the gadget base, decomposition length, and the bootstrapping-key noise), never on the input ciphertext's accumulated noise.</p></section>
+<section><h2>The torus T and its discretization</h2><p>TFHE is defined over the real <strong>torus</strong> $\mathbb{T} = \mathbb{R}/\mathbb{Z}$, the set of reals modulo $1$, i.e. the half-open interval $[0,1)$ with wraparound addition. The torus is an abelian group under addition but it is <em>not</em> a ring: there is no well-defined product of two torus elements (what would $0.5 \cdot 0.5$ mean modulo $1$ in a consistent way?). However, $\mathbb{T}$ is a module over $\mathbb{Z}$: an integer times a torus element is well defined. This single algebraic fact dictates the entire structure of the scheme - plaintexts and ciphertext components live on the torus, while secret keys and the multiplicands in homomorphic products are integers.</p><p>In implementation the torus is discretized. A torus element is represented by a machine integer modulo $q = 2^{32}$ or $q = 2^{64}$, where the integer $x$ stands for the torus value $x / q$. Thus the discretized torus is $\mathbb{Z}_q$, and a real torus value $t \in [0,1)$ maps to $\lfloor q\, t \rceil \bmod q$. We write the message space as the top bits of this representation: a plaintext $m$ in a small space $\{0, \dots, p-1\}$ is encoded as $\frac{m}{p}$ on the torus, leaving the low-order bits for noise.</p><p>The polynomial variants work over the ring</p>$$ \mathcal{R} = \mathbb{Z}[X]/(X^N + 1), \qquad \mathcal{R}_q = \mathbb{Z}_q[X]/(X^N + 1), $$<p>where $N$ is a power of two. The torus polynomials are $\mathbb{T}_N[X] = \mathbb{T}[X]/(X^N+1)$, i.e. degree-$<N$ polynomials with torus coefficients. The quotient by $X^N + 1$ is what makes blind rotation work: because $X^N \equiv -1$, multiplying by $X^k$ performs a <em>negacyclic</em> rotation of the coefficient vector, and rotating past index $N$ negates the wrapped coefficients (see Equation 5 below).</p></section>
+<section><h2>TLWE: the base ciphertext</h2><p>A <strong>TLWE</strong> (Torus Learning With Errors) ciphertext encrypts a single torus message $\mu \in \mathbb{T}$ under a binary secret key $\mathbf{s} = (s_1, \dots, s_n) \in \{0,1\}^n$. It is a vector</p>$$ c = (a_1, \dots, a_n, b) \in \mathbb{T}^{n+1}, \qquad b = \sum_{i=1}^{n} a_i\, s_i + \mu + e, $$<p>where the mask coefficients $a_i$ are drawn uniformly from $\mathbb{T}$ and $e$ is a small Gaussian noise with standard deviation $\sigma$. This is Equation 1, the defining encryption relation. The hardness of recovering $\mu$ or $\mathbf{s}$ from $c$ is the (decisional) LWE assumption over the torus.</p><p>The <strong>phase</strong> of the ciphertext is the linear function</p>$$ \varphi_{\mathbf{s}}(c) = b - \sum_{i=1}^{n} a_i\, s_i = \mu + e, $$<p>which is Equation 2. Decryption computes the phase and then <em>rounds</em> it to the nearest valid encoded message: if messages occupy the points $\{k/p\}$, decryption returns the multiple of $1/p$ closest to $\varphi_{\mathbf{s}}(c)$. Correctness requires $\lVert e \rVert < \frac{1}{2p}$ so the noise cannot push the phase across the rounding boundary. Homomorphic addition is just coordinate-wise addition of two ciphertexts, which adds both messages and both noises; multiplication by a known integer $w$ scales the ciphertext (and the noise) by $w$.</p></section>
+<section><h2>TGLWE: packing many messages in a polynomial</h2><p><strong>TGLWE</strong> (the generalized, ring version) encrypts a polynomial message $\mu(X) \in \mathbb{T}_N[X]$ under a key that is a tuple of $k$ ring elements $\mathbf{S} = (S_1, \dots, S_k) \in \mathcal{R}^k$ with small (binary or ternary) coefficients. The ciphertext is</p>$$ C = (A_1, \dots, A_k, B) \in \mathbb{T}_N[X]^{k+1}, \qquad B = \sum_{j=1}^{k} A_j\, S_j + \mu + E, $$<p>with each $A_j$ uniform over $\mathbb{T}_N[X]$ and $E$ a small noise polynomial. This is Equation 3. TLWE is the special case $N = 1$ (and then $k = n$). The common bootstrapping parameterization uses $k = 1$ with a large $N$ (e.g. $N = 1024$ or $2048$), so a single ring element $S = S_1$ acts as the key and one TGLWE ciphertext packs $N$ torus coefficients. The phase is defined analogously, $\Phi_{\mathbf{S}}(C) = B - \sum_j A_j S_j = \mu + E$.</p><p>Ring multiplication of two degree-$N$ polynomials in $\mathcal{R}_q$ is the dominant cost, and it is performed with the Number-Theoretic Transform (NTT) - the modular analogue of the FFT - so that a product costs $O(N \log N)$ instead of $O(N^2)$. The iterative NTT with butterfly operations is given in the Algorithms appendix.</p></section>
+<section><h2>TGGSW and gadget decomposition</h2><p><strong>TGGSW</strong> (the ring GSW ciphertext, after Gentry-Sahai-Waters) is the object that lets us multiply an encrypted polynomial by a small <em>cleartext-controlled</em> value while keeping noise growth additive rather than multiplicative. A TGGSW ciphertext encrypting a small message $m \in \mathcal{R}$ (often a single bit) is a vertical stack of TGLWE ciphertexts. The construction relies on a <strong>gadget</strong>.</p><p>Fix a decomposition base $B = 2^{\beta}$ and a level count $\ell$. The gadget vector is</p>$$ \mathbf{g} = \left( \tfrac{q}{B},\ \tfrac{q}{B^2},\ \dots,\ \tfrac{q}{B^{\ell}} \right), $$<p>Equation 4, and the gadget matrix $G = I_{k+1} \otimes \mathbf{g}^{\top}$ tiles $\mathbf{g}$ across the $k+1$ ciphertext components. A TGGSW ciphertext of $m$ is then $C = Z + m\,G$, where $Z$ is a vertical stack of $(k+1)\ell$ fresh TGLWE encryptions of zero.</p><p>The companion operation is <strong>gadget (radix) decomposition</strong>: given a torus polynomial $a$, it returns small integer-coefficient polynomials $(u_1, \dots, u_{\ell})$ such that $a \approx \sum_{i=1}^{\ell} u_i \cdot \frac{q}{B^i}$ with each $\lVert u_i \rVert_{\infty} \le B/2$. Equivalently, $\langle \mathrm{Decomp}(a), \mathbf{g}\rangle \approx a$ up to a rounding error bounded by $\frac{q}{2 B^{\ell}}$. The decomposition truncates to the top $\ell$ base-$B$ digits, deliberately discarding the low-order noise bits - this is precisely why the external product's output noise does not inherit the input's accumulated noise. The pseudocode is in the appendix.</p></section>
+<section><h2>The external product and the CMux gate</h2><p>The <strong>external product</strong> $\boxdot$ multiplies a TGGSW ciphertext (encrypting a small $m$) with a TGLWE ciphertext (encrypting $\mu$) to produce a TGLWE ciphertext of $m \cdot \mu$:</p>$$ \mathrm{TGGSW}(m) \;\boxdot\; \mathrm{TGLWE}(\mu) \;=\; \mathrm{Decomp}\big(\mathrm{TGLWE}(\mu)\big) \cdot \mathrm{TGGSW}(m) \;=\; \mathrm{TGLWE}(m \cdot \mu). $$<p>This is Equation 6. The operation decomposes each component of the TGLWE input into its $\ell$ small digit-polynomials, then takes the matrix-vector product of that small-coefficient row against the $(k+1)\ell$ rows of the TGGSW matrix. Because the multiplicands on the TGGSW side are scaled by the gadget while the TGLWE side contributes only <em>small</em> decomposition coefficients, the resulting noise is <em>additive</em>: roughly the TGGSW noise plus the decomposition rounding error, independent of the magnitude of the input message's noise. That asymmetry is the engine of bootstrapping.</p><p>The <strong>CMux</strong> (controlled multiplexer) gate is the external product specialized to a selector bit. Given a TGGSW encryption of a control bit $b \in \{0,1\}$ and two TGLWE ciphertexts $C_0, C_1$, it homomorphically selects:</p>$$ \mathrm{CMux}(\mathrm{TGGSW}(b), C_0, C_1) \;=\; C_0 + \mathrm{TGGSW}(b) \boxdot (C_1 - C_0) \;=\; \begin{cases} C_0 & b = 0 \\ C_1 & b = 1 \end{cases}. $$<p>This is Equation 7. The encrypted bit $b$ chooses between $C_0$ and $C_1$ without revealing which. A chain of CMux gates is exactly what implements blind rotation.</p></section>
+<section><h2>Blind rotation: turning the phase into a rotation</h2><p>Blind rotation is the heart of PBS. The goal: take a TLWE ciphertext whose phase is $\tilde{\mu} = b - \sum_i a_i s_i$, and rotate a known <em>test polynomial</em> (the lookup table) by an amount equal to that phase - <em>without</em> decrypting. The output is a TGLWE ciphertext whose constant term holds the looked-up value.</p><p>First the torus phase is rescaled to an integer modulo $2N$. Each $a_i$ and $b$ is rounded to $\tilde{a}_i = \lfloor 2N a_i \rceil$ and $\tilde{b} = \lfloor 2N b \rceil$ in $\mathbb{Z}_{2N}$. Multiplying the test polynomial by $X^{-\tilde{\mu}}$ rotates it by $\tilde{\mu}$ positions. The negacyclic property,</p>$$ X^{N} \equiv -1 \pmod{X^N + 1} \quad\Longrightarrow\quad X^{i + N} \equiv -X^{i}, $$<p>which is Equation 5, means the rotation index lives modulo $2N$: a full $2N$ rotation returns to the start, and a rotation by $N$ flips the sign of every coefficient. The needed exponent is $-\tilde{\mu} = -\big(\tilde{b} - \sum_i \tilde{a}_i s_i\big)$, so the rotation amount is</p>$$ X^{-\tilde{\mu}} \;=\; X^{-\tilde{b}} \cdot \prod_{i=1}^{n} X^{\tilde{a}_i s_i}. $$<p>This is Equation 8, and it is the key decomposition: we know $\tilde{b}$ and all $\tilde{a}_i$ in the clear, but $\mathbf{s}$ is secret. Each factor $X^{\tilde{a}_i s_i}$ equals $X^{\tilde{a}_i}$ when $s_i = 1$ and $1$ when $s_i = 0$. That is a per-bit choice between two polynomials, i.e. a CMux! The <strong>bootstrapping key</strong> $\mathrm{BSK}$ is a list of $n$ TGGSW encryptions of the secret bits $s_1, \dots, s_n$. Blind rotation starts from the accumulator $\mathrm{ACC} = X^{-\tilde{b}} \cdot v(X)$ (the rotated test polynomial, trivially encrypted) and applies $n$ CMux steps, the $i$-th choosing between $\mathrm{ACC}$ and $X^{\tilde{a}_i} \cdot \mathrm{ACC}$ under the encrypted bit $s_i$. After all $n$ steps the accumulator encrypts $X^{-\tilde{\mu}} v(X)$. Because each CMux contributes only additive noise (Equation 6), the total noise after $n$ steps is small and bounded by the parameters - this is where the refresh happens.</p></section>
+<section><h2>The lookup table evaluated for free</h2><p>The test polynomial $v(X) = \sum_{j=0}^{N-1} v_j X^j$ is built so that its coefficients spell out the desired function $f$ evaluated across the message space. After blind rotation, the accumulator is $X^{-\tilde{\mu}} v(X)$, and its <em>constant coefficient</em> is $v_{\tilde{\mu} \bmod 2N}$ (with a sign from negacyclic wraparound). By choosing $v_j$ so that the block of indices mapping to message $m$ all carry the value $\frac{f(m)}{p}$, the constant term of the rotated polynomial is exactly $f(\tilde{\mu})$, an encoding of $f$ applied to the original message.</p><p>This is why PBS is <strong>programmable</strong>: the function $f$ is baked into the cleartext test polynomial, so evaluating <em>any</em> function $f$ over the message space costs nothing beyond the bootstrap that we had to do anyway for noise refresh. The identity function refreshes noise with no change to the message; a sign function, ReLU-like step, or arbitrary small lookup table is obtained simply by re-filling $v$.</p><p>Two structural constraints follow from the negacyclic ring. First, the message must fit in $\lfloor 2N \rfloor$ rotation slots, so the precision is tied to $N$. Second, the sign flip at $X^N \equiv -1$ means the table is effectively <em>anti-periodic</em> with period $N$: $v_{j+N} = -v_j$ is forced. Functions are therefore evaluated on the cleartext under the assumption that the encoded message occupies the upper half of the rotation range (the so-called negacyclic / padding-bit convention), with one bit of padding (the message kept in $[0, N)$) guaranteeing a well-defined, sign-consistent lookup. The whole table evaluation is data-independent rotation of a fixed polynomial, hence "for free."</p></section>
+<section><h2>Sample extraction: from TGLWE back to TLWE</h2><p>Blind rotation leaves the answer in the <em>constant coefficient</em> of a TGLWE ciphertext (a polynomial encryption), but the rest of the pipeline (and the next gate) wants a plain TLWE ciphertext encrypting that single coefficient. <strong>Sample extraction</strong> is the (noise-free, key-free) rewriting that pulls coefficient $h$ out of a TGLWE ciphertext into a TLWE ciphertext under the coefficient-vector key.</p><p>Write the TGLWE ciphertext (take $k=1$ for clarity) as $C = (A, B)$ with $A(X) = \sum_j a_j X^j$ and $B(X) = \sum_j b_j X^j$, under key $S(X) = \sum_j s_j X^j$. The phase polynomial is $\Phi(C) = B - A\,S$, and its coefficient $h$ equals the looked-up message plus noise. Because the product $A \cdot S$ in $\mathcal{R}_q$ is negacyclic, the coefficient $h$ of $A S$ is a fixed signed permutation of the $a_j$:</p>$$ (A S)_h \;=\; \sum_{j=0}^{h} a_{j}\, s_{h-j} \;-\; \sum_{j=h+1}^{N-1} a_{j}\, s_{N + h - j}. $$<p>This is Equation 9. To extract coefficient $h$ we therefore build a TLWE ciphertext $(a'_0, \dots, a'_{N-1}, b')$ whose body is $b' = b_h$ and whose mask is the signed, reversed arrangement of the $a_j$ so that $b' - \sum_i a'_i s_i = h\text{-th coefficient of } \Phi(C)$. For $h = 0$ the rule is simply</p>$$ a'_0 = a_0, \quad a'_i = -a_{N-i}\ (1 \le i \le N-1), \quad b' = b_0. $$<p>This is Equation 10. No homomorphic operation, no key, and no extra noise are involved - it is a pure relabeling of existing ciphertext coefficients. The result is a TLWE ciphertext under the <em>extracted key</em> (the coefficient vector of $S$), encrypting $f(m)$ with the low, fresh noise produced by blind rotation. A final key-switch maps it back to the original TLWE key dimension to complete the PBS.</p></section>
+<section><h2>Putting it together: the PBS pipeline and its noise budget</h2><p>A complete programmable bootstrap of an input TLWE ciphertext proceeds in three stages:</p><p>1. <strong>Modulus switch</strong> the input TLWE from $\mathbb{Z}_q$ down to $\mathbb{Z}_{2N}$, rounding each $a_i, b$ to $\tilde{a}_i, \tilde{b}$. This introduces a small rounding error but sets up the rotation indices.</p><p>2. <strong>Blind rotation</strong> (Equation 8) over the test polynomial $v$ using the bootstrapping key, an $n$-fold CMux chain. Output: a TGLWE ciphertext encrypting $X^{-\tilde{\mu}} v(X)$ with parameter-bounded noise.</p><p>3. <strong>Sample extraction</strong> (Equation 10) of the constant coefficient, yielding a TLWE ciphertext of $f(m)$ under the extracted key, followed by a <strong>key switch</strong> back to the original key.</p><p>The output noise variance is, to first order, $\sigma_{\mathrm{out}}^2 \approx n\,(k+1)\,\ell\, N \cdot \tfrac{B^2}{12}\, \sigma_{\mathrm{BSK}}^2 \,+\, \text{(decomposition)} \,+\, \text{(mod-switch)} \,+\, \text{(key-switch)}$, a quantity built entirely from the <em>bootstrapping parameters</em> $(B, \ell, N, n, \sigma_{\mathrm{BSK}})$. It contains no term in the input ciphertext's noise. That is the formal statement of "noise refresh": however dirty the input, the output is clean to a fixed level, which is exactly what makes the scheme fully (rather than merely leveled) homomorphic, while the choice of $v$ lets us fold an arbitrary lookup table into the same pass.</p></section>
+<section><h2>Algorithms</h2><p>Complete at-a-glance pseudocode for every algorithm referenced above.</p><p><strong>Algorithm A - Gadget (radix) decomposition.</strong></p><pre><code>Input:  torus element a in Z_q, base B = 2^beta, levels ell
+Output: small integers (u_1, ..., u_ell), each |u_i| <= B/2
+ 1: a_hat <- round(a / (q / B^ell)) * (q / B^ell)   # keep top ell digits
+ 2: carry <- 0
+ 3: for i = ell down to 1 do
+ 4:     digit <- (a_hat / (q / B^i)) mod B           # base-B digit
+ 5:     digit <- digit + carry
+ 6:     if digit >= B/2 then                          # balanced representation
+ 7:         digit <- digit - B
+ 8:         carry <- 1
+ 9:     else
+10:         carry <- 0
+11:     u_i <- digit
+12: return (u_1, ..., u_ell)</code></pre><p><strong>Algorithm B - Iterative NTT (Cooley-Tukey, butterfly form).</strong> Used for ring products in $\mathcal{R}_q$ at cost $O(N \log N)$.</p><pre><code>Input:  coefficient vector a[0..N-1], N = 2^L, primitive root w mod q
+Output: a holding the NTT of the input (in-place)
+ 1: bit-reverse-permute(a)                       # reorder indices
+ 2: for s = 1 to L do
+ 3:     m <- 2^s                                  # current block size
+ 4:     w_m <- w^((q-1)/m) mod q                  # m-th root of unity
+ 5:     for k = 0 to N-1 step m do
+ 6:         omega <- 1
+ 7:         for j = 0 to m/2 - 1 do
+ 8:             t <- (omega * a[k + j + m/2]) mod q   # butterfly: twiddle
+ 9:             u <- a[k + j]
+10:             a[k + j]         <- (u + t) mod q       # butterfly: add
+11:             a[k + j + m/2]   <- (u - t) mod q       # butterfly: sub
+12:             omega <- (omega * w_m) mod q
+13: return a
+# inverse NTT: same structure with w^{-1}, then multiply by N^{-1} mod q</code></pre><p><strong>Algorithm C - External product (TGGSW box-dot TGLWE).</strong></p><pre><code>Input:  G = TGGSW(m)  (a ((k+1)*ell) x (k+1) matrix of torus polys)
+        C = TGLWE(mu) = (A_1,...,A_k, B)
+        base B, levels ell
+Output: TGLWE(m * mu)
+ 1: for j = 1 to k+1 do                          # decompose each component
+ 2:     (u_{j,1}, ..., u_{j,ell}) <- Decomp(C_j)  # Algorithm A, per coefficient
+ 3: U <- concat over j of (u_{j,1},...,u_{j,ell}) # row of (k+1)*ell small polys
+ 4: D <- U * G                                    # matrix-vector product in R_q
+ 5: return D                                       # = TGLWE(m * mu)</code></pre><p><strong>Algorithm D - CMux gate.</strong></p><pre><code>Input:  TGGSW(b) with b in {0,1}; TGLWE ciphertexts C0, C1
+Output: C0 if b=0, C1 if b=1
+ 1: D <- C1 - C0
+ 2: P <- ExternalProduct(TGGSW(b), D)   # Algorithm C
+ 3: return C0 + P</code></pre><p><strong>Algorithm E - Blind rotation.</strong></p><pre><code>Input:  TLWE ct (a_1..a_n, b) already mod-switched to Z_{2N}
+        test polynomial v(X) in T_N[X]
+        bootstrapping key BSK = (TGGSW(s_1), ..., TGGSW(s_n))
+Output: TGLWE encrypting X^{-mu_tilde} * v(X)
+ 1: ACC <- trivial TGLWE of ( X^{-b} * v(X) )    # b = b_tilde
+ 2: for i = 1 to n do
+ 3:     rotated <- X^{a_i} * ACC                  # cleartext rotation, a_i known
+ 4:     ACC <- CMux(BSK_i, ACC, rotated)          # pick rotated iff s_i = 1
+ 5: return ACC</code></pre><p><strong>Algorithm F - Sample extraction (coefficient h).</strong></p><pre><code>Input:  TGLWE C = (A, B) with A=sum a_j X^j, B=sum b_j X^j; index h
+Output: TLWE (a'_0,...,a'_{N-1}, b') under the extracted key
+ 1: b' <- b_h
+ 2: for i = 0 to h do
+ 3:     a'_i <- a_{h - i}
+ 4: for i = h+1 to N-1 do
+ 5:     a'_i <- -a_{N + h - i}                    # negacyclic sign flip
+ 6: return (a'_0, ..., a'_{N-1}, b')</code></pre><p><strong>Algorithm G - Full programmable bootstrap (PBS).</strong></p><pre><code>Input:  TLWE_in encrypting message m under key s (in Z_q)
+        function f, encoded as test polynomial v_f
+        bootstrapping key BSK, key-switching key KSK
+Output: TLWE encrypting f(m) under key s, with fresh low noise
+ 1: ct' <- ModSwitch(TLWE_in, from q to 2N)       # round a_i, b
+ 2: ACC <- BlindRotate(ct', v_f, BSK)              # Algorithm E
+ 3: tlwe_ext <- SampleExtract(ACC, h = 0)          # Algorithm F
+ 4: TLWE_out <- KeySwitch(tlwe_ext, KSK)           # back to original key dim
+ 5: return TLWE_out</code></pre><p><strong>Algorithm H - Systolic dataflow for the CMux / external-product chain.</strong> A hardware view of blind rotation: the $n$ CMux stages stream through a 1-D array of processing elements (PEs), each PE owning one bootstrapping-key TGGSW and pipelining the decompose/multiply/accumulate of the external product.</p><pre><code>Setup:  PE_1 ... PE_n in a line; PE_i holds BSK_i
+        accumulator tile ACC streams left-to-right through the array
+ 1: load ACC into PE_1
+ 2: for each PE_i (i = 1..n), in pipeline order do
+ 3:     in parallel across coefficient lanes:
+ 4:         D_lane     <- (X^{a_i} * ACC_lane) - ACC_lane   # form C1 - C0
+ 5:         U_lane     <- Decomp(D_lane)                    # Algorithm A
+ 6:         partial    <- MAC(U_lane, BSK_i rows)           # systolic multiply-accumulate
+ 7:         ACC_lane   <- ACC_lane + partial                # CMux result
+ 8:     forward ACC to PE_{i+1}                             # one stage latency
+ 9: drain final ACC out of PE_n
+# Throughput: one CMux per stage; n CMuxes fill the pipeline of depth n,
+# so steady-state latency is dominated by the deepest external product.</code></pre></section>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/\bfig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+})();
+function rtSetupEquations(){
+  var prev=document.getElementById('rt-eqprev');
+  if(!prev){prev=document.createElement('div');prev.id='rt-eqprev';document.body.appendChild(prev);}
+  function showEq(html,e){prev.innerHTML=html;prev.style.display='block';var x=Math.min(e.clientX+20,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+20,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hideEq(){prev.style.display='none';}
+  var eqs=document.querySelectorAll('mjx-container[display="true"]'),htmlByNum={};
+  for(var i=0;i<eqs.length;i++){var n=i+1;eqs[i].id='eq'+n;htmlByNum[n]=eqs[i].outerHTML;}
+  if(!eqs.length)return;
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='script'||tg==='style')continue;
+    if(pn.closest&&pn.closest('mjx-container'))continue;
+    if(/\beq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!htmlByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#eq'+num;a.className='rt-eqref';a.textContent=m[0];
+      (function(h){a.addEventListener('mousemove',function(e){showEq(h,e);});a.addEventListener('mouseleave',hideEq);})(htmlByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+}
+window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],tags:'none'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},startup:{pageReady:function(){return MathJax.startup.defaultPageReady().then(function(){rtSetupEquations();});}}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>

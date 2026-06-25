@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hardware Patterns for FHE Acceleration</title>
+<style>
+:root{--bg:#0f1115;--surface:#181b20;--ink:#e6e8eb;--muted:#9aa0a8;
+ --line:#2a2f37;--accent:#6ea8fe}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+code{background:#0b0d11;border:1px solid var(--line);border-radius:4px;
+ padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:#15151a;border-bottom:1px solid #333;font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:#8ab4f8;text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+#rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
+#rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
+a.rt-figref,a.rt-eqref{color:#1a73e8;text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+body{counter-reset:rt-eq}
+mjx-container[display="true"]{position:relative;padding-right:2.4em}
+mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Summaries</a></div><main class="doc">
+<header><h1>Hardware Patterns for FHE Acceleration</h1><p class="meta">Research Tracker - background note</p></header>
+<section><h2>Why FHE needs special hardware, and what this note covers</h2><p>Fully Homomorphic Encryption (FHE) lets a server compute on ciphertexts without decrypting them. The price is that every plaintext number becomes a high-degree polynomial with large coefficients, and the central recurring operation - <em>bootstrapping</em> - chains thousands of polynomial multiplications and key-dependent products together. A single CKKS ciphertext at a bootstrappable parameter set can reach tens of megabytes, and the evaluation (key-switching / bootstrapping) keys reach hundreds of megabytes to gigabytes. The arithmetic is almost entirely integer (or fixed-point) modular arithmetic over polynomial rings, so the floating-point throughput of CPUs and GPUs is largely wasted, and the working set is far too big to keep in registers or caches.</p><p>The result is that FHE accelerators are dominated by three concrete engineering patterns, and this note teaches each one from first principles and then ties it to the accelerators summarized elsewhere on this site - <strong>HEAX</strong> (CKKS on FPGA), <strong>FAB</strong> (bootstrappable CKKS on FPGA), <strong>FPT</strong> (TFHE PBS on FPGA), <strong>MATCHA</strong> (TFHE ASIC), and <strong>Strix</strong> (TFHE ASIC):</p><ul><li><strong>Systolic arrays</strong> for the polynomial and matrix arithmetic that makes up gadget decomposition, the external product, and key switching.</li><li><strong>Pipelined NTT / FFT butterfly units</strong> and the on-chip handling of <em>twiddle factors</em> (the roots of unity those butterflies multiply by).</li><li><strong>The HBM / memory-bandwidth bottleneck</strong>: large ciphertexts and especially the evaluation keys do not fit on chip, so the design point is almost always set by how fast keys can stream in from off-chip memory.</li></ul><p>A useful framing, made explicit by FAB, is that the winning design is usually <em>not</em> more compute but a <em>balanced</em> design that is not memory-bound: a modest number of functional units, careful use of the limited on-chip SRAM, and scheduling that hides off-chip key traffic behind computation.</p></section>
+<section><h2>The algebraic objects the hardware operates on</h2><p>Both major FHE families work in a polynomial ring. The power-of-two cyclotomic ring is</p><p>$$R_q = \mathbb{Z}_q[X]/(X^N+1),$$</p><p>where $N$ is a power of two (typically $N=2^{10}$ to $2^{16}$) and $q$ is the coefficient modulus. The defining relation $X^N \equiv -1$ makes the ring <em>negacyclic</em>: multiplying a polynomial by $X$ rotates its coefficients and negates the one that wraps around. This is Equation 1 and it is the reason FHE multiplication is not an ordinary convolution.</p><p>$$a(X)\cdot b(X) \bmod (X^N+1) \;=\; \sum_{k=0}^{N-1}\Big(\sum_{i+j=k} a_i b_j \;-\!\!\sum_{i+j=k+N} a_i b_j\Big) X^k.$$</p><p>A schoolbook product of two degree-$(N-1)$ polynomials costs $O(N^2)$ coefficient multiplications, which is the cost the transform-based engines (next section) are built to avoid. To keep the modular multiplications small and parallel, every accelerator splits the big modulus $q$ into machine-word-sized coprime primes using the <em>Residue Number System</em> (RNS / CRT). With $q=\prod_{i=1}^{L} q_i$, the Chinese Remainder Theorem gives a ring isomorphism (Equation 2):</p><p>$$R_q \;\cong\; R_{q_1}\times R_{q_2}\times\cdots\times R_{q_L}.$$</p><p>Each <em>limb</em> (residue) $x \bmod q_i$ is processed independently, which is what lets HEAX exploit "per-component" parallelism and FAB issue many narrow modular operations in parallel. The reverse direction, recombining limbs into a residue for a new modulus $p$, is base conversion (Equation 3), used inside key switching as ModUp / ModDown:</p><p>$$[x]_p \;=\; \sum_{i=1}^{L}\big[\, x_i \cdot \tilde{Q}_i \,\big]_{q_i}\cdot Q_i^{*} \pmod p, \qquad Q_i^{*}=\frac{Q}{q_i},\quad \tilde{Q}_i = (Q_i^{*})^{-1} \bmod q_i.$$</p><p>In TFHE the same ring appears but coefficients live on the discrete <em>torus</em> $\mathbb{T} = \mathbb{R}/\mathbb{Z}$ represented as fixed-point integers, so TFHE engines (FPT, MATCHA, Strix) use a complex FFT rather than an integer NTT, but the butterfly hardware is structurally the same.</p></section>
+<section><h2>Pattern A - Systolic arrays for polynomial and matrix arithmetic</h2><p>A <em>systolic array</em> is a grid of small identical processing elements (PEs), each doing one multiply-accumulate (MAC) per cycle, where data is pumped <em>rhythmically</em> through the array: a value enters at an edge, is used by a PE, and is passed to its neighbor on the next cycle. No PE reads a global memory or register file during the steady state - every operand arrives from a neighbor. This converts an $O(N^2)$ or $O(N^3)$ computation with a huge memory footprint into a high-throughput stream with only local, nearest-neighbor wiring, which is exactly the property you want when the bottleneck is data movement, not arithmetic.</p><p>The canonical example is multiplying an $m\times n$ matrix by an $n\times p$ matrix on an $m\times p$ grid of MAC cells. Element $C_{ij}$ accumulates inside PE$(i,j)$ as rows of $A$ stream in from the left and columns of $B$ stream in from the top, perfectly skewed in time so that the right $a_{ik}$ and $b_{kj}$ meet at PE$(i,j)$ on cycle $i+j+k$. The recurrence each cell runs is Equation 4:</p><p>$$C_{ij} \;\leftarrow\; C_{ij} + a_{ik}\,b_{kj}, \qquad k = 0,1,\ldots,n-1.$$</p><p>Why this matters for FHE: the two heaviest non-transform operations are <em>matrix-vector / matrix-matrix</em> in shape. Key switching multiplies a decomposed ciphertext by a key-switching matrix; the TFHE <em>external product</em> multiplies a decomposed GLWE vector by a GGSW matrix. Both are inner products of many polynomial limbs accumulated together, and both map cleanly onto a systolic MAC fabric where decomposed limbs stream in one axis and key coefficients stream in the other.</p><p>The same dataflow discipline drives the transform-domain pointwise step. In the FFT/NTT domain a polynomial product is a coefficient-wise multiply-accumulate, so the "VMA" (vector multiply-accumulate) stage in Strix and the MAC stage in FPT are systolic-style streaming MAC arrays sitting between the forward and inverse transforms. The general lesson the FHE accelerators take from systolic design is the <em>streaming, no-stall</em> philosophy:</p><ul><li><strong>FPT</strong> is built as a fixed cascade of throughput-balanced stages (external product, forward FFT, inverse FFT, twisting, MAC), each consuming the same <em>streaming width</em> of coefficients every cycle, with static latency and minimal control logic - a streaming-DSP style rather than a register-file-plus-PEs style. The whole CMux is one long systolic-like pipeline.</li><li><strong>Strix</strong>'s Homomorphic Streaming Core is six fully-pipelined stages (Rotator, Decomposer, FFT, VMA, IFFT, Accumulator); one traversal equals one blind-rotation iteration and ciphertexts stream through with no bubbles - a textbook systolic steady state.</li><li><strong>MATCHA</strong>'s external-product (EP) cores and TGSW clusters run as a two-stage producer/consumer pipeline (the TGSW cluster builds the key bundle one step ahead of the EP core consuming it), again a systolic producer-consumer pattern with separate register banks to avoid memory conflicts.</li><li><strong>HEAX</strong>'s KeySwitch module is "fully end-to-end pipelined", processing many key-switching operations simultaneously without excessive FIFOs - the same idea applied to the RNS key-switch inner products.</li></ul><p>The pseudocode below shows the output-stationary systolic MAC dataflow that all of these specialize.</p><pre><code>SystolicMAC(A[m][n], B[n][p]):                # output-stationary array
+  # grid of m*p PEs; PE(i,j) holds accumulator acc[i][j]
+  for all i,j in parallel: acc[i][j] = 0
+  for step = 0 to (m + n + p):               # rhythmic clock
+    for each PE(i,j) in parallel:
+      a_in = value arriving from west neighbor   # a[i][k] skewed by i
+      b_in = value arriving from north neighbor  # b[k][j] skewed by j
+      acc[i][j] = acc[i][j] + a_in * b_in        # one MAC per cycle
+      pass a_in to east neighbor PE(i, j+1)
+      pass b_in to south neighbor PE(i+1, j)
+  return acc                                  # C = A * B
+</code></pre><p>In FHE the multiply on each PE is a <em>modular</em> multiply (Pattern discussion below) for NTT-domain work, or a fixed-point complex multiply for FFT-domain TFHE work.</p></section>
+<section><h2>The modular multiplier each PE contains</h2><p>Whatever the dataflow, the atomic operation is a modular multiply $c = a\cdot b \bmod q_i$. A hardware divide is far too expensive, so accelerators use a reduction that replaces division by precomputed multiplications and shifts. Barrett reduction precomputes $\mu = \lfloor 2^{2w}/q\rfloor$ for word width $w$ and computes Equation 5:</p><p>$$r \;=\; a\,b \;-\; \Big\lfloor \frac{(a\,b)\,\mu}{2^{2w}}\Big\rfloor\, q, \qquad \text{then } r \mathrel{-}= q \text{ if } r \ge q.$$</p><p>Montgomery reduction is the common alternative (it keeps operands in a residue form and avoids a final compare in the inner loop). HEAX uses a fused multiply-then-reduce "MulRed" core; FAB splits each $54$-bit operation into $27$-bit additions and $18$-bit multiplies to match the FPGA DSP block, loop-unrolling so a multiply finishes in $12$ cycles instead of $21$ while keeping every DSP pipeline register full. The point for hardware is that the reduction is itself <em>deeply pipelined</em> (HEAX reports an NTT core $50$ stages deep), so although a single modular multiply has high latency, the array completes one every cycle.</p><pre><code>BarrettModMul(a, b, q, mu, w):       # mu = floor(2^(2w)/q) precomputed
+  t   = a * b                        # 2w-bit product
+  est = (t * mu) >> (2*w)            # estimated quotient
+  r   = t - est * q
+  if r >= q: r = r - q               # at most one correction
+  return r
+</code></pre></section>
+<section><h2>Pattern B - The NTT/FFT and the butterfly</h2><p>To avoid the $O(N^2)$ schoolbook product (Equation 1), accelerators transform each polynomial, multiply pointwise, and transform back. Over $\mathbb{Z}_q$ this is the <em>Number Theoretic Transform</em> (NTT), the FFT done in a finite field using a primitive $N$-th root of unity $\omega$ with $\omega^N \equiv 1 \pmod q$. The forward transform is Equation 6:</p><p>$$\hat{a}_k \;=\; \sum_{j=0}^{N-1} a_j\,\omega^{jk} \bmod q, \qquad k = 0,\ldots,N-1.$$</p><p>and the convolution theorem turns the ring product into a coefficient-wise product (Equation 7):</p><p>$$a\cdot b \;=\; \mathrm{NTT}^{-1}\big(\,\mathrm{NTT}(a)\odot \mathrm{NTT}(b)\,\big),$$</p><p>which costs $O(N \log N)$ instead of $O(N^2)$. For the negacyclic ring $\mathbb{Z}_q[X]/(X^N+1)$ one folds in a $2N$-th root $\psi$ with $\psi^2=\omega$: pre-weighting $a_j$ by $\psi^{j}$ (a "twist") and post-weighting by $\psi^{-k}$ makes the cyclic NTT compute the <em>negacyclic</em> product directly, absorbing the $X^N=-1$ wraparound for free. TFHE engines instead run a complex FFT with the twisting Equation 8:</p><p>$$\hat{a} \;=\; \big(a_0,\; \psi\,a_1,\; \psi^{2} a_2,\; \ldots,\; \psi^{N-1} a_{N-1}\big)$$</p><p>then a real-to-complex FFT. The Cooley-Tukey decomposition factors the transform into $\log_2 N$ stages, each made of $N/2$ <em>butterflies</em>. A radix-2 decimation-in-time butterfly takes two coefficients and one twiddle factor $\omega^r$ and produces two outputs (Equation 9):</p><p>$$\begin{aligned} u' &= u + \omega^r\, v,\\ v' &= u - \omega^r\, v. \end{aligned}$$</p><p>This is the single most replicated piece of arithmetic in an FHE accelerator. Each butterfly is one modular (or fixed-point complex) multiply by the twiddle plus an add and a subtract. The iterative in-place NTT is below.</p><pre><code>IterativeNTT(a[0..N-1], psi_powers, q):     # in-place, decimation-in-time
+  a = bit_reverse_permutation(a)            # reorder inputs
+  len = 2
+  while len <= N:                           # log2(N) stages
+    half = len / 2
+    for start = 0 to N-1 step len:          # blocks within a stage
+      for j = 0 to half-1:                  # butterflies in a block
+        w = psi_powers[ twiddle_index(len, j) ]   # root of unity
+        u = a[start + j]
+        v = ModMul(a[start + j + half], w, q)
+        a[start + j]        = ModAdd(u, v, q)      # u + w*v
+        a[start + j + half] = ModSub(u, v, q)      # u - w*v
+    len = len * 2
+  return a                                  # NTT(a), bit-reversed order
+</code></pre><p>How the accelerators realize this:</p><ul><li><strong>HEAX</strong> builds an NTT core that accepts two coefficients, a twiddle $w$, a precomputed companion $w_p$, and the prime $p$, and emits two transformed coefficients; all internal modular ops are pipelined. To feed many butterflies per cycle, each polynomial is stored across many parallel BRAMs that share read/write addresses, exploiting that the NTT's run of consecutive accesses is always a power of two.</li><li><strong>FAB</strong> wires its $256$ modular add/sub/multiply units as radix-2 butterflies processing $512$ coefficients per pass, with a dedicated address-generation unit that maps data and twiddles per stage, and folds bit-reversal into the preceding automorphism / multiply so it costs nothing extra.</li><li><strong>FPT</strong> and <strong>Strix</strong> use <em>continuous-flow pipelined</em> FFTs: $\log_2 N$ cascaded butterfly stages separated by stride-permutation / shuffle units (Strix's SHUs) that do all reordering on chip with no matrix transpose, which is what keeps the streaming dataflow stall-free. Strix uses CLP input lanes (e.g. $2$ butterfly units per stage for CLP $=4$) and shuffle units whose delay $L$ halves down the pipeline ($L=N/8$ down to $L=1$), with large delays in SRAM shift registers and small ones in flip-flops.</li><li><strong>MATCHA</strong> uses a radix-4, multiplication-free FFT: each twiddle/lifting coefficient is quantized to a dyadic value $\alpha/2^{\beta}$, so multiplying by it becomes a few shifts and adds, which lets the whole design clock at $2\,\text{GHz}$.</li></ul></section>
+<section><h2>On-chip twiddle-factor handling</h2><p>Each NTT stage needs a specific set of roots of unity, the <em>twiddle factors</em> $\omega^r$ (or $\psi^r$ in the negacyclic case). There are $O(N)$ distinct twiddles, they are reused every transform, and they must arrive at the right butterfly on the right cycle. Recomputing them by repeated multiplication would add a serial dependency and burn multipliers, so every accelerator <em>precomputes and stores</em> them on chip in dedicated, banked memories, and the design effort goes into <em>indexing and bandwidth</em>, not arithmetic:</p><ul><li><strong>Precompute and bit-reverse:</strong> HEAX stores powers of $\psi$ in bit-reverse order in a twiddle-factor memory, together with a precomputed Barrett companion $\mathbf{Y}' = \lfloor \mathbf{Y}\cdot 2^w / p\rfloor$ so each butterfly's modular multiply is a single MulRed.</li><li><strong>Per-stage address generation:</strong> FAB has a dedicated twiddle-factor-mapping sub-unit that reads exactly the twiddles a stage needs from a URAM "miscellaneous" bank, in lockstep with the data-mapping sub-unit, so the $512$-coefficient pass never waits on a twiddle.</li><li><strong>Sharing to halve reads:</strong> MATCHA's radix-4 butterfly reads a single complex root per butterfly and lets two butterflies in the same block share a twiddle factor, halving twiddle-buffer reads, and storing dyadic-quantized coefficients so the "multiply" is shifts and adds.</li><li><strong>Reduced-width twiddles:</strong> FHE tolerates noise, so twiddles can be stored in fewer bits. Strix keeps a $64$-bit FFT datapath but only $16$-bit twiddle factors; FPT sets twiddle width to the intermediate width minus four bits, shrinking the twiddle ROMs and the FFT area substantially.</li></ul><p>Because the twiddle set is small and read-only, twiddle ROMs are rarely the capacity problem - they live comfortably in BRAM/URAM or distributed ROM. The capacity and bandwidth crisis is caused by the <em>keys</em>, which is Pattern C.</p><pre><code>StreamingNTTStage(in_lanes, stage_s, twiddle_rom):  # one pipelined stage
+  # processes 'width' coefficients per cycle, no stall
+  for each cycle, for each butterfly lane l in parallel:
+    (u, v)   = read two coefficients arriving this cycle
+    r        = twiddle_index(stage_s, l, cycle)      # deterministic schedule
+    w        = twiddle_rom[r]                         # precomputed, on-chip
+    out_a    = ModAdd(u, ModMul(v, w))                # u + w*v
+    out_b    = ModSub(u, ModMul(v, w))                # u - w*v
+    emit (out_a, out_b) into shuffle/permute network  # reorder for next stage
+</code></pre></section>
+<section><h2>Where these operations live in (T)FHE: gadget decomposition, external product, blind rotation</h2><p>To see why butterflies and systolic MACs dominate, follow the TFHE bootstrap. The core homomorphic multiply is the <em>external product</em> of a GGSW ciphertext (an encrypted matrix) with a GLWE ciphertext (an encrypted vector). To keep noise bounded, the GLWE operand is first split into small digits by <em>gadget decomposition</em> against the gadget vector $g = (B^{0}, B^{1}, \ldots, B^{\ell-1})$ for base $B$ and level $\ell$ (Equation 10):</p><p>$$a \;\approx\; \sum_{i=0}^{\ell-1} a^{(i)}\,\frac{q}{B^{\,i+1}}, \qquad \lVert a^{(i)} \rVert_\infty \le \frac{B}{2}.$$</p><p>The external product is then the inner product of the decomposed digits with the GGSW rows (Equation 11):</p><p>$$\mathrm{GGSW} \boxdot \mathrm{GLWE} \;=\; \sum_{i} a^{(i)} \cdot \mathrm{row}_i(\mathrm{GGSW}),$$</p><p>a sum of polynomial products - hence $\ell(k{+}1)$ forward NTTs/FFTs, a systolic MAC across rows, and $(k{+}1)$ inverse transforms. The decomposer that produces the $a^{(i)}$ is just bit-slicing and rounding, so MATCHA, Strix, and FPT all implement it as a <em>multiplier-free</em> unit (shifts, adds, sign logic).</p><p>The external product is wrapped in a controlled multiplexer, the <em>CMux</em>, which selects between two ciphertexts under an encrypted bit $b$ (Equation 12):</p><p>$$\mathrm{CMux}(b,\, c_0,\, c_1) \;=\; c_0 + b\boxdot(c_1 - c_0).$$</p><p><em>Blind rotation</em> iterates the CMux $n$ times (once per coefficient of the input LWE mask), each step rotating an accumulator polynomial by an encrypted exponent. This loop <em>is</em> the bootstrap, it is where essentially all the time goes, and at every iteration it must read a fresh bootstrapping-key element $\mathrm{BK}_i$ - which is what makes the bootstrap memory-bound. The two pseudocodes:</p><pre><code>GadgetDecompose(a, base B, level L):       # multiplier-free
+  out = []
+  for i = 0 to L-1:
+    digit = round( a / (q / B^(i+1)) ) mod B   # shift + round
+    center digit into (-B/2, B/2]              # signed digit
+    out.append(digit)
+  return out            # a ~= sum_i out[i] * (q / B^(i+1))
+
+BlindRotate(ACC, LWE = (a_1..a_n, b), BK[1..n]):  # the bootstrap loop
+  ACC = X^{-b} * test_polynomial            # initialize rotation
+  for i = 1 to n:                           # one CMux per mask coefficient
+    diff = (X^{a_i} - 1) * ACC               # rotate by encrypted exponent
+    ACC  = ACC + ExternalProduct(BK[i], diff)  # CMux via external product
+  return SampleExtract(ACC)                 # output refreshed LWE
+</code></pre><p>The <code>ExternalProduct</code> call expands to the forward-FFT / systolic-MAC / inverse-FFT cascade of Patterns A and B; the <code>BK[i]</code> read is the off-chip traffic of Pattern C.</p></section>
+<section><h2>Pattern C - The HBM / memory-bandwidth bottleneck</h2><p>The defining constraint of FHE acceleration is not arithmetic throughput, it is <em>feeding</em> the arithmetic. A bootstrappable CKKS ciphertext can be tens of MB (FAB's parameter set reaches $28.3$ MB per ciphertext), the live key-switching data is over $100$ MB (FAB: $\sim 112$ MB = $84$ MB keys + $28$ MB ciphertext), and TFHE bootstrapping keys are GB-scale. On-chip SRAM is fast but tiny: an FPGA like the Alveo U280 has roughly $41$ to $43$ MB of BRAM+URAM at $\sim 30\,\text{TB/s}$ internal bandwidth, while off-chip HBM2 offers GB of capacity but only $\sim 300$ to $460\,\text{GB/s}$ per stack. The arithmetic can consume key coefficients faster than HBM can deliver them. FPT makes the gap explicit: at full CMux throughput the bootstrapping key demand can exceed $1.0\,\text{TB/s}$, more than HBM provides. This is the <em>memory wall</em>, and the roofline picture is Equation 13:</p><p>$$\text{Throughput} \;\le\; \min\!\Big(\underbrace{\text{peak compute}}_{\text{units}\,\times\,f},\;\; \underbrace{\text{BW}_{\text{HBM}} \times \text{operational intensity}}_{\text{bytes delivered}}\Big).$$</p><p>where operational intensity is useful arithmetic per byte fetched. FHE's intensity is low (every key byte is used once per bootstrap iteration), so most designs sit on the bandwidth-bound side of the roofline unless they actively raise intensity. The standard counter-measures, all visible in the site's accelerators:</p><ul><li><strong>Keep everything on chip when you can (HEAX, FAB).</strong> HEAX exploits the RNS isomorphism (Equation 2) to compute each limb independently, eliminating off-chip access for small parameters and minimizing it for large ones; only at its largest parameter set ($N=2^{14}$) must it stream key-switching keys from DRAM, at which point throughput becomes DRAM-bandwidth-limited. FAB deliberately picks $N=2^{16}$ as the largest power of two whose limbs still fit on chip, and packs limbs so $72$-bit URAM and $18$-bit BRAM words are fully used.</li><li><strong>Reuse a fetched key across a batch (FPT, Strix, MATCHA).</strong> The most effective lever is <em>batching</em>: process many ciphertexts that are all at the same bootstrap iteration and under the same key, so the key element $\mathrm{BK}_i$ is fetched once and amortized over the whole batch. FPT fills its deep CMux pipeline with $b$ ciphertexts (e.g. $b=12$) so it reads $\mathrm{BK}_i$ from a small BRAM ping-pong buffer at $1.0\,\text{TB/s}$ internally while HBM refills $\mathrm{BK}_{i+1}$ at only $1.0/b\,\text{TB/s}$ - turning a bandwidth-bound design into a compute-bound one. Strix generalizes this to <em>two-level</em> (device + core) batching: each blind-rotation iteration fetches the $\mathrm{bsk}$ portion once and multicasts it to all cores, reusing it across the whole batch, with double buffering to prefetch the next portion. Strix shows the failure mode too: pushing core-level parallelism (CLP) too high shrinks the gap between iterations, forces the $\mathrm{bsk}$ to be refetched too often, demands $\sim 1\,\text{TB/s}$, and collapses throughput.</li><li><strong>Shrink the keys (FPT, MATCHA, Strix).</strong> Because FHE is noisy, keys and twiddles can be stored in reduced-precision fixed-point, cutting the bytes that must move. FPT's per-variable fixed-point analysis trims the full $\mathrm{BK}$ to $\sim 15$ MB so it fits in a mix of BRAM and URAM; Strix uses $16$-bit twiddles on a $64$-bit FFT path.</li><li><strong>Reduce key traffic algorithmically (FAB).</strong> FAB's modified key-switch dataflow reorders ModUp/decompose/inner-product so fewer NTTs run and no resultant limb is written back to HBM, hiding the $\sim 300$-cycle key-read latency behind computation in dual-port BRAM banks.</li><li><strong>Provision enough channels (FAB, MATCHA, Strix).</strong> FAB feeds its kernel from all $32$ AXI ports across two $4$-GB HBM2 stacks (up to $460\,\text{GB/s}$); MATCHA uses $640\,\text{GB/s}$ of HBM2; Strix splits one $300\,\text{GB/s}$ HBM2e stack into channels dedicated to $\mathrm{bsk}$, $\mathrm{ksk}$, and ciphertexts.</li></ul><p>The unifying takeaway is FAB's thesis restated: the scarce resource is HBM bandwidth, so the architecture is designed around <em>data movement</em> - balanced functional units, aggressive on-chip residency, key-reuse batching, and reduced-precision keys - rather than around piling on more multipliers. FPT and Strix represent the current end state of that philosophy for TFHE: by reusing each fetched key across a batch they become the first <em>compute-bound</em> bootstrapping designs, escaping the wall that bounds the CKKS accelerators.</p><pre><code>BatchedBootstrapEpoch(batch[1..b], BK[1..n], BR_iters n):
+  # all b ciphertexts at the same iteration, same key -> key reuse
+  load test vectors into per-core scratchpads      # one-time
+  for it = 1 to n:                                  # one BR iteration per pass
+    fetch BK[it] from HBM once                      # single off-chip read
+    prefetch BK[it+1] into alternate buffer         # ping-pong / double buffer
+    for each ciphertext c in batch in parallel:     # amortize the fetch
+      c.ACC = c.ACC + ExternalProduct(BK[it], rotate(c.ACC))
+  return [ SampleExtract(c.ACC) for c in batch ]
+  # effective off-chip key bandwidth = (key bytes per iter) / b
+</code></pre></section>
+<section><h2>Putting the three patterns together</h2><p>A complete FHE accelerator is the composition of the three patterns. Data arrives over PCIe, is staged in HBM, and is streamed on chip; the <em>NTT/FFT butterfly engine</em> (Pattern B) transforms polynomials, reading twiddles from on-chip ROMs; the transformed limbs flow into a <em>systolic MAC fabric</em> (Pattern A) that performs the external product or key-switch inner products against streamed key coefficients; an inverse transform returns to the coefficient domain; and the entire schedule is arranged so the <em>off-chip key traffic</em> (Pattern C) is reused across a batch and hidden behind computation. The single design knob that most often decides whether the machine is compute-bound or memory-bound is the batch / reuse factor that sets the effective key bandwidth in the last pseudocode of the previous section.</p><p>Mapping the site's accelerators onto the patterns:</p><pre><code>Accelerator | Transform        | Dataflow / MAC          | Memory strategy
+------------+------------------+-------------------------+-----------------------------
+HEAX (CKKS) | pipelined NTT    | end-to-end pipelined     | RNS per-limb on-chip; stream
+            | core, banked     | KeySwitch, no big FIFOs  | KSK from DRAM only at N=2^14
+            | BRAM twiddles    |                          | (then DRAM-BW-bound)
+FAB  (CKKS) | 256 radix-2 BFUs | reordered KeySwitch,     | N=2^16 limbs fit 43MB on-chip;
+            | 512 coef/pass    | no limb write-back       | 460 GB/s HBM2, 32 AXI ports
+FPT  (TFHE) | continuous-flow  | streaming CMux cascade,  | batch b=12 reuse; ping-pong BK
+            | pipelined FFT    | balanced FFT/IFFT, MAC   | cache; 15MB fixed-point BK;
+            | 16-bit twiddles  |                          | first compute-bound design
+MATCHA(TFHE)| radix-4 mult-free| EP cores + TGSW clusters | BKU + 640 GB/s HBM2;
+            | FFT, dyadic      | producer/consumer pipe   | dyadic twiddles cut traffic
+Strix(TFHE) | pipelined FFT    | 6-stage HSC, VMA array,  | two-level batching; bsk fetched
+            | + SHU folding    | no transpose, no stall   | once/iter, multicast; 300 GB/s
+            | 16-bit twiddles  |                          | HBM2e split by data type
+</code></pre><p>The recurring story across all five is that arithmetic is cheap and abundant on modern FPGAs and ASICs, while moving the large ciphertexts and especially the evaluation keys is the binding constraint - so the cleverness lives in the dataflow (keep it streaming and stall-free) and in the memory schedule (keep keys on chip, reuse them across a batch, and store them in as few bits as the noise budget allows).</p></section>
+<section><h2>Algorithms</h2><p>Complete "at a glance" listings of every algorithm referenced above. These are standard formulations written for clarity, not tied to any single source PDF.</p><p><strong>Algorithm 1 - Iterative in-place NTT (Cooley-Tukey, decimation-in-time).</strong></p><pre><code>Input : a[0..N-1] in Z_q, N a power of two; psi_powers (precomputed 2N-th
+         roots, bit-reverse order); modulus q
+Output: NTT(a) (negacyclic if pre/post twisting by psi^j / psi^-k applied)
+ 1: a <- bit_reverse_permutation(a)
+ 2: len <- 2
+ 3: while len <= N do                       # log2(N) stages
+ 4:   half <- len / 2
+ 5:   for start <- 0 to N-1 step len do      # blocks
+ 6:     for j <- 0 to half-1 do             # butterflies
+ 7:       w <- psi_powers[ twiddle_index(len, j) ]
+ 8:       u <- a[start+j]
+ 9:       v <- ModMul(a[start+j+half], w, q)
+10:       a[start+j]      <- ModAdd(u, v, q)   # u + w*v
+11:       a[start+j+half] <- ModSub(u, v, q)   # u - w*v
+12:   len <- len * 2
+13: return a
+</code></pre><p><strong>Algorithm 2 - Barrett modular multiply (the op inside each butterfly / PE).</strong></p><pre><code>Input : a, b in [0,q); q; w = word width; mu = floor(2^(2w)/q) (precomputed)
+Output: a*b mod q
+ 1: t   <- a * b                 # full 2w-bit product
+ 2: est <- (t * mu) >> (2*w)     # quotient estimate
+ 3: r   <- t - est * q
+ 4: if r >= q then r <- r - q    # at most one correction
+ 5: return r
+</code></pre><p><strong>Algorithm 3 - Output-stationary systolic matrix multiply (external product / key-switch fabric).</strong></p><pre><code>Input : A[m][n], B[n][p] streamed skewed into an m x p PE grid
+Output: C = A*B held in PE accumulators
+ 1: for all PE(i,j) in parallel: acc[i][j] <- 0
+ 2: for step <- 0 to (m+n+p) do                 # rhythmic clock
+ 3:   for each PE(i,j) in parallel do
+ 4:     a_in <- value from west neighbor          # a[i][k] skewed
+ 5:     b_in <- value from north neighbor         # b[k][j] skewed
+ 6:     acc[i][j] <- acc[i][j] + MAC(a_in, b_in)  # modular or fixed-point
+ 7:     forward a_in east  to PE(i, j+1)
+ 8:     forward b_in south to PE(i+1, j)
+ 9: return acc
+</code></pre><p><strong>Algorithm 4 - Streaming pipelined NTT/FFT stage with on-chip twiddles.</strong></p><pre><code>Input : coefficient stream (width per cycle); stage index s; twiddle_rom (on-chip)
+Output: transformed stream for the next stage, reordered by shuffle network
+ 1: for each cycle do
+ 2:   for each butterfly lane l in parallel do
+ 3:     (u, v) <- two coefficients arriving this cycle
+ 4:     r <- twiddle_index(s, l, cycle)        # deterministic schedule
+ 5:     w <- twiddle_rom[r]                     # precomputed, reduced width
+ 6:     out_a <- ModAdd(u, ModMul(v, w))        # u + w*v
+ 7:     out_b <- ModSub(u, ModMul(v, w))        # u - w*v
+ 8:     push (out_a, out_b) into shuffle/permute unit (no transpose)
+</code></pre><p><strong>Algorithm 5 - Signed gadget decomposition (multiplier-free).</strong></p><pre><code>Input : a in Z_q; base B; level L (gadget g = (q/B^1, ..., q/B^L))
+Output: digits a^(0..L-1) with |a^(i)| <= B/2 and a ~= sum_i a^(i)*(q/B^(i+1))
+ 1: out <- empty
+ 2: for i <- 0 to L-1 do
+ 3:   d <- round( a / (q / B^(i+1)) ) mod B    # shift + round, no multiply
+ 4:   if d > B/2 then d <- d - B                # center to signed range
+ 5:   out.append(d)
+ 6: return out
+</code></pre><p><strong>Algorithm 6 - Blind rotation / CMux loop (the TFHE bootstrap core).</strong></p><pre><code>Input : test polynomial tv; LWE = (a_1..a_n, b); bootstrap keys BK[1..n]
+Output: refreshed LWE ciphertext
+ 1: ACC <- X^{-b} * tv                          # initialize accumulator
+ 2: for i <- 1 to n do                          # one CMux per mask coeff
+ 3:   diff <- (X^{a_i} - 1) * ACC                # rotate by encrypted exponent
+ 4:   prod <- ExternalProduct(BK[i], diff)       # forward FFT -> MAC -> iFFT
+ 5:   ACC  <- ACC + prod                         # CMux = c0 + b box (c1-c0)
+ 6: return SampleExtract(ACC)
+
+ExternalProduct(GGSW, GLWE):
+ 7: for each component decompose GLWE via Algorithm 5 -> digits a^(i)
+ 8: forward-transform each digit (Algorithm 4)
+ 9: systolic-MAC digits against GGSW rows (Algorithm 3)  # Equation 11
+10: inverse-transform the accumulated rows -> result GLWE
+</code></pre><p><strong>Algorithm 7 - Batched bootstrap epoch with key reuse (the memory-wall counter-measure).</strong></p><pre><code>Input : batch[1..b] (all at same iteration, same key); BK[1..n]; iterations n
+Output: refreshed batch
+ 1: load test vectors into per-core scratchpads     # one-time, on-chip
+ 2: for it <- 1 to n do                             # one BR iteration per pass
+ 3:   fetch BK[it] from HBM once                     # single off-chip read
+ 4:   prefetch BK[it+1] into alternate buffer        # double buffering
+ 5:   for each ciphertext c in batch in parallel do  # amortize the fetch
+ 6:     c.ACC <- c.ACC + ExternalProduct(BK[it], rotate(c.ACC))
+ 7: return [ SampleExtract(c.ACC) for c in batch ]
+ 8: # effective off-chip key bandwidth = (key bytes per iteration) / b
+</code></pre></section>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/\bfig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+})();
+function rtSetupEquations(){
+  var prev=document.getElementById('rt-eqprev');
+  if(!prev){prev=document.createElement('div');prev.id='rt-eqprev';document.body.appendChild(prev);}
+  function showEq(html,e){prev.innerHTML=html;prev.style.display='block';var x=Math.min(e.clientX+20,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+20,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hideEq(){prev.style.display='none';}
+  var eqs=document.querySelectorAll('mjx-container[display="true"]'),htmlByNum={};
+  for(var i=0;i<eqs.length;i++){var n=i+1;eqs[i].id='eq'+n;htmlByNum[n]=eqs[i].outerHTML;}
+  if(!eqs.length)return;
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='script'||tg==='style')continue;
+    if(pn.closest&&pn.closest('mjx-container'))continue;
+    if(/\beq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!htmlByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#eq'+num;a.className='rt-eqref';a.textContent=m[0];
+      (function(h){a.addEventListener('mousemove',function(e){showEq(h,e);});a.addEventListener('mouseleave',hideEq);})(htmlByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+}
+window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],tags:'none'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},startup:{pageReady:function(){return MathJax.startup.defaultPageReady().then(function(){rtSetupEquations();});}}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>
