@@ -204,7 +204,7 @@ def inject(path, source_url, meta_line=""):
             new_meta = html_escape(meta_line)
         html = re.sub(r'<p class="meta">.*?</p>',
                       '<p class="meta">%s</p>' % new_meta, html, count=1, flags=re.S)
-    bar = '<div id="rt-bar"><a href="%s">&#8592; Back to Summaries</a>' % SUMMARIES_URL
+    bar = '<div id="rt-bar"><a href="%s">&#8592; Back to Deep Summaries</a>' % SUMMARIES_URL
     if source_url:
         bar += '<a href="%s" target="_blank" rel="noopener noreferrer">Full text &#8599;</a>' % source_url
     bar += "</div>"

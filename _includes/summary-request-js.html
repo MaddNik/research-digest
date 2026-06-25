@@ -42,7 +42,7 @@
       var id = arxivId(btn.getAttribute('data-pf-link'));
       var url = id ? byId[id] : '';
       if (url) {
-        btn.textContent = 'View summary';
+        btn.textContent = 'View Deep Summary';
         btn.classList.add('is-done');
         btn.setAttribute('data-pf-view', url);
       }
@@ -52,7 +52,7 @@
       var base = 'https://github.com/' + REPO + '/issues/new';
       var q = '?labels=' + encodeURIComponent('summary-request')
         + '&template=' + encodeURIComponent('summary-request.yml')
-        + '&title=' + encodeURIComponent('Summary request: ' + (title || link || ''))
+        + '&title=' + encodeURIComponent('Deep summary request: ' + (title || link || ''))
         + '&source-url=' + encodeURIComponent(link || '')
         + '&paper-title=' + encodeURIComponent(title || '')
         + '&category=' + encodeURIComponent(cat || 'Other');

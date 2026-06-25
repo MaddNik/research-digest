@@ -4,7 +4,7 @@ layout: page
 
 {% assign sums = site.data.summaries %}
 
-<p class="text-muted">Summaries I have written from sources. Click a title to read it in place, or use Full view. Use the tiles to filter; "TFHE on FPGA" shows items that are both.</p>
+<p class="text-muted">Deep Summaries I have written from sources. Click a title to read it in place, or use Full view. Use the tiles to filter; "TFHE on FPGA" shows items that are both.</p>
 
 {% if sums and sums.size > 0 %}
   {% assign tfhe_n = 0 %}
@@ -50,11 +50,11 @@ layout: page
         <a class="sm-open" target="_blank" rel="noopener noreferrer">Open in full window &#8599;</a>
         <button type="button" class="sm-close" data-smclose aria-label="Close">&times;</button>
       </div>
-      <iframe class="sm-frame" title="Summary" loading="lazy"></iframe>
+      <iframe class="sm-frame" title="Deep Summary" loading="lazy"></iframe>
     </div>
   </div>
 {% else %}
-  <p>No summaries published yet. Create one in your research-material directory and it will appear here.</p>
+  <p>No deep summaries published yet. Create one in your research-material directory and it will appear here.</p>
 {% endif %}
 
 <style>
@@ -115,7 +115,7 @@ layout: page
     var fullText = modal.querySelector('.sm-fulltext');
     var openEl = modal.querySelector('.sm-open');
     function open(url, title, src) {
-      titleEl.textContent = title || 'Summary';
+      titleEl.textContent = title || 'Deep Summary';
       frame.src = url;
       openEl.href = url;
       if (src) { fullText.href = src; fullText.removeAttribute('hidden'); } else { fullText.setAttribute('hidden', ''); }

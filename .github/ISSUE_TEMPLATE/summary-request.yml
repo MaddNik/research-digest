@@ -1,12 +1,12 @@
-name: Summary request
-description: Request an automated extensive summary of a paper or source
-title: "Summary request: "
+name: Deep summary request
+description: Request an automated deep summary of a paper or source
+title: "Deep summary request: "
 labels: ["summary-request"]
 body:
   - type: markdown
     attributes:
       value: |
-        Request a summary. The poller picks this up during the next weekday run window and publishes it to the Summaries section. You will get a comment with the link when it is done.
+        Request a deep summary. The poller picks this up during the next weekday run window and publishes it to the Deep Summaries section. You will get a comment with the link when it is done.
   - type: input
     id: source-url
     attributes:

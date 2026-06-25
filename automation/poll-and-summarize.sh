@@ -132,7 +132,7 @@ PY
 )"
       if [ -n "$EXIST_URL" ]; then
         echo "#$NUM already summarized (arXiv $ARXIV) -> $EXIST_URL"
-        comment "$NUM" "A summary already exists: https://maddnik.github.io/research-digest${EXIST_URL}"
+        comment "$NUM" "A deep summary already exists: https://maddnik.github.io/research-digest${EXIST_URL}"
         add_label "$NUM" summarized
         close_issue "$NUM"
         continue
@@ -162,7 +162,7 @@ PY
     if [ "$RC" -eq 0 ] && [ -n "$NEW_DIR" ]; then
       SLUG="$(basename "$(dirname "$NEW_DIR")")"
       echo "#$NUM done -> $SLUG"
-      comment "$NUM" "Summary published: ${PAGES_BASE}/${SLUG}/ (live after the next Pages build)."
+      comment "$NUM" "Deep summary published: ${PAGES_BASE}/${SLUG}/ (live after the next Pages build)."
       add_label "$NUM" summarized
       remove_label "$NUM" summarizing
       close_issue "$NUM"
