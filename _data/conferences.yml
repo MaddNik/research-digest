@@ -1,6 +1,9 @@
 # Conferences to track (semiconductor and/or photonics).
 # Refreshed monthly by automation/run-conferences.sh.
 # Fields: name, domain, continent, location, dates, start (YYYY-MM-DD for sorting), about, url.
+# Optional: submission, earlybird, late_deadline (deadline strings), speakers (list), panel
+# (string). These render as a deadlines line and a collapsible "Panel & speakers" sub-menu;
+# include them only when verified and relevant.
 
 - name: "DAC: ACM/IEEE Design Automation Conference"
   domain: Semiconductor
@@ -10,6 +13,14 @@
   start: 2026-07-26
   about: "Premier conference for the design and automation of electronic chips and systems, spanning EDA, hardware, embedded and AI design."
   url: "https://www.dac.com/"
+  earlybird: "June 26, 2026"
+  late_deadline: "Onsite registration June 27 to July 29, 2026"
+  speakers:
+    - "John Martinis (Keynote, CTO and Co-Founder, Qolab; 2025 Nobel Laureate in Physics) - From Fundamental Science to Building a Superconducting Quantum Computer"
+    - "Baaziz Achour (Keynote, EVP and CTO, Qualcomm) - Design Automation for Emerging AI: From AI Chips to Datacenter"
+    - "Jan M. Rabaey (Keynote, Professor Emeritus, UC Berkeley) - Engineering Life, Where Biology and Technology Meet"
+    - "Timothy Costa (SKYTalk, GM and VP of Computational Engineering, NVIDIA) - AI Supercomputing Meets EDA: Accelerating the Future of Chip and System Design"
+    - "Huiming Bu (SKYTalk, VP Global Semiconductor, IBM Research) - From 7nm to 7A: A Retrospective Looking into the Future"
 
 - name: "Hot Chips: A Symposium on High-Performance Chips"
   domain: Semiconductor
@@ -19,6 +30,15 @@
   start: 2026-08-23
   about: "Leading industry symposium where companies present the latest high-performance processor, accelerator and chip architectures."
   url: "https://hotchips.org/"
+  submission: "April 8, 2026"
+  earlybird: "July 31, 2026"
+  speakers:
+    - "Daniel Rosenband (Keynote, Waymo) - Compute in Motion: Challenges of Autonomous Driving"
+    - "NVIDIA - NVIDIA Rubin GPU: Driving the Era of Agentic AI"
+    - "AMD - AMD Instinct MI400 Series GPU Architecture"
+    - "Google - The Eighth Generation TPU Family"
+    - "OpenAI - You Can Just Build Things ... Chips"
+  panel: "The program features a deep slate of data-center AI silicon talks, including Meta MTIA, Microsoft MAIA, Cerebras, SambaNova, Google's eighth-generation TPU and OpenAI."
 
 - name: "ESSERC: European Solid-State Electronics Research Conference"
   domain: Semiconductor
@@ -28,6 +48,13 @@
   start: 2026-09-07
   about: "Europe's flagship event on solid-state devices and circuits, formed from the merger of ESSDERC and ESSCIRC, covering semiconductor processes and circuit design."
   url: "https://www.esserc2026.org/"
+  submission: "April 10, 2026"
+  speakers:
+    - "Roberto Emilio Luigi Bez (Keynote, Senior Director of Storage Strategic Technology, Micron) - Memory for a better world"
+    - "Arya Behzad (Keynote, VP of R&D Engineering, Broadcom) - From Air to Copper to Fiber: When Abstraction Boundaries Fail in Modern Communication Systems"
+    - "Regina Dittmann (Keynote, Research Center Julich) - ReRAM Technology"
+    - "Cedric Virmontois (Keynote, CNES) - Image sensors for space applications"
+    - "Ioannis Kabitoglou (Keynote, Infineon) - Quantum Computing and the future of cryptography"
 
 - name: "FPL: International Conference on Field-Programmable Logic and Applications"
   domain: Semiconductor
@@ -37,6 +64,7 @@
   start: 2026-09-07
   about: "Premier European conference on FPGAs, reconfigurable computing and their applications."
   url: "https://2026.fpl.org/"
+  submission: "March 27, 2026"
 
 - name: "ECOC: European Conference on Optical Communication"
   domain: Photonics
@@ -46,6 +74,14 @@
   start: 2026-09-20
   about: "The largest and most prestigious European event on optical communication and photonic technologies."
   url: "https://www.ecoc2026.org/"
+  submission: "April 22, 2026"
+  earlybird: "Mid July 2026"
+  speakers:
+    - "Peter Winzer (Plenary, VP of Systems Architecture, Ciena) - AI Cluster Communications"
+    - "Patrick Vandenameele (Plenary, CEO-elect, IMEC) - Integrated photonics at the heart of a scalable AI revolution"
+    - "Mark Thompson (Plenary, Co-Founder and CTO, PsiQuantum) - Photonics for Quantum Computing"
+    - "Jiangwei Man (Plenary, Director of Advanced Optoelectronics Laboratory, Huawei) - Scaling AI From Optical Innovation to NPO and CPO Solutions"
+  panel: "The program includes a strong AI-optics and quantum-photonics focus, with 13 tutorial speakers including Kerry Vahala (Caltech) on High-Q Integrated Photonics."
 
 - name: "ICCAD: IEEE/ACM International Conference on Computer-Aided Design"
   domain: Semiconductor
@@ -55,6 +91,7 @@
   start: 2026-11-08
   about: "Premier forum for research and innovation in electronic design automation, from algorithms to design tools and methodologies."
   url: "https://www.iccad.com/"
+  submission: "April 14, 2026"
 
 - name: "IPC: IEEE Photonics Conference"
   domain: Photonics
@@ -64,6 +101,12 @@
   start: 2026-11-08
   about: "Annual flagship conference of the IEEE Photonics Society, covering photonic devices, integrated photonics and applications."
   url: "https://ieee-ipc.org/"
+  submission: "May 18, 2026"
+  speakers:
+    - "Laura Marcu (Plenary, Professor of Neurological Surgery and Biomedical Engineering, UC Davis)"
+    - "William John Munro (Plenary, Okinawa Institute of Science and Technology Graduate University)"
+    - "Siddharth Ramachandran (Plenary, High Dimensional Photonics Lab, Boston University)"
+    - "Eli Yablonovitch (Plenary, Electrical Engineering and Computer Sciences, UC Berkeley)"
 
 - name: "SPIE Photonics West"
   domain: Photonics
@@ -73,6 +116,7 @@
   start: 2027-01-30
   about: "The world's largest photonics technologies event, covering lasers, biomedical optics, optoelectronics and quantum technologies."
   url: "https://spie.org/conferences-and-exhibitions/photonics-west"
+  submission: "July 22, 2026"
 
 - name: "ISSCC: IEEE International Solid-State Circuits Conference"
   domain: Semiconductor
@@ -82,6 +126,7 @@
   start: 2027-02-14
   about: "Foremost global forum for advances in solid-state circuits and systems-on-chip."
   url: "https://www.isscc.org/"
+  submission: "September 9, 2026"
 
 - name: "OFC: Optical Fiber Communication Conference and Exhibition"
   domain: Photonics
@@ -109,6 +154,7 @@
   start: 2027-03-22
   about: "The main European event bringing together designers and design automation users, researchers and vendors in electronic systems design and test."
   url: "https://www.date-conference.com/"
+  submission: "September 20, 2026"
 
 - name: "CLEO: Conference on Lasers and Electro-Optics"
   domain: Photonics
