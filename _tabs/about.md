@@ -14,9 +14,9 @@ five fields:
 - **Cryptography**: protocols, primitives, cryptanalysis, zero-knowledge
 - **Hardware security**: side channels, fault attacks, secure hardware, trusted execution
 
-Papers are tracked weekly. Each paper is its own entry: open its short summary to
-read a longer summary in a popup, with a direct link to the source. Browse a
-single field from its tab, or use the Tags tab.
+Papers are tracked weekly. Each paper is its own entry: click the title or use
+the Read more button to open a full summary in a popup. Browse a single field
+from its tab, or use the Tags tab.
 
 The **Conferences** tab tracks upcoming semiconductor and photonics events
 (location, focus, dates, and a link when available), refreshed monthly.
