@@ -40,7 +40,7 @@
   .rt-count {
     display: inline-block; min-width: 1.1em; padding: 0 .35em;
     font-size: .7rem; font-weight: 700; line-height: 1.4;
-    color: #fff; background: #f0a500; border-radius: 1rem; vertical-align: middle;
+    color: #fff; background: var(--link-color); border-radius: 1rem; vertical-align: middle;
   }
   .rt-topbar-group { margin-left: auto; display: inline-flex; align-items: center; gap: 0; }
   .rt-topbar {
@@ -106,8 +106,6 @@
   .rt-drop-list li a:hover { color: var(--link-color); text-decoration: underline; }
   .rt-drop-list .rt-btn { font-size: .8rem; flex-shrink: 0; }
 
-  /* On wide screens the panel carries the lists; hide the page copy everywhere except my-research */
-  @media (min-width: 1200px) { #mr-lists { display: none; } }
   @media (max-width: 1199.98px) { .rt-desktop-note { display: none; } }
 </style>
 
