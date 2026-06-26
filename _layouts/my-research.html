@@ -2,18 +2,16 @@
 layout: page
 ---
 
-<p class="text-muted px-xl-1 rt-desktop-note">Your Bookmarked and Saved lists are in the right panel. Use the bookmark and save icons on any card to add items.</p>
-
 <style>
   .mr-anchor { scroll-margin-top: 5rem; }
-  .rt-panel-link { color: inherit; text-decoration: none; }
-  .rt-panel-link:hover { text-decoration: underline; }
+  /* Always show the lists on this page regardless of screen width */
+  #mr-lists { display: block !important; }
 </style>
 
 <div id="mr-lists">
   <h2 id="bookmarked" class="fhe-section mr-anchor">Bookmarked <span class="rt-count" data-rt-count="saved" hidden></span></h2>
   <div class="rt-render" data-rt-list-render="saved"></div>
 
-  <h2 id="saved" class="fhe-section mr-anchor">Saved <span class="rt-count" data-rt-count="toread" hidden></span></h2>
+  <h2 id="to-read" class="fhe-section mr-anchor">To-Read <span class="rt-count" data-rt-count="toread" hidden></span></h2>
   <div class="rt-render" data-rt-list-render="toread"></div>
 </div>

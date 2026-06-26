@@ -56,13 +56,26 @@
     </div>
 
     <span class="rt-topbar-group">
-      <a href="{{ '/my-research/' | relative_url }}#saved" class="rt-topbar" aria-label="Saved" title="Saved">
+      <button type="button" class="rt-topbar rt-drop-trigger" data-rt-drop="toread" aria-label="To-Read" title="To-Read">
         <i class="fas fa-book-open fa-fw"></i><span class="rt-count" data-rt-count="toread" hidden></span>
-      </a>
-      <a href="{{ '/my-research/' | relative_url }}#bookmarked" class="rt-topbar" aria-label="Bookmarked" title="Bookmarked">
+      </button>
+      <button type="button" class="rt-topbar rt-drop-trigger" data-rt-drop="saved" aria-label="Bookmarked" title="Bookmarked">
         <i class="fas fa-bookmark fa-fw"></i><span class="rt-count" data-rt-count="saved" hidden></span>
-      </a>
+      </button>
     </span>
+
+    <div id="rt-dropdown" hidden>
+      <div class="rt-drop-backdrop"></div>
+      <div class="rt-drop-panel">
+        <div class="rt-drop-head">
+          <span class="rt-drop-title"></span>
+          <a class="rt-drop-viewall" href="{{ '/my-research/' | relative_url }}">View all</a>
+        </div>
+        <div class="rt-drop-body">
+          <div class="rt-drop-list"></div>
+        </div>
+      </div>
+    </div>
 
     <button type="button" id="search-trigger" class="btn btn-link" aria-label="Search">
       <i class="fas fa-search fa-fw"></i>
