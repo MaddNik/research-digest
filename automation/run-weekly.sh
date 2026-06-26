@@ -19,6 +19,7 @@ cd "$REPO" || { echo "repo not found" >&2; exit 1; }
   git pull --rebase --autostash 2>&1 || echo "(pull failed, continuing)"
 
   claude -p "$(cat "$REPO/automation/local-run-prompt.md")" \
+    --model sonnet \
     --dangerously-skip-permissions \
     --output-format text
 

@@ -25,6 +25,9 @@ LOGDIR="$REPO/automation/logs"
 LOCK="$REPO/automation/.poll.lock"
 USAGE_MAX=95
 RETRY_CAP=2
+# Model for headless deep-summary generation. Sonnet keeps usage low; switch to
+# "opus" here if you notice summary quality dropping.
+MODEL=sonnet
 
 TOKEN="$(cat "$HOME/.gh_pat" 2>/dev/null)"
 [ -n "$TOKEN" ] || TOKEN="$(sed -n 's#https://[^:]*:\([^@]*\)@github.com#\1#p' "$HOME/.git-credentials" 2>/dev/null | head -1)"
@@ -144,7 +147,7 @@ PY
     BEFORE="$(find "$RM" -maxdepth 3 -name summary.html 2>/dev/null | sort -u)"
 
     PROMPT_TEXT="$(SRC="$SRC" LEVEL="$LEVEL" CAT="$CAT" envsubst '${SRC} ${LEVEL} ${CAT}' < "$PROMPT")"
-    OUT="$(claude -p "$PROMPT_TEXT" --dangerously-skip-permissions --output-format text 2>&1)"
+    OUT="$(claude -p "$PROMPT_TEXT" --model "$MODEL" --dangerously-skip-permissions --output-format text 2>&1)"
     RC=$?
     printf '%s\n' "$OUT"
 
