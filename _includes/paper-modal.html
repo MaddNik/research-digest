@@ -13,15 +13,20 @@
 <style>
   .paper-card__more {
     align-self: flex-start;
-    border: 1px solid var(--btn-border-color, #d3d3d3);
+    border: 1px solid var(--btn-border-color, rgba(128,128,128,.35));
     background: transparent;
-    color: var(--link-color, #2a408e);
+    color: var(--text-color);
     border-radius: .5rem;
     padding: .25rem .75rem;
     font-size: .85rem;
     cursor: pointer;
+    transition: border-color .12s, background .12s, color .12s;
   }
-  .paper-card__more:hover { background: var(--btn-backtotop-color, rgba(0,0,0,.04)); }
+  .paper-card__more:hover {
+    border-color: #14b8a6;
+    background: rgba(20,184,166,.08);
+    color: #14b8a6;
+  }
   .paper-card.card {
     background: var(--card-bg);
     box-shadow: var(--card-shadow);
@@ -38,7 +43,7 @@
     font-size: 1.25rem;
     cursor: pointer;
   }
-  .paper-card__title:hover { color: var(--link-color); }
+  .paper-card__title:hover { color: #14b8a6; }
   .paper-card__short {
     color: var(--text-muted-color);
     line-height: 1.65;
@@ -85,9 +90,10 @@
   .paper-modal__link {
     display: inline-block; font-weight: 600;
     padding: .4rem .9rem; border-radius: .5rem;
-    background: var(--link-color, #2a408e); color: #fff !important; text-decoration: none;
+    background: #14b8a6; color: #fff !important; text-decoration: none;
+    transition: background .12s;
   }
-  .paper-modal__link:hover { opacity: .9; }
+  .paper-modal__link:hover { background: #0d9488; }
 </style>
 
 <script>
