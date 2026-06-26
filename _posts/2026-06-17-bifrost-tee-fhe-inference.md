@@ -2,7 +2,7 @@
 title: "Bifrost: Hybrid TEE-FHE Inference for Privacy-Preserving Transformer and LLM Serving"
 date: 2026-06-17 08:23:00 +0200
 categories: [FHE]
-tags: [ckks, tee, llm-inference]
+tags: [fhe, hardware-security]
 link: https://arxiv.org/abs/2606.17421
 byline: "Chenghao Chen et al. (arXiv:2606.17421, Jun 16 2026)"
 description: "A hybrid trusted-execution-environment and FHE serving architecture that delegates linear layers to a CKKS accelerator while keeping non-linear and refresh operations inside a CPU TEE."

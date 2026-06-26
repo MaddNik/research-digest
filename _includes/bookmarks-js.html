@@ -1,4 +1,4 @@
-{%- comment -%} Personal research lists (Bookmarked + Saved), stored in localStorage. Card buttons, My Research page, top-bar counts. {%- endcomment -%}
+{%- comment -%} Personal research lists (Bookmarked + Saved), stored in localStorage. Card buttons, My Research page, top-bar counts + dropdown. {%- endcomment -%}
 
 <style>
   .paper-card .card-body { position: relative; }
@@ -12,10 +12,13 @@
   .rt-btn.is-on[data-rt-list="saved"]   { color: #f0a500; }
   .rt-btn.is-on[data-rt-list="toread"]  { color: #4ea1d3; }
 
-  /* Bookmark accent border — paper cards (global) */
-  .paper-card { border-left-width: 3px !important; border-left-color: transparent !important; transition: border-left-color .15s; }
-  .paper-card[data-bm="saved"]  { border-left-color: #f0a500 !important; }
-  .paper-card[data-bm="toread"] { border-left-color: #4ea1d3 !important; }
+  /* Bookmark accent border — all card types globally */
+  .paper-card,
+  .conf-card { border-left: 3px solid transparent !important; transition: border-left-color .15s; }
+  .paper-card[data-bm="saved"],
+  .conf-card[data-bm="saved"]  { border-left-color: #f0a500 !important; }
+  .paper-card[data-bm="toread"],
+  .conf-card[data-bm="toread"] { border-left-color: #4ea1d3 !important; }
 
   /* Research list headings — match sidebar nav label style */
   .rt-group h3 {
@@ -40,7 +43,8 @@
   .rt-topbar-group { margin-left: auto; display: inline-flex; align-items: center; gap: 0; }
   .rt-topbar {
     position: relative; display: inline-flex; align-items: center;
-    padding: .25rem .3rem; color: var(--topbar-text-color, var(--text-color)); text-decoration: none;
+    padding: .25rem .3rem; background: transparent; border: 0;
+    color: var(--topbar-text-color, var(--text-color)); cursor: pointer;
   }
   .rt-topbar:hover { color: var(--link-color); }
   .rt-topbar .rt-count { position: absolute; top: -.1rem; right: -.2rem; }
@@ -60,6 +64,44 @@
   /* Panel heading links */
   .rt-panel-link { color: inherit; text-decoration: none; }
   .rt-panel-link:hover { text-decoration: underline; color: var(--link-color); }
+
+  /* Topbar dropdown */
+  #rt-dropdown[hidden] { display: none; }
+  #rt-dropdown {
+    position: fixed; inset: 0; z-index: 1500;
+    display: flex; justify-content: flex-end; align-items: flex-start;
+    padding-top: 3.6rem; padding-right: .5rem;
+  }
+  .rt-drop-backdrop { position: absolute; inset: 0; }
+  .rt-drop-panel {
+    position: relative; z-index: 1;
+    width: min(360px, calc(100vw - 1rem));
+    max-height: min(520px, calc(100vh - 5rem));
+    display: flex; flex-direction: column;
+    background: var(--card-bg); border: 1px solid var(--main-border-color, rgba(128,128,128,.25));
+    border-radius: .6rem; box-shadow: 0 8px 32px rgba(0,0,0,.25); overflow: hidden;
+  }
+  .rt-drop-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .6rem 1rem; border-bottom: 1px solid var(--main-border-color, rgba(128,128,128,.2));
+    flex-shrink: 0;
+  }
+  .rt-drop-title { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted-color); }
+  .rt-drop-viewall { font-size: .8rem; color: var(--link-color); text-decoration: none; white-space: nowrap; }
+  .rt-drop-viewall:hover { text-decoration: underline; }
+  .rt-drop-body { overflow-y: auto; flex: 1; padding: .5rem .9rem .75rem; }
+  .rt-drop-empty { color: var(--text-muted-color); font-size: .88rem; padding: .5rem 0; }
+  .rt-drop-list { font-size: .88rem; }
+  .rt-drop-list .rt-group h3 { font-size: .68rem; margin: .7rem 0 .15rem; }
+  .rt-drop-list .rt-group h4 { font-size: .66rem; margin: .3rem 0 .08rem .5rem; }
+  .rt-drop-list ul { margin: 0; padding: 0; list-style: none; }
+  .rt-drop-list li { padding: .15rem 0; line-height: 1.35; display: flex; align-items: baseline; gap: .3rem; }
+  .rt-drop-list li a { color: var(--text-color); text-decoration: none; flex: 1; }
+  .rt-drop-list li a:hover { color: var(--link-color); text-decoration: underline; }
+  .rt-drop-list .rt-btn { font-size: .8rem; flex-shrink: 0; }
+
+  /* Accent stripe on active topbar button */
+  .rt-drop-trigger.rt-drop-open { color: var(--link-color); }
 
   /* On wide screens the lists live in the right panel; hide the page copy. */
   @media (min-width: 1200px) { #mr-lists { display: none; } }
@@ -90,7 +132,6 @@
     }
     function size(l) { return Object.keys(store[l] || {}).length; }
 
-    /* Format a tag slug into a readable label */
     function fmtTag(t) {
       return t.replace(/-/g, ' ').split(' ').map(function (w) {
         return w.length <= 4 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1);
@@ -112,7 +153,7 @@
         var id = b.getAttribute('data-rt-id');
         b.classList.toggle('is-on', !!(store[l] && store[l][id]));
       });
-      /* Set data-bm accent on parent cards (paper-card and conf-card) */
+      /* Set data-bm accent on parent cards */
       document.querySelectorAll('.paper-card, .conf-card').forEach(function (card) {
         var btn = card.querySelector('.rt-btn[data-rt-id]');
         if (!btn) return;
@@ -126,11 +167,8 @@
     /* Build sub-category section within one category */
     function catSection(list, catItems) {
       var iconClass = list === 'saved' ? 'bookmark' : 'book-open';
-
       function itemLi(it) {
-        return '<li class="lh-lg"><a href="' + esc(it.url) + '">' + esc(it.title) + '</a>' +
-          (it.kind && it.kind !== 'Deep Summary' && it.kind !== 'Paper'
-            ? ' <span class="text-muted small">' + esc(it.kind) + '</span>' : '') +
+        return '<li><a href="' + esc(it.url) + '">' + esc(it.title) + '</a>' +
           ' <button type="button" class="rt-btn is-on" data-rt-list="' + list +
           '" aria-label="Remove" title="Remove"' +
           ' data-rt-id="' + esc(it.url) + '" data-rt-title="' + esc(it.title) +
@@ -139,21 +177,18 @@
           '" data-rt-tags="' + esc((it.tags || []).join(',')) + '">' +
           '<i class="fas fa-' + iconClass + '"></i></button></li>';
       }
-
       var hasTags = catItems.some(function (it) { return it.tags && it.tags.length > 0; });
       if (!hasTags) {
         var flat = '<ul class="content list-unstyled ps-0">';
         catItems.forEach(function (it) { flat += itemLi(it); });
         return flat + '</ul>';
       }
-
       var subGroups = {};
       var noTag = [];
       catItems.forEach(function (it) {
         var sub = it.tags && it.tags.length ? it.tags[0] : '';
         if (sub) { (subGroups[sub] = subGroups[sub] || []).push(it); } else { noTag.push(it); }
       });
-
       var html = '';
       if (noTag.length) {
         html += '<ul class="content list-unstyled ps-0">';
@@ -173,30 +208,24 @@
       var ids = Object.keys(items);
       if (!ids.length) {
         var icon = list === 'saved' ? 'bookmark' : 'save';
-        return '<p class="rt-empty">Nothing here yet. Use the ' + icon + ' icon on a card.</p>';
+        return '<p class="rt-empty">Nothing here yet. Use the <i class="fas fa-' + icon + '"></i> icon on a card.</p>';
       }
-
       var order = TOPICS.map(function (t) { return t.key; });
       var names = {};
       TOPICS.forEach(function (t) { names[t.key] = t.name; });
-
       var deepIds  = ids.filter(function (id) { return items[id].kind === 'Deep Summary'; });
       var otherIds = ids.filter(function (id) { return items[id].kind !== 'Deep Summary'; });
-
       var catGroups = {};
       otherIds.forEach(function (id) {
         var c = items[id].cat || 'Other';
         (catGroups[c] = catGroups[c] || []).push(items[id]);
       });
-
       var cats = Object.keys(catGroups).sort(function (a, b) {
         var ia = order.indexOf(a); var ib = order.indexOf(b);
         if (ia < 0) ia = 999; if (ib < 0) ib = 999;
         return (ia - ib) || a.localeCompare(b);
       });
-
       var html = '';
-
       if (deepIds.length) {
         html += '<div class="rt-group"><h3>Deep Summaries</h3>';
         html += catSection(list, deepIds.map(function (id) { return items[id]; }));
@@ -207,7 +236,6 @@
         html += catSection(list, catGroups[c]);
         html += '</div>';
       });
-
       return html;
     }
 
@@ -221,12 +249,61 @@
       });
     }
 
-    function renderAll() { refreshButtons(); updateCounts(); renderLists(); }
-
-    /* Export so summaries.html observer can re-sync without duplicating logic */
+    function renderAll() { refreshButtons(); updateCounts(); renderLists(); renderDropdown(); }
     window._rtRenderAll = renderAll;
 
+    /* ── Topbar dropdown ──────────────────────────────────────────────────── */
+    var dropEl = document.getElementById('rt-dropdown');
+    var dropList = dropEl ? dropEl.querySelector('.rt-drop-list') : null;
+    var dropTitle = dropEl ? dropEl.querySelector('.rt-drop-title') : null;
+    var dropViewAll = dropEl ? dropEl.querySelector('.rt-drop-viewall') : null;
+    var openList = null;
+
+    var LABEL = { saved: 'Bookmarked', toread: 'Saved' };
+    var HASH  = { saved: '#bookmarked', toread: '#saved' };
+    var ACCENT = { saved: '#f0a500', toread: '#4ea1d3' };
+
+    function renderDropdown() {
+      if (!dropEl || !openList) return;
+      if (dropList) {
+        dropList.className = 'rt-drop-list rt-list';
+        dropList.innerHTML = groupedHtml(openList);
+      }
+      if (dropTitle) dropTitle.textContent = LABEL[openList] || openList;
+      if (dropViewAll) dropViewAll.href = MR_URL + (HASH[openList] || '');
+    }
+
+    function openDrop(list, triggerEl) {
+      if (openList === list && !dropEl.hasAttribute('hidden')) {
+        closeDrop(); return;
+      }
+      openList = list;
+      renderDropdown();
+      dropEl.removeAttribute('hidden');
+      document.querySelectorAll('.rt-drop-trigger').forEach(function (t) { t.classList.remove('rt-drop-open'); });
+      if (triggerEl) triggerEl.classList.add('rt-drop-open');
+    }
+
+    function closeDrop() {
+      if (!dropEl) return;
+      dropEl.setAttribute('hidden', '');
+      openList = null;
+      document.querySelectorAll('.rt-drop-trigger').forEach(function (t) { t.classList.remove('rt-drop-open'); });
+    }
+
+    if (dropEl) {
+      dropEl.querySelector('.rt-drop-backdrop').addEventListener('click', closeDrop);
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrop(); });
+    }
+
     document.addEventListener('click', function (e) {
+      var trigger = e.target.closest('.rt-drop-trigger');
+      if (trigger) {
+        e.preventDefault();
+        openDrop(trigger.getAttribute('data-rt-drop'), trigger);
+        return;
+      }
+      /* bookmark/save button clicks */
       var b = e.target.closest('.rt-btn');
       if (!b) return;
       var l = b.getAttribute('data-rt-list');
@@ -238,7 +315,6 @@
       if (store[l][id]) {
         delete store[l][id];
       } else {
-        /* Mutually exclusive: remove from the other list */
         var other = l === 'saved' ? 'toread' : 'saved';
         if (store[other]) delete store[other][id];
         var tagsStr = b.getAttribute('data-rt-tags') || '';

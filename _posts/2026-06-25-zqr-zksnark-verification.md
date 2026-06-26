@@ -2,7 +2,7 @@
 title: "zQR: A Verifiable QR-Driven zkSNARK Proof Verification Framework for Mobile Platforms"
 date: 2026-06-25 08:13:00 +0200
 categories: [Cryptography]
-tags: [zero-knowledge-proofs, mobile-security, privacy-preserving]
+tags: [zero-knowledge, hardware-security, privacy]
 link: https://arxiv.org/abs/2606.27092
 byline: "Ismayilov (arXiv:2606.27092, Wed 25 Jun 2026)"
 description: "QR code-driven zero-knowledge SNARK verification framework optimized for mobile platforms with compact proof representations."

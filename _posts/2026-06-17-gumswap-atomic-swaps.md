@@ -2,7 +2,7 @@
 title: "GumSwap: Griefing-Free Universal Multi-Party Atomic Swaps"
 date: 2026-06-17 08:30:00 +0200
 categories: [Cryptography]
-tags: [atomic-swaps, cross-chain, blockchain, protocols]
+tags: [blockchain, cryptography]
 link: https://eprint.iacr.org/2026/1253
 byline: "Dongkun Hou et al. (IACR ePrint 2026/1253, Jun 14 2026)"
 description: "A universal multi-party cross-chain swap protocol that defends against griefing by compensating compliant parties whose assets are locked but not redeemed."

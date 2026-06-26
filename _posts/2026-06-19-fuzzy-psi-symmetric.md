@@ -2,7 +2,7 @@
 title: "Fuzzy PSI from Symmetric Primitives with Exact Logarithmic Dependence on Distance Threshold"
 date: 2026-06-19 08:10:00 +0200
 categories: [Cryptography]
-tags: [fuzzy-psi, oblivious-transfer, private-set-intersection, symmetric-primitives]
+tags: [mpc, cryptography]
 link: https://arxiv.org/abs/2606.15093
 byline: "Cong Zhang et al. (arXiv:2606.15093, Jun 13 2026)"
 description: "Fuzzy private set intersection over Lp distances built from oblivious transfer and symmetric primitives, with optimal logarithmic cost in the distance threshold."

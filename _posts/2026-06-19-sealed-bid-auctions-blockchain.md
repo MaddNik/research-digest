@@ -2,7 +2,7 @@
 title: "Censorship-Resistant Sealed-Bid Auctions on Blockchains"
 date: 2026-06-19 08:11:00 +0200
 categories: [Cryptography]
-tags: [sealed-bid-auctions, zero-knowledge-proofs, censorship-resistance, blockchain]
+tags: [blockchain, zero-knowledge]
 link: https://arxiv.org/abs/2606.14939
 byline: "Orestis Alpos et al. (arXiv:2606.14939, Jun 12 2026)"
 description: "A sealed-bid auction protocol for blockchains that hides bids until reveal and resists proposer-level censorship using zero-knowledge proofs."

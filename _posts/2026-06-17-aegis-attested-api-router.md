@@ -2,7 +2,7 @@
 title: "The Proxy Knows Too Much: Sealing LLM API Routers with Attested TEEs"
 date: 2026-06-17 08:35:00 +0200
 categories: [Hardware Security]
-tags: [tee, attestation, confidential-computing, supply-chain]
+tags: [hardware-security]
 link: https://arxiv.org/abs/2606.16358
 byline: "Sipeng Xie et al. (arXiv:2606.16358, Jun 15 2026)"
 description: "An attested API router that confines plaintext to a small hardware enclave so an untrusted host cannot read or alter LLM interactions."

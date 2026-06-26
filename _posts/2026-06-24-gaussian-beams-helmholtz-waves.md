@@ -2,7 +2,7 @@
 title: "From Gaussian beams to Helmholtz waves"
 date: 2026-06-24 08:08:00 +0200
 categories: [Photonics]
-tags: [gaussian-beams, helmholtz-waves, wave-optics]
+tags: [wave-optics]
 link: https://arxiv.org/abs/2606.26068
 byline: "Dominguez-Cruz & Rodriguez-Lara (arXiv:2606.26068, Tue 24 Jun 2026)"
 description: "Establishes mathematical framework connecting Gaussian beam widths to Helmholtz transverse wavenumbers."

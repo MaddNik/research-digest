@@ -2,7 +2,7 @@
 title: "Cultivating logical catalysts for fault-tolerant dyadic phase rotations"
 date: 2026-06-25 08:11:00 +0200
 categories: [Cryptography]
-tags: [quantum-computing, fault-tolerance, surface-codes]
+tags: [quantum-computing]
 link: https://arxiv.org/abs/2606.27358
 byline: "Xu & Wang (arXiv:2606.27358, Wed 25 Jun 2026)"
 description: "Surface-code cultivation protocol for reusable logical catalyst states implementing exact fine dyadic phase gates."

@@ -2,7 +2,7 @@
 title: "DISARM: Target Electronic Device Informed Mitigation of Software Runtime Side-Channel Vulnerabilities"
 date: 2026-06-19 08:16:00 +0200
 categories: [Hardware Security]
-tags: [timing-side-channel, hardware-aware-mitigation, embedded-devices, constant-time]
+tags: [side-channel, embedded-systems]
 link: https://arxiv.org/abs/2606.19807
 byline: "Tasneem Suha et al. (arXiv:2606.19807, Jun 18 2026)"
 description: "A hardware-informed methodology that uses real embedded-device timing to generate targeted fixes for runtime side-channel leaks."

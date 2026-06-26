@@ -2,7 +2,7 @@
 title: "Multi-channel high-speed flip-chip packaging platform for thin-film lithium niobate photonic circuits"
 date: 2026-06-17 08:07:00 +0200
 categories: [Photonics]
-tags: [lithium-niobate, packaging, integrated-photonics, optical-switch]
+tags: [integrated-photonics]
 link: https://arxiv.org/abs/2606.15391
 byline: "Zhenzheng Wang et al. (arXiv:2606.15391, Jun 13 2026)"
 description: "A flip-chip packaging platform delivers dozens of electrical channels to centimeter-scale thin-film lithium niobate chips with 50 gigahertz bandwidth."

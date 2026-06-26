@@ -2,7 +2,7 @@
 title: "Problems in algebra inspired by tropical cryptography"
 date: 2026-06-17 08:31:00 +0200
 categories: [Cryptography]
-tags: [tropical-cryptography, cryptanalysis, foundations, algebra]
+tags: [cryptography]
 link: https://eprint.iacr.org/2026/1256
 byline: "I. Buchinskiy et al. (IACR ePrint 2026/1256, Jun 14 2026)"
 description: "A survey of algebraic and computational problems arising from the design and cryptanalysis of tropical cryptography protocols."

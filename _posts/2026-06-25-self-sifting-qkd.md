@@ -2,7 +2,7 @@
 title: "Self-Sifting quantum key distribution"
 date: 2026-06-25 08:12:00 +0200
 categories: [Cryptography]
-tags: [quantum-key-distribution, quantum-cryptography, bell-states]
+tags: [quantum-cryptography]
 link: https://arxiv.org/abs/2606.27299
 byline: "Sarshar & Annabestani (arXiv:2606.27299, Wed 25 Jun 2026)"
 description: "Two-way QKD protocol delaying sifting operations preventing mode-dependent attacks and enabling eavesdropper detection."

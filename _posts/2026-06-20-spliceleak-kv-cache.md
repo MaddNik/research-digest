@@ -2,7 +2,7 @@
 title: "Agent-Assisted Side-Channel Attacks on Non-Prefix KV Cache in RAG"
 date: 2026-06-20 08:14:00 +0200
 categories: [Hardware Security]
-tags: [side-channel-attacks, large-language-models, cache-security]
+tags: [side-channel, machine-learning]
 link: https://arxiv.org/abs/2606.21842
 byline: "Sun et al. (arXiv:2606.21842, Thu 20 Jun 2026)"
 description: "First end-to-end side-channel attack on non-prefix KV cache fusion extracting semantic content token-by-token from LLM serving."

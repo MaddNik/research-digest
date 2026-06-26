@@ -2,7 +2,7 @@
 title: "The Quantum Split-Step Fourier Algorithm for Nonlinear Optical Waveguides"
 date: 2026-06-23 08:02:00 +0200
 categories: [Photonics]
-tags: [quantum-correlations, supercontinuum, frequency-conversion]
+tags: [quantum-photonics, nonlinear-optics]
 link: https://arxiv.org/abs/2606.24643
 byline: "Biancalana (arXiv:2606.24643, Mon 23 Jun 2026)"
 description: "Combines split-step propagation with commutator-preserving Bogoliubov evolution to track quantum correlations in optical waveguides."

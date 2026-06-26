@@ -2,7 +2,7 @@
 title: "In-plane vector-field imaging of propagating surface phonon polaritons"
 date: 2026-06-25 08:01:00 +0200
 categories: [Photonics]
-tags: [surface-phonon-polaritons, nonlinear-microscopy, vector-field-imaging]
+tags: [nanophotonics, nonlinear-optics, optical-sensing]
 link: https://arxiv.org/abs/2606.27030
 byline: "Niemann et al. (arXiv:2606.27030, Wed 25 Jun 2026)"
 description: "Nonlinear infrared-visible sum-frequency generation microscopy enables direct measurement of in-plane polariton field components with polarization-selective imaging."

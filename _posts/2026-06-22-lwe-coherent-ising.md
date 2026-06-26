@@ -2,7 +2,7 @@
 title: "When the Learning With Errors Problem Meets the Coherent Ising Machine: A Penalty-Free Algorithm-Hardware Co-Design"
 date: 2026-06-22 08:15:00 +0200
 categories: [Hardware Security]
-tags: [post-quantum-cryptography, lattice-cryptanalysis, quantum-hybrid]
+tags: [post-quantum, quantum-cryptography]
 link: https://arxiv.org/abs/2606.22843
 byline: "Jiang (arXiv:2606.22843, Sat 22 Jun 2026)"
 description: "Hybrid quantum-classical LWE solver achieving penalty-free Bounded-Distance-Decoding through Coherent Ising Machine co-design."

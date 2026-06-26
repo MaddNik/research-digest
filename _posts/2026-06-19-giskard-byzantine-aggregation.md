@@ -2,7 +2,7 @@
 title: "Giskard: Byzantine Robust and Confidential Aggregation for Large-Scale Decentralized Learning"
 date: 2026-06-19 08:13:00 +0200
 categories: [Cryptography]
-tags: [secure-multiparty-computation, bgw, byzantine-robustness, secure-aggregation]
+tags: [mpc]
 link: https://arxiv.org/abs/2606.19129
 byline: "Ousmane Touat et al. (arXiv:2606.19129, Jun 17 2026)"
 description: "A committee-tree MPC protocol that achieves confidential, Byzantine-robust aggregation while avoiding all-to-all communication."

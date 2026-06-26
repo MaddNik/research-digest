@@ -2,7 +2,7 @@
 title: "Tilikum: Transaction Fair Ordering on a DAG without Weak Edges"
 date: 2026-06-25 08:09:00 +0200
 categories: [Cryptography]
-tags: [blockchain, fair-ordering, dag-consensus]
+tags: [blockchain]
 link: https://arxiv.org/abs/2606.27250
 byline: "Segalini et al. (arXiv:2606.27250, Wed 25 Jun 2026)"
 description: "Fair transaction ordering protocol for DAG-based blockchains achieving 39× higher throughput than baselines."

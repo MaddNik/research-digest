@@ -2,7 +2,7 @@
 title: "Approaching the Quantum Limit of Optical Rotatory Dispersion"
 date: 2026-06-24 08:04:00 +0200
 categories: [Photonics]
-tags: [chiral-molecules, quantum-electrodynamics, monochromators]
+tags: [optical-sensing, quantum-photonics]
 link: https://arxiv.org/abs/2606.25776
 byline: "Ma et al. (arXiv:2606.25776, Tue 24 Jun 2026)"
 description: "Establishes theoretical benchmarks for chiral optical filters combining computational chemistry with QED for quantum-enhanced monochromators."

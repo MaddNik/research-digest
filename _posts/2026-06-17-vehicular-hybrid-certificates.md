@@ -2,7 +2,7 @@
 title: "Pseudonym Scheme Based on Hybrid Certificates for Security Credential Management System in Vehicular Communications"
 date: 2026-06-17 08:17:00 +0200
 categories: [PQC]
-tags: [hybrid, vehicular, certificates, pseudonyms]
+tags: [networking, privacy]
 link: https://arxiv.org/abs/2606.14008
 byline: "Abel C. H. Chen et al. (arXiv:2606.14008, Jun 12 2026)"
 description: "A hybrid elliptic-curve plus post-quantum certificate and pseudonym scheme for standardized vehicular communication credential systems."

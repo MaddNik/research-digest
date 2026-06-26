@@ -2,7 +2,7 @@
 title: "TensorZKP: Repurposing GPU Tensor Cores for High-Performance Zero-Knowledge Proofs"
 date: 2026-06-17 08:26:00 +0200
 categories: [Cryptography]
-tags: [zero-knowledge, gpu-acceleration, snark, implementation]
+tags: [zero-knowledge, hardware-acceleration, software-engineering]
 link: https://eprint.iacr.org/2026/1250
 byline: "Tao Lu et al. (IACR ePrint 2026/1250, Jun 13 2026)"
 description: "The first GPU framework to map zero-knowledge proof computation onto Tensor Cores by reformulating proof modules as matrix multiplication tasks."

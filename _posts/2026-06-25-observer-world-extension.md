@@ -2,7 +2,7 @@
 title: "The Observer World: A Cryptographic Extension of Impagliazzo's Five Worlds"
 date: 2026-06-25 08:10:00 +0200
 categories: [Cryptography]
-tags: [computational-complexity, cryptographic-assumptions, complexity-theory]
+tags: [cryptography]
 link: https://arxiv.org/abs/2606.27139
 byline: "Buono (arXiv:2606.27139, Wed 25 Jun 2026)"
 description: "Extends foundational cryptographic theory introducing observational axis proving independence of observational blindness and computational hardness."

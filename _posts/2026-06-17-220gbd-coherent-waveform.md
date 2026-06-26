@@ -2,7 +2,7 @@
 title: "220-GBd optical coherent waveform generation using temporal unitary transforms"
 date: 2026-06-17 08:12:00 +0200
 categories: [Photonics]
-tags: [optical-interconnects, coherent-optics, modulation]
+tags: [optical-communications]
 link: https://arxiv.org/abs/2606.17226
 byline: "Callum Deakin et al. (arXiv:2606.17226, Jun 15 2026)"
 description: "Temporal unitary transforms generate 220-gigabaud coherent optical signals using only 50 gigahertz of electrical bandwidth."

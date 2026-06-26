@@ -2,7 +2,7 @@
 title: "Self-Pulsing Microring Resonator Networks for Bandwidth-Efficient Event Detection in an Optical Fiber Sensor"
 date: 2026-06-17 08:11:00 +0200
 categories: [Photonics]
-tags: [microring-resonators, photonic-computing, optical-sensing]
+tags: [microresonators, photonic-computing, optical-sensing]
 link: https://arxiv.org/abs/2606.11940
 byline: "Alessio Lugnan et al. (arXiv:2606.11940, Jun 10 2026)"
 description: "Self-pulsing microring resonator networks process fiber-sensor signals while cutting the required sampling rate by more than an order of magnitude."

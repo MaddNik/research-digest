@@ -2,7 +2,7 @@
 title: "G-Lox: Group-Adaptive, Privacy-Preserving Bridge Distribution with Two-Party Computation"
 date: 2026-06-19 08:12:00 +0200
 categories: [Cryptography]
-tags: [two-party-computation, bridge-distribution, anonymity, private-state]
+tags: [mpc, blockchain, privacy]
 link: https://arxiv.org/abs/2606.19620
 byline: "Baigang Chen et al. (arXiv:2606.19620, Jun 17 2026)"
 description: "A bridge-distribution system that keeps adaptive group-level logic hidden from any single server using secure two-party computation."

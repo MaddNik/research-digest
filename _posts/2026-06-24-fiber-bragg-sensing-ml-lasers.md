@@ -2,7 +2,7 @@
 title: "Fiber Bragg grating-based acoustic sensing system with ML-trained hybrid III-V/SiN lasers"
 date: 2026-06-24 08:05:00 +0200
 categories: [Photonics]
-tags: [fiber-bragg-gratings, machine-learning, structural-health-monitoring]
+tags: [optical-sensing, machine-learning]
 link: https://arxiv.org/abs/2606.26306
 byline: "Gaur et al. (arXiv:2606.26306, Tue 24 Jun 2026)"
 description: "Intelligent structural health monitoring using machine learning for tunable hybrid lasers achieving sub-picometer wavelength control."

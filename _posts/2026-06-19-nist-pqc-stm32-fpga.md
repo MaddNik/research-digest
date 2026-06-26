@@ -2,7 +2,7 @@
 title: "Comparative Performance Analysis of NIST PQC Standards: From STM32 Software Limitations to FPGA-SoC Acceleration"
 date: 2026-06-19 08:07:00 +0200
 categories: [PQC]
-tags: [dilithium, sphincs-plus, fpga-acceleration, embedded-implementation]
+tags: [post-quantum, hardware-acceleration, embedded-systems]
 link: https://arxiv.org/abs/2606.15744
 byline: "Mustafa Akif Yildirim et al. (arXiv:2606.15744, Jun 14 2026)"
 description: "Shows that NIST signature schemes are impractical in pure software on a Cortex-M4 microcontroller and need FPGA hardware acceleration to run at millisecond speeds."

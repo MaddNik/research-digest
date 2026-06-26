@@ -2,7 +2,7 @@
 title: "Octave bandwidth 3D-Printed Couplers for Low-Loss Thin-Film Lithium Tantalate Circuits"
 date: 2026-06-17 08:06:00 +0200
 categories: [Photonics]
-tags: [integrated-photonics, lithium-tantalate, fiber-coupling]
+tags: [integrated-photonics]
 link: https://arxiv.org/abs/2606.16398
 byline: "Erik Jung et al. (arXiv:2606.16398, Jun 15 2026)"
 description: "3D-printed polymer couplers give octave-spanning, sub-decibel fiber-to-chip coupling for thin-film lithium tantalate waveguides."

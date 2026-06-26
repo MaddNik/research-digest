@@ -2,7 +2,7 @@
 title: "Spatiotemporally Interleaved Homodyne Photonic Tensor Core"
 date: 2026-06-17 08:05:00 +0200
 categories: [Photonics]
-tags: [photonic-computing, lithium-niobate, tensor-core]
+tags: [photonic-computing, integrated-photonics, hardware-acceleration]
 link: https://arxiv.org/abs/2606.16150
 byline: "Yun-Long Nie, Hang Song, De-Hui Huang, et al. (arXiv:2606.16150, Jun 15 2026)"
 description: "A thin-film lithium niobate photonic tensor core that cuts the DAC and electro-optic overhead of matrix operations from O(n squared) to O(n)."

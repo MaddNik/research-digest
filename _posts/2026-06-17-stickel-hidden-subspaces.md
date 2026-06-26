@@ -2,7 +2,7 @@
 title: "Stickel-type key exchange with hidden subspaces"
 date: 2026-06-17 08:27:00 +0200
 categories: [Cryptography]
-tags: [cryptanalysis, key-exchange, non-commutative, protocols]
+tags: [cryptography]
 link: https://eprint.iacr.org/2026/1257
 byline: "Fintan Costello et al. (IACR ePrint 2026/1257, Jun 14 2026)"
 description: "A polynomial-time break of all Stickel-type matrix key-exchange schemes using public subspaces, plus a new scheme that hides the subspaces by conjugation."

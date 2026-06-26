@@ -2,7 +2,7 @@
 title: "DataGuard: Guaranteeing Private Training in Systolic-array Based Accelerators"
 date: 2026-06-17 08:37:00 +0200
 categories: [Hardware Security]
-tags: [secure-hardware, accelerator, differential-privacy, trusted-hardware]
+tags: [hardware-security, hardware-acceleration, privacy]
 link: https://arxiv.org/abs/2606.16809
 byline: "Pawan Kumar Sanjaya et al. (arXiv:2606.16809, Jun 15 2026)"
 description: "A hardware mechanism in ML accelerators that guarantees only differentially private results can leave the device, without trusting the federated learning application."

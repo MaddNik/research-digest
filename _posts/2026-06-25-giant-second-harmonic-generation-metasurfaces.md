@@ -2,7 +2,7 @@
 title: "Giant Second-Harmonic Generation in 3R-MoS2/MLM Hybrid Metasurfaces Cavities"
 date: 2026-06-25 08:07:00 +0200
 categories: [Photonics]
-tags: [second-harmonic-generation, 2d-materials, inverse-design, nonlinear-metasurfaces]
+tags: [nonlinear-optics, nanophotonics]
 link: https://arxiv.org/abs/2606.26751
 byline: "Abdelraouf (arXiv:2606.26751, Wed 25 Jun 2026)"
 description: "AI-driven inverse design framework achieving three orders of magnitude enhancement in second-harmonic generation for frequency conversion."

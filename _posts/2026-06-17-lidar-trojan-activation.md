@@ -2,7 +2,7 @@
 title: "Anywhere, Any-Stymie: Remote Activation of Trojan Malware on LiDAR with Modulated Signals"
 date: 2026-06-17 08:34:00 +0200
 categories: [Hardware Security]
-tags: [supply-chain, hardware-trojan, sensor-security, autonomous-systems]
+tags: [hardware-security]
 link: https://arxiv.org/abs/2606.17562
 byline: "R. Spencer Hallyburton et al. (arXiv:2606.17562, Jun 16 2026)"
 description: "Dormant firmware malware embedded in a LiDAR pipeline is remotely triggered by a modulated optical signal to manipulate point clouds."

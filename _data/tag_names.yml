@@ -1,0 +1,27 @@
+# Display names for canonical tags (slug -> readable label)
+optical-communications: Optical Communications
+integrated-photonics: Integrated Photonics
+nonlinear-optics: Nonlinear Optics
+quantum-photonics: Quantum Photonics
+photonic-computing: Photonic Computing
+microresonators: Microresonators
+optical-sensing: Optical Sensing
+nanophotonics: Nanophotonics
+beam-steering: Beam Steering
+wave-optics: Wave Optics
+fhe: Homomorphic Encryption
+mpc: Secure Computation
+zero-knowledge: Zero-Knowledge Proofs
+post-quantum: Post-Quantum Crypto
+cryptography: Cryptography
+quantum-cryptography: Quantum Cryptography
+quantum-computing: Quantum Computing
+side-channel: Side-Channel Security
+hardware-security: Hardware Security
+hardware-acceleration: Hardware Acceleration
+privacy: Privacy
+blockchain: Blockchain
+machine-learning: Machine Learning
+networking: Networking
+embedded-systems: Embedded Systems
+software-engineering: Software Engineering

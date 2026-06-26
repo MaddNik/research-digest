@@ -2,7 +2,7 @@
 title: "Accountable Asynchronous Multi-Party Computation"
 date: 2026-06-17 08:25:00 +0200
 categories: [Cryptography]
-tags: [mpc, asynchronous, accountability, secret-sharing]
+tags: [mpc]
 link: https://eprint.iacr.org/2026/1245
 byline: "Pierre Civit et al. (IACR ePrint 2026/1245, Jun 11 2026)"
 description: "The first accountable asynchronous MPC protocol, which either preserves safety or yields publicly verifiable evidence implicating faulty parties when corruptions exceed the resilience threshold."

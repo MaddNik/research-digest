@@ -2,7 +2,7 @@
 title: "Measurement Study of Post-Quantum Readiness of Internet: 2026"
 date: 2026-06-17 08:18:00 +0200
 categories: [PQC]
-tags: [measurement, tls, deployment, hybrid-key-exchange]
+tags: [cryptography, software-engineering, post-quantum, networking]
 link: https://arxiv.org/abs/2606.16473
 byline: "Vanishka Mohan Dubey et al. (arXiv:2606.16473, Jun 15 2026)"
 description: "A large-scale measurement of hybrid post-quantum key exchange and certificate adoption across more than 32,000 internet domains."

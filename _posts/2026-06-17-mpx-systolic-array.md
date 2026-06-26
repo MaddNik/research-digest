@@ -2,7 +2,7 @@
 title: "MPX: A Unified Systolic Array for Matrix and Polynomial Multiplication"
 date: 2026-06-17 08:22:00 +0200
 categories: [FHE]
-tags: [ntt, polynomial-multiplication, systolic-array]
+tags: [hardware-acceleration]
 link: https://arxiv.org/abs/2606.16394
 byline: "George Alexakis et al. (arXiv:2606.16394, Jun 15 2026)"
 description: "A dual-mode systolic array that supports both matrix multiplication and direct polynomial multiplication for FHE and post-quantum cryptography on a single hardware fabric."

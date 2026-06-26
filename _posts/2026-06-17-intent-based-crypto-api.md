@@ -2,7 +2,7 @@
 title: "Intent-Based Cryptographic API Design for Cryptographic Agility"
 date: 2026-06-17 08:15:00 +0200
 categories: [PQC]
-tags: [cryptographic-agility, api-design, key-migration]
+tags: [cryptography, software-engineering]
 link: https://arxiv.org/abs/2606.13445
 byline: "Navaneeth Rameshan et al. (arXiv:2606.13445, Jun 11 2026)"
 description: "Design principles and Protocol Buffers patterns for cryptographic APIs that let organizations swap algorithms without rewriting application code."

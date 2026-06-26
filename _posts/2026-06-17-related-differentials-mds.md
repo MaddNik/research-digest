@@ -2,7 +2,7 @@
 title: "Related Differentials of 4x4 MDS Matrices: A Complete Characterization"
 date: 2026-06-17 08:28:00 +0200
 categories: [Cryptography]
-tags: [cryptanalysis, symmetric-crypto, mds-matrices, differential]
+tags: [cryptography, privacy]
 link: https://eprint.iacr.org/2026/1251
 byline: "Kamil Otal et al. (IACR ePrint 2026/1251, Jun 13 2026)"
 description: "A complete characterization of which 4-by-4 MDS diffusion matrices admit related differentials, given by 280 explicit polynomial equations."

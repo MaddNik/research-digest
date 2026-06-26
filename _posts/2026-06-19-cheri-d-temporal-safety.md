@@ -2,7 +2,7 @@
 title: "CHERI-D: Secure and efficient inline object ID for CHERI temporal memory safety"
 date: 2026-06-19 08:15:00 +0200
 categories: [Hardware Security]
-tags: [cheri, temporal-memory-safety, capabilities, use-after-free]
+tags: [hardware-security]
 link: https://arxiv.org/abs/2606.19055
 byline: "Yuecheng Wang et al. (arXiv:2606.19055, Jun 17 2026)"
 description: "A CHERI architectural extension embedding inline object IDs to enforce strict use-after-free protection with low revocation overhead."

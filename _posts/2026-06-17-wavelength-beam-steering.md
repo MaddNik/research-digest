@@ -2,7 +2,7 @@
 title: "Wavelength-Multiplexed 2D Beam Steering via a Passive Diffractive Network"
 date: 2026-06-17 08:09:00 +0200
 categories: [Photonics]
-tags: [diffractive-optics, beam-steering, optical-computing]
+tags: [beam-steering, photonic-computing]
 link: https://arxiv.org/abs/2606.16261
 byline: "Che-Yung Shen et al. (arXiv:2606.16261, Jun 15 2026)"
 description: "A passive deep-learning-designed diffractive network maps wavelength to output angle for programmable two-dimensional beam steering with no moving parts."

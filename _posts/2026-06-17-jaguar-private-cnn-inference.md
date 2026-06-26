@@ -2,7 +2,7 @@
 title: "Jaguar: Fast Private CNN Inference with Power-of-Two Homomorphic Arithmetic"
 date: 2026-06-17 08:20:00 +0200
 categories: [FHE]
-tags: [private-inference, power-of-two, 2pc, cnn]
+tags: [fhe, hardware-acceleration, mpc]
 link: https://arxiv.org/abs/2606.11827
 byline: "Yewon Jeong et al. (arXiv:2606.11827, Jun 10 2026)"
 description: "A hybrid homomorphic-encryption and two-party-computation CNN inference system built around a power-of-two ciphertext ring to speed up convolution and truncation."

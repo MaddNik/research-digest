@@ -2,7 +2,7 @@
 title: "Dual Line Coherent Detection"
 date: 2026-06-19 08:06:00 +0200
 categories: [Photonics]
-tags: [coherent-detection, frequency-comb-lo, offset-tolerance, uncooled-transceiver]
+tags: [optical-communications]
 link: https://arxiv.org/abs/2606.17932
 byline: "Nelson Castro et al. (arXiv:2606.17932, Jun 16 2026)"
 description: "A coherent detection method using a frequency-comb local oscillator tolerates large frequency offset for 400 gigabit-per-second signals."

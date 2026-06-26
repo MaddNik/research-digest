@@ -2,7 +2,7 @@
 title: "Inverse designed photonic crystal waveguides for pulsed operation"
 date: 2026-06-23 08:03:00 +0200
 categories: [Photonics]
-tags: [photonic-crystal-waveguides, inverse-design, optical-communications]
+tags: [nanophotonics, optical-communications]
 link: https://arxiv.org/abs/2606.24639
 byline: "Thompson et al. (arXiv:2606.24639, Mon 23 Jun 2026)"
 description: "Achieves 100× reduction in computational time with 10× greater bandwidth and 4× lower loss through inverse design optimization."

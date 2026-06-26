@@ -2,7 +2,7 @@
 title: "Top Gun: Degree Annihilation Attacks on Poseidon"
 date: 2026-06-17 08:24:00 +0200
 categories: [Cryptography]
-tags: [cryptanalysis, zero-knowledge, hash-functions, algebraic-attacks]
+tags: [cryptography, zero-knowledge]
 link: https://eprint.iacr.org/2026/1254
 byline: "Antonio Sanso et al. (IACR ePrint 2026/1254, Jun 14 2026)"
 description: "A new algebraic-cryptanalysis framework that lowers the effective degree of Poseidon's polynomial systems by forcing dominant degree terms to vanish."

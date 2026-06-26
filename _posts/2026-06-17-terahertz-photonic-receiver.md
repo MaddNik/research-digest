@@ -2,7 +2,7 @@
 title: "Integrated Terahertz Photonic Receiving Frontend with Link Noise Outperforming Electronics"
 date: 2026-06-17 08:08:00 +0200
 categories: [Photonics]
-tags: [terahertz, lithium-niobate, optical-interconnects, 6g]
+tags: [nanophotonics, integrated-photonics, optical-communications, networking]
 link: https://arxiv.org/abs/2606.16094
 byline: "Yuansong Zeng et al. (arXiv:2606.16094, Jun 15 2026)"
 description: "Thin-film lithium niobate terahertz photonic receivers reach link noise performance that surpasses electronic frontends across multiple terahertz windows."

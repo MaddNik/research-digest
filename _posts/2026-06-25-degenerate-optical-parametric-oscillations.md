@@ -2,7 +2,7 @@
 title: "Low-Threshold Degenerate Optical Parametric Oscillations in Photonic-Crystal Microresonator"
 date: 2026-06-25 08:06:00 +0200
 categories: [Photonics]
-tags: [optical-parametric-oscillations, microresonators, nonlinear-photonics]
+tags: [nonlinear-optics, microresonators]
 link: https://arxiv.org/abs/2606.26860
 byline: "Lobanov et al. (arXiv:2606.26860, Wed 25 Jun 2026)"
 description: "Demonstrates pump power threshold reduction for degenerate optical parametric oscillations using dual-frequency pump."

@@ -2,7 +2,7 @@
 title: "FEnc2: Unifying Data Packing for Efficient Private Inference via Convolution and Architecture-Aware Fragment Encoding"
 date: 2026-06-17 08:21:00 +0200
 categories: [FHE]
-tags: [private-inference, ckks, ciphertext-packing, cnn]
+tags: [fhe]
 link: https://arxiv.org/abs/2606.16359
 byline: "Ran Ran et al. (arXiv:2606.16359, Jun 15 2026)"
 description: "A fragment-based ciphertext packing framework for CKKS private CNN inference that jointly optimizes slot utilization, rotation complexity, and ciphertext density."

@@ -2,7 +2,7 @@
 title: "bioETH-Beacon: A Confidential On-Chain Genomic Beacon with Encrypted Counts, Filters, and Bounded Noise over a Fully Homomorphic EVM"
 date: 2026-06-19 08:09:00 +0200
 categories: [FHE]
-tags: [genomics, fhevm, blockchain, privacy-preserving-queries]
+tags: [privacy, fhe, blockchain]
 link: https://arxiv.org/abs/2606.20315
 byline: "Christos Galanopoulos et al. (arXiv:2606.20315, Jun 18 2026)"
 description: "A smart-contract prototype running encrypted genomic beacon count queries on a fully homomorphic Ethereum Virtual Machine."

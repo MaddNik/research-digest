@@ -2,7 +2,7 @@
 title: "Hierarchical Identity-Based Signature with Designated Aggregator from Lattices"
 date: 2026-06-17 08:16:00 +0200
 categories: [PQC]
-tags: [lattice, signatures, identity-based, aggregation]
+tags: [post-quantum, cryptography, mpc]
 link: https://arxiv.org/abs/2606.14090
 byline: "Stuti Kumari et al. (arXiv:2606.14090, Jun 12 2026)"
 description: "The first lattice-based construction of a hierarchical identity-based signature scheme with a designated aggregator."

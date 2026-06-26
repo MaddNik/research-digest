@@ -2,7 +2,7 @@
 title: "A family of invertible shift-invariant maps with strong arithmetic properties"
 date: 2026-06-17 08:29:00 +0200
 categories: [Cryptography]
-tags: [symmetric-crypto, boolean-functions, primitives, nonlinear-layers]
+tags: [cryptography]
 link: https://eprint.iacr.org/2026/1249
 byline: "Xiao-Xin Zhao et al. (IACR ePrint 2026/1249, Jun 12 2026)"
 description: "A new family of shift-invariant maps generalizing the chi-map, characterized via an isomorphism to polynomial quotient rings that fully determines invertibility and cycle structure."

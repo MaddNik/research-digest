@@ -2,7 +2,7 @@
 title: "Broadband High-Level Squeezed Light using Waveguide Optical Parametric Amplifiers with External Dispersion Compensation"
 date: 2026-06-17 08:13:00 +0200
 categories: [Photonics]
-tags: [quantum-photonics, squeezed-light, waveguide-opa]
+tags: [quantum-photonics, beam-steering]
 link: https://arxiv.org/abs/2606.17422
 byline: "Takumi Suzuki et al. (arXiv:2606.17422, Jun 16 2026)"
 description: "Waveguide optical parametric amplifiers with external dispersion compensation deliver broadband squeezed light beyond 4 terahertz of offset."

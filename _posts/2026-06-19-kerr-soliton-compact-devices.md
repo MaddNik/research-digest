@@ -2,7 +2,7 @@
 title: "Kerr Soliton Generation in Ultra-Compact Photonic Devices"
 date: 2026-06-19 08:05:00 +0200
 categories: [Photonics]
-tags: [soliton-microcomb, microresonator, thermal-model, feedback-control]
+tags: [microresonators, photonic-computing]
 link: https://arxiv.org/abs/2606.18067
 byline: "Garrett J. Beals et al. (arXiv:2606.18067, Jun 16 2026)"
 description: "Deterministic Kerr soliton microcombs are generated in compact microresonators down to 16 gigahertz spacing using a validated thermal model and fast feedback."

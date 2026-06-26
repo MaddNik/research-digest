@@ -2,7 +2,7 @@
 title: "A Scalable All-to-All Reconfigurable Ising Solver Using Pulsed Time-Division Multiplexing"
 date: 2026-06-17 08:04:00 +0200
 categories: [Photonics]
-tags: [ising-machine, optoelectronic, optimization]
+tags: [photonic-computing]
 link: https://arxiv.org/abs/2606.16929
 byline: "Henry Love, Zhehao Yu, Mohammad Alimadadi, et al. (arXiv:2606.16929, Jun 15 2026)"
 description: "An optoelectronic Ising machine with 64 all-to-all connected spins on a 65 nm CMOS chip, benchmarked on 3-SAT and MaxCut."

@@ -2,7 +2,7 @@
 title: "Di5Guise: 5G Privacy with vSIM"
 date: 2026-06-17 08:36:00 +0200
 categories: [Hardware Security]
-tags: [secure-hardware, fpga, attestation, 5g-privacy]
+tags: [hardware-security, hardware-acceleration, privacy]
 link: https://arxiv.org/abs/2606.16943
 byline: "Shirin Ebadi et al. (arXiv:2606.16943, Jun 15 2026)"
 description: "A virtualized SIM on secure hardware that decouples device identity from subscriber identity to break operator-level user correlation."

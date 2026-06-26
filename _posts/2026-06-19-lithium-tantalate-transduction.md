@@ -2,7 +2,7 @@
 title: "Stable, bidirectional electro-optic transduction in thin film lithium tantalate"
 date: 2026-06-19 08:02:00 +0200
 categories: [Photonics]
-tags: [microwave-optical-transduction, lithium-tantalate, quantum-interconnect, electro-optic]
+tags: [quantum-photonics, integrated-photonics]
 link: https://arxiv.org/abs/2606.12726
 byline: "Christopher J. Axline et al. (arXiv:2606.12726, Jun 16 2026)"
 description: "Integrated thin-film lithium tantalate transducers coherently convert C-band optical photons to microwave photons with multi-day stability and low added noise."

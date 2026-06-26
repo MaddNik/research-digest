@@ -2,7 +2,7 @@
 title: "An Assessment Framework for Application-Level Cryptographic Agility"
 date: 2026-06-17 08:14:00 +0200
 categories: [PQC]
-tags: [cryptographic-agility, migration, api-design]
+tags: [cryptography, software-engineering]
 link: https://arxiv.org/abs/2606.13425
 byline: "Navaneeth Rameshan et al. (arXiv:2606.13425, Jun 11 2026)"
 description: "A seven-dimension framework for assessing how ready software cryptographic APIs are for the post-quantum transition."

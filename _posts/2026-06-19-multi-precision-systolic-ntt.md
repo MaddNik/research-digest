@@ -2,7 +2,7 @@
 title: "Low-Cost Multi-Precision Systolic Arrays for Accelerating FHE NTTs on AI ASICs"
 date: 2026-06-19 08:08:00 +0200
 categories: [FHE]
-tags: [ntt, systolic-array, ai-asic, hardware-acceleration]
+tags: [hardware-acceleration]
 link: https://arxiv.org/abs/2606.19866
 byline: "George Alexakis et al. (arXiv:2606.19866, Jun 18 2026)"
 description: "A modified systolic array that natively reconstructs full-precision output, letting AI ASICs run high-precision FHE NTTs faster."

@@ -2,7 +2,7 @@
 title: "MIPSBLEED: Uncovering Microarchitectural Timing Leaks in Pervasive Embedded Processors"
 date: 2026-06-17 08:32:00 +0200
 categories: [Hardware Security]
-tags: [side-channel, microarchitectural, timing-attack, embedded]
+tags: [side-channel, embedded-systems]
 link: https://arxiv.org/abs/2606.16372
 byline: "Ahmed Najeeb et al. (arXiv:2606.16372, Jun 15 2026)"
 description: "A framework that exposes practical timing side-channels in MIPS embedded processors and recovers elliptic curve keys."

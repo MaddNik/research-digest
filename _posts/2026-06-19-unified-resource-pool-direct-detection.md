@@ -2,7 +2,7 @@
 title: "A unified resource-pool architecture for high-dimensional direct-detection optical communication"
 date: 2026-06-19 08:01:00 +0200
 categories: [Photonics]
-tags: [direct-detection, disordered-photonics, high-dimensional-modulation, photonic-processor]
+tags: [optical-communications, nanophotonics, photonic-computing]
 link: https://arxiv.org/abs/2606.20004
 byline: "Jingze Liu et al. (arXiv:2606.20004, Jun 18 2026)"
 description: "An integrated disordered photonic processor jointly maps wavelength, polarization, and intensity into one symbol space for direct-detection receivers."

@@ -2,7 +2,7 @@
 title: "Optical Implementation of Equilibrium Propagation Using Spatial Photonic Ising Machines"
 date: 2026-06-17 08:10:00 +0200
 categories: [Photonics]
-tags: [photonic-computing, ising-machine, neural-networks]
+tags: [photonic-computing, hardware-acceleration]
 link: https://arxiv.org/abs/2606.13454
 byline: "Dimitri Vanden Abeele et al. (arXiv:2606.13454, Jun 11 2026)"
 description: "A hybrid optical-digital system trains energy-based networks via equilibrium propagation on a spatial photonic Ising machine."

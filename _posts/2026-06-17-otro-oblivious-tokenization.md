@@ -2,7 +2,7 @@
 title: "OTRO: Oblivious Tokenization Path with Square-Root ORAM"
 date: 2026-06-17 08:33:00 +0200
 categories: [Hardware Security]
-tags: [tee, side-channel, oram, confidential-computing]
+tags: [hardware-security, side-channel, mpc]
 link: https://arxiv.org/abs/2606.17358
 byline: "Jonghyun Lee et al. (arXiv:2606.17358, Jun 15 2026)"
 description: "An oblivious tokenizer for confidential LLM serving that blocks access-pattern leakage on Intel TDX with minimal latency cost."
