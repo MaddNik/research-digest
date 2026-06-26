@@ -1,4 +1,4 @@
-{%- comment -%} Personal research lists (Saved + To read), stored in localStorage. Card buttons, My Research page, top-bar counts. {%- endcomment -%}
+{%- comment -%} Personal research lists (Bookmarked + Saved), stored in localStorage. Card buttons, My Research page, top-bar counts. {%- endcomment -%}
 
 <style>
   .paper-card .card-body { position: relative; }
@@ -9,11 +9,29 @@
     color: var(--text-muted-color); font-size: 1rem; line-height: 1; padding: .15rem .2rem;
   }
   .rt-btn:hover { color: var(--link-color); }
-  .rt-btn.is-on[data-rt-list="saved"] { color: #f0a500; }
-  .rt-btn.is-on[data-rt-list="toread"] { color: #4ea1d3; }
+  .rt-btn.is-on[data-rt-list="saved"]   { color: #f0a500; }
+  .rt-btn.is-on[data-rt-list="toread"]  { color: #4ea1d3; }
+
+  /* Bookmark accent border — paper cards (global) */
+  .paper-card { border-left-width: 3px !important; border-left-color: transparent !important; transition: border-left-color .15s; }
+  .paper-card[data-bm="saved"]  { border-left-color: #f0a500 !important; }
+  .paper-card[data-bm="toread"] { border-left-color: #4ea1d3 !important; }
+
+  /* Research list headings — match sidebar nav label style */
+  .rt-group h3 {
+    font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--text-muted-color); margin: .9rem 0 .2rem;
+    padding-bottom: .2rem; border-bottom: 1px solid var(--main-border-color, rgba(128,128,128,.15));
+  }
+  .rt-group h4 {
+    font-size: .7rem; font-weight: 600; color: var(--text-muted-color);
+    margin: .45rem 0 .1rem .7rem; opacity: .8;
+  }
   .rt-list .rt-group { margin-top: 1.2rem; }
   .rt-list .rt-empty { color: var(--text-muted-color); }
   .rt-list li .rt-btn { font-size: .9rem; }
+
+  /* Count badges */
   .rt-count {
     display: inline-block; min-width: 1.1em; padding: 0 .35em;
     font-size: .7rem; font-weight: 700; line-height: 1.4;
@@ -26,6 +44,19 @@
   }
   .rt-topbar:hover { color: var(--link-color); }
   .rt-topbar .rt-count { position: absolute; top: -.1rem; right: -.2rem; }
+
+  /* Paper-page action buttons */
+  .paper-bm-actions { display: flex; gap: .5rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+  .paper-bm-btn {
+    border: 1px solid var(--btn-border-color, rgba(128,128,128,.35));
+    background: transparent; border-radius: .5rem; padding: .3rem .85rem; font-size: .85rem;
+    display: inline-flex; align-items: center; gap: .4rem; color: var(--text-color);
+    cursor: pointer; transition: border-color .12s, color .12s;
+  }
+  .paper-bm-btn:hover { border-color: var(--link-color); color: var(--link-color); }
+  .paper-bm-btn.is-on[data-rt-list="saved"]  { border-color: #f0a500; color: #f0a500; }
+  .paper-bm-btn.is-on[data-rt-list="toread"] { border-color: #4ea1d3; color: #4ea1d3; }
+
   /* On wide screens the lists live in the right panel; hide the page copy. */
   @media (min-width: 1200px) { #mr-lists { display: none; } }
   @media (max-width: 1199.98px) { .rt-desktop-note { display: none; } }
@@ -55,6 +86,13 @@
     }
     function size(l) { return Object.keys(store[l] || {}).length; }
 
+    /* Format a tag slug into a readable label */
+    function fmtTag(t) {
+      return t.replace(/-/g, ' ').split(' ').map(function (w) {
+        return w.length <= 4 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1);
+      }).join(' ');
+    }
+
     function updateCounts() {
       document.querySelectorAll('.rt-count').forEach(function (el) {
         var which = el.getAttribute('data-rt-count');
@@ -70,59 +108,101 @@
         var id = b.getAttribute('data-rt-id');
         b.classList.toggle('is-on', !!(store[l] && store[l][id]));
       });
+      /* Set data-bm accent on parent cards (paper-card and conf-card) */
+      document.querySelectorAll('.paper-card, .conf-card').forEach(function (card) {
+        var btn = card.querySelector('.rt-btn[data-rt-id]');
+        if (!btn) return;
+        var id = btn.getAttribute('data-rt-id');
+        var bm = (store.saved && store.saved[id]) ? 'saved'
+               : (store.toread && store.toread[id]) ? 'toread' : '';
+        if (bm) { card.setAttribute('data-bm', bm); } else { card.removeAttribute('data-bm'); }
+      });
+    }
+
+    /* Build sub-category section within one category */
+    function catSection(list, catItems) {
+      var iconClass = list === 'saved' ? 'bookmark' : 'book-open';
+
+      function itemLi(it) {
+        return '<li class="lh-lg"><a href="' + esc(it.url) + '">' + esc(it.title) + '</a>' +
+          (it.kind && it.kind !== 'Deep Summary' && it.kind !== 'Paper'
+            ? ' <span class="text-muted small">' + esc(it.kind) + '</span>' : '') +
+          ' <button type="button" class="rt-btn is-on" data-rt-list="' + list +
+          '" aria-label="Remove" title="Remove"' +
+          ' data-rt-id="' + esc(it.url) + '" data-rt-title="' + esc(it.title) +
+          '" data-rt-url="' + esc(it.url) + '" data-rt-cat="' + esc(it.cat) +
+          '" data-rt-kind="' + esc(it.kind || '') +
+          '" data-rt-tags="' + esc((it.tags || []).join(',')) + '">' +
+          '<i class="fas fa-' + iconClass + '"></i></button></li>';
+      }
+
+      var hasTags = catItems.some(function (it) { return it.tags && it.tags.length > 0; });
+      if (!hasTags) {
+        var flat = '<ul class="content list-unstyled ps-0">';
+        catItems.forEach(function (it) { flat += itemLi(it); });
+        return flat + '</ul>';
+      }
+
+      var subGroups = {};
+      var noTag = [];
+      catItems.forEach(function (it) {
+        var sub = it.tags && it.tags.length ? it.tags[0] : '';
+        if (sub) { (subGroups[sub] = subGroups[sub] || []).push(it); } else { noTag.push(it); }
+      });
+
+      var html = '';
+      if (noTag.length) {
+        html += '<ul class="content list-unstyled ps-0">';
+        noTag.forEach(function (it) { html += itemLi(it); });
+        html += '</ul>';
+      }
+      Object.keys(subGroups).sort().forEach(function (sub) {
+        html += '<h4>' + esc(fmtTag(sub)) + '</h4><ul class="content list-unstyled ps-0 ms-2">';
+        subGroups[sub].forEach(function (it) { html += itemLi(it); });
+        html += '</ul>';
+      });
+      return html;
     }
 
     function groupedHtml(list) {
       var items = store[list] || {};
       var ids = Object.keys(items);
       if (!ids.length) {
-        return '<p class="rt-empty">Nothing here yet. Use the ' +
-          (list === 'saved' ? 'bookmark' : 'book') + ' icon on a card.</p>';
+        var icon = list === 'saved' ? 'bookmark' : 'save';
+        return '<p class="rt-empty">Nothing here yet. Use the ' + icon + ' icon on a card.</p>';
       }
+
       var order = TOPICS.map(function (t) { return t.key; });
       var names = {};
       TOPICS.forEach(function (t) { names[t.key] = t.name; });
 
-      function itemLi(it) {
-        return '<li class="lh-lg"><a href="' + esc(it.url) + '">' + esc(it.title) + '</a>' +
-          (it.kind && it.kind !== 'Deep Summary' ? ' <span class="text-muted small">' + esc(it.kind) + '</span>' : '') +
-          ' <button type="button" class="rt-btn is-on" data-rt-list="' + list + '" aria-label="Remove" title="Remove"' +
-          ' data-rt-id="' + esc(it.url) + '" data-rt-title="' + esc(it.title) + '"' +
-          ' data-rt-url="' + esc(it.url) + '" data-rt-cat="' + esc(it.cat) + '"' +
-          ' data-rt-kind="' + esc(it.kind || '') + '">' +
-          '<i class="fas fa-' + (list === 'saved' ? 'bookmark' : 'book-open') + '"></i></button></li>';
-      }
-
-      var deepIds = ids.filter(function (id) { return items[id].kind === 'Deep Summary'; });
+      var deepIds  = ids.filter(function (id) { return items[id].kind === 'Deep Summary'; });
       var otherIds = ids.filter(function (id) { return items[id].kind !== 'Deep Summary'; });
+
+      var catGroups = {};
+      otherIds.forEach(function (id) {
+        var c = items[id].cat || 'Other';
+        (catGroups[c] = catGroups[c] || []).push(items[id]);
+      });
+
+      var cats = Object.keys(catGroups).sort(function (a, b) {
+        var ia = order.indexOf(a); var ib = order.indexOf(b);
+        if (ia < 0) ia = 999; if (ib < 0) ib = 999;
+        return (ia - ib) || a.localeCompare(b);
+      });
 
       var html = '';
 
       if (deepIds.length) {
-        html += '<div class="rt-group"><h3>Deep Summaries</h3><ul class="content list-unstyled ps-0">';
-        deepIds.forEach(function (id) { html += itemLi(items[id]); });
-        html += '</ul></div>';
+        html += '<div class="rt-group"><h3>Deep Summaries</h3>';
+        html += catSection(list, deepIds.map(function (id) { return items[id]; }));
+        html += '</div>';
       }
-
-      if (otherIds.length) {
-        var groups = {};
-        otherIds.forEach(function (id) {
-          var it = items[id];
-          var c = it.cat || 'Other';
-          (groups[c] = groups[c] || []).push(it);
-        });
-        var cats = Object.keys(groups).sort(function (a, b) {
-          var ia = order.indexOf(a); var ib = order.indexOf(b);
-          if (ia < 0) ia = 999;
-          if (ib < 0) ib = 999;
-          return (ia - ib) || a.localeCompare(b);
-        });
-        cats.forEach(function (c) {
-          html += '<div class="rt-group"><h3>' + esc(names[c] || c) + '</h3><ul class="content list-unstyled ps-0">';
-          groups[c].forEach(function (it) { html += itemLi(it); });
-          html += '</ul></div>';
-        });
-      }
+      cats.forEach(function (c) {
+        html += '<div class="rt-group"><h3>' + esc(names[c] || c) + '</h3>';
+        html += catSection(list, catGroups[c]);
+        html += '</div>';
+      });
 
       return html;
     }
@@ -139,6 +219,9 @@
 
     function renderAll() { refreshButtons(); updateCounts(); renderLists(); }
 
+    /* Export so summaries.html observer can re-sync without duplicating logic */
+    window._rtRenderAll = renderAll;
+
     document.addEventListener('click', function (e) {
       var b = e.target.closest('.rt-btn');
       if (!b) return;
@@ -151,13 +234,16 @@
       if (store[l][id]) {
         delete store[l][id];
       } else {
+        /* Mutually exclusive: remove from the other list */
         var other = l === 'saved' ? 'toread' : 'saved';
         if (store[other]) delete store[other][id];
+        var tagsStr = b.getAttribute('data-rt-tags') || '';
         store[l][id] = {
           title: b.getAttribute('data-rt-title'),
-          url: b.getAttribute('data-rt-url'),
-          cat: b.getAttribute('data-rt-cat') || 'Other',
-          kind: b.getAttribute('data-rt-kind') || ''
+          url:   b.getAttribute('data-rt-url'),
+          cat:   b.getAttribute('data-rt-cat') || 'Other',
+          kind:  b.getAttribute('data-rt-kind') || '',
+          tags:  tagsStr ? tagsStr.split(',').map(function (t) { return t.trim(); }).filter(Boolean) : []
         };
       }
       save(store);

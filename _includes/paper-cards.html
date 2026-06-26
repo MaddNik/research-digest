@@ -24,12 +24,14 @@
         <button type="button" class="paper-card__more" data-target="{{ pfx }}pf-{{ forloop.index }}">Read abstract</button>
         {% if post.link %}<button type="button" class="paper-card__summary rt-summary-btn" data-pf-link="{{ post.link }}" data-pf-title="{{ post.title | escape }}" data-pf-cat="{{ cat }}">Generate Deep Summary</button>{% endif %}
         <span class="card-actions">
-          <button type="button" class="rt-btn" data-rt-list="toread" aria-label="Add to read list" title="To read"
+          <button type="button" class="rt-btn" data-rt-list="toread" aria-label="Save" title="Save"
             data-rt-id="{{ post.url | relative_url }}" data-rt-title="{{ post.title | escape }}"
-            data-rt-url="{{ post.url | relative_url }}" data-rt-cat="{{ cat }}" data-rt-kind="Paper"><i class="fas fa-book-open"></i></button>
-          <button type="button" class="rt-btn" data-rt-list="saved" aria-label="Save" title="Save"
+            data-rt-url="{{ post.url | relative_url }}" data-rt-cat="{{ cat }}" data-rt-kind="Paper"
+            data-rt-tags="{{ post.tags | join: ',' }}"><i class="fas fa-book-open"></i></button>
+          <button type="button" class="rt-btn" data-rt-list="saved" aria-label="Bookmark" title="Bookmark"
             data-rt-id="{{ post.url | relative_url }}" data-rt-title="{{ post.title | escape }}"
-            data-rt-url="{{ post.url | relative_url }}" data-rt-cat="{{ cat }}" data-rt-kind="Paper"><i class="fas fa-bookmark"></i></button>
+            data-rt-url="{{ post.url | relative_url }}" data-rt-cat="{{ cat }}" data-rt-kind="Paper"
+            data-rt-tags="{{ post.tags | join: ',' }}"><i class="fas fa-bookmark"></i></button>
         </span>
       </div>
       <template id="{{ pfx }}pf-{{ forloop.index }}">

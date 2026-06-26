@@ -2,6 +2,24 @@
 layout: post
 ---
 
+{% assign cat = page.categories[0] %}
+<div class="paper-bm-actions">
+  <button type="button" class="rt-btn paper-bm-btn" data-rt-list="toread"
+    aria-label="Save" title="Save for later"
+    data-rt-id="{{ page.url | relative_url }}" data-rt-title="{{ page.title | escape }}"
+    data-rt-url="{{ page.url | relative_url }}" data-rt-cat="{{ cat }}" data-rt-kind="Paper"
+    data-rt-tags="{{ page.tags | join: ',' }}">
+    <i class="fas fa-book-open"></i> Save
+  </button>
+  <button type="button" class="rt-btn paper-bm-btn" data-rt-list="saved"
+    aria-label="Bookmark" title="Bookmark this paper"
+    data-rt-id="{{ page.url | relative_url }}" data-rt-title="{{ page.title | escape }}"
+    data-rt-url="{{ page.url | relative_url }}" data-rt-cat="{{ cat }}" data-rt-kind="Paper"
+    data-rt-tags="{{ page.tags | join: ',' }}">
+    <i class="fas fa-bookmark"></i> Bookmark
+  </button>
+</div>
+
 {{ content }}
 
 {% if page.link %}

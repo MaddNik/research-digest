@@ -28,12 +28,14 @@
         {%- endif -%}
         {% if show_deep %}<button type="button" class="paper-card__summary rt-summary-btn" data-pf-link="{{ r.url }}" data-pf-title="{{ r.name | escape }}" data-pf-cat="FHE">Generate Deep Summary</button>{% endif %}
         <span class="card-actions">
-          <button type="button" class="rt-btn" data-rt-list="toread" aria-label="Add to read list" title="To read"
+          <button type="button" class="rt-btn" data-rt-list="toread" aria-label="Save" title="Save"
             data-rt-id="{{ r.url }}" data-rt-title="{{ r.name | escape }}"
-            data-rt-url="{{ r.url }}" data-rt-cat="FHE" data-rt-kind="{{ r.kind | escape }}"><i class="fas fa-book-open"></i></button>
-          <button type="button" class="rt-btn" data-rt-list="saved" aria-label="Save" title="Save"
+            data-rt-url="{{ r.url }}" data-rt-cat="FHE" data-rt-kind="{{ r.kind | escape }}"
+            data-rt-tags="{{ r.tags | join: ',' }}"><i class="fas fa-book-open"></i></button>
+          <button type="button" class="rt-btn" data-rt-list="saved" aria-label="Bookmark" title="Bookmark"
             data-rt-id="{{ r.url }}" data-rt-title="{{ r.name | escape }}"
-            data-rt-url="{{ r.url }}" data-rt-cat="FHE" data-rt-kind="{{ r.kind | escape }}"><i class="fas fa-bookmark"></i></button>
+            data-rt-url="{{ r.url }}" data-rt-cat="FHE" data-rt-kind="{{ r.kind | escape }}"
+            data-rt-tags="{{ r.tags | join: ',' }}"><i class="fas fa-bookmark"></i></button>
         </span>
       </div>
       <template id="fhe-res-{{ forloop.index }}">

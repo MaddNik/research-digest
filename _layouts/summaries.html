@@ -34,14 +34,14 @@ layout: page
             <a class="conf-fullview" href="{% if s.source_url and s.source_url != '' %}{{ s.source_url }}{% else %}{{ s.url | relative_url }}{% endif %}" target="_blank" rel="noopener noreferrer">Full view &#8599;</a>
           </div>
           <span class="card-actions">
-            <button type="button" class="rt-btn" data-rt-list="toread" aria-label="To read" title="To read"
+            <button type="button" class="rt-btn" data-rt-list="toread" aria-label="Save" title="Save"
               data-rt-id="{{ s.url | relative_url }}" data-rt-title="{{ s.title | escape }}"
               data-rt-url="{{ s.url | relative_url }}" data-rt-cat="{{ s.category | escape }}"
-              data-rt-kind="Deep Summary"><i class="fas fa-book-open"></i></button>
-            <button type="button" class="rt-btn" data-rt-list="saved" aria-label="Save" title="Save"
+              data-rt-kind="Deep Summary" data-rt-tags="{{ s.tags | join: ',' }}"><i class="fas fa-book-open"></i></button>
+            <button type="button" class="rt-btn" data-rt-list="saved" aria-label="Bookmark" title="Bookmark"
               data-rt-id="{{ s.url | relative_url }}" data-rt-title="{{ s.title | escape }}"
               data-rt-url="{{ s.url | relative_url }}" data-rt-cat="{{ s.category | escape }}"
-              data-rt-kind="Deep Summary"><i class="fas fa-bookmark"></i></button>
+              data-rt-kind="Deep Summary" data-rt-tags="{{ s.tags | join: ',' }}"><i class="fas fa-bookmark"></i></button>
             <button type="button" class="sm-btn sm-hide-btn" aria-label="Archive" title="Archive"
               data-sm-url="{{ s.url | relative_url }}"><i class="fas fa-eye-slash"></i></button>
           </span>
@@ -131,32 +131,19 @@ layout: page
     function saveHidden(h) { localStorage.setItem(SM_KEY, JSON.stringify(h)); }
     var smHidden = loadHidden();
 
-    /* === Read bookmarks store (same key as bookmarks-js) === */
-    var RT_KEY = 'rt_lists';
+    /* === Read bookmark state for Bookmarked filter tile === */
     function bmState(url) {
       try {
-        var bm = JSON.parse(localStorage.getItem(RT_KEY) || '{}');
+        var bm = JSON.parse(localStorage.getItem('rt_lists') || '{}');
         if (bm.saved && bm.saved[url]) return 'saved';
         if (bm.toread && bm.toread[url]) return 'toread';
       } catch(e) {}
       return '';
     }
 
-    /* === Refresh left-border accent and button is-on states === */
+    /* === Sync bookmark accent + button states via the global renderer === */
     function refreshBookmarkState() {
-      if (!content) return;
-      try {
-        var bm = JSON.parse(localStorage.getItem(RT_KEY) || '{}');
-        content.querySelectorAll('[data-url]').forEach(function(card) {
-          var url = card.getAttribute('data-url');
-          var state = (bm.saved && bm.saved[url]) ? 'saved' : (bm.toread && bm.toread[url]) ? 'toread' : '';
-          card.setAttribute('data-bm', state);
-          card.querySelectorAll('.rt-btn[data-rt-list]').forEach(function(b) {
-            var l = b.getAttribute('data-rt-list');
-            b.classList.toggle('is-on', !!(bm[l] && bm[l][url]));
-          });
-        });
-      } catch(e) {}
+      if (window._rtRenderAll) window._rtRenderAll();
     }
 
     /* === Refresh hide-button icons === */
