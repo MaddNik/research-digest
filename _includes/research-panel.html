@@ -1,8 +1,10 @@
-{%- comment -%} Right-sidebar personal lists (Bookmarked + Saved), populated by the research script. {%- endcomment -%}
+{%- comment -%} Right-sidebar personal lists (Bookmarked + Saved), populated by the research script.
+  data-rt-cat filters to the current page category when set. {%- endcomment -%}
+{%- assign panel_cat = page.category | default: '' -%}
 <section id="rt-panel">
   <h2 class="panel-heading"><a href="{{ '/my-research/' | relative_url }}#bookmarked" class="rt-panel-link">Bookmarked</a> <span class="rt-count" data-rt-count="saved" hidden></span></h2>
-  <div class="content mt-2 rt-render" data-rt-list-render="saved"></div>
+  <div class="content mt-2 rt-render" data-rt-list-render="saved" data-rt-scope="panel" data-rt-cat="{{ panel_cat }}"></div>
 
   <h2 class="panel-heading mt-4"><a href="{{ '/my-research/' | relative_url }}#saved" class="rt-panel-link">Saved</a> <span class="rt-count" data-rt-count="toread" hidden></span></h2>
-  <div class="content mt-2 rt-render" data-rt-list-render="toread"></div>
+  <div class="content mt-2 rt-render" data-rt-list-render="toread" data-rt-scope="panel" data-rt-cat="{{ panel_cat }}"></div>
 </section>
