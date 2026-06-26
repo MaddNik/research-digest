@@ -25,9 +25,8 @@ LOGDIR="$REPO/automation/logs"
 LOCK="$REPO/automation/.poll.lock"
 USAGE_MAX=95
 RETRY_CAP=2
-# Model for headless deep-summary generation. Sonnet keeps usage low; switch to
-# "opus" here if you notice summary quality dropping.
-MODEL=sonnet
+# Model for headless deep-summary generation.
+MODEL=opus
 
 TOKEN="$(cat "$HOME/.gh_pat" 2>/dev/null)"
 [ -n "$TOKEN" ] || TOKEN="$(sed -n 's#https://[^:]*:\([^@]*\)@github.com#\1#p' "$HOME/.git-credentials" 2>/dev/null | head -1)"

@@ -82,31 +82,48 @@
       var order = TOPICS.map(function (t) { return t.key; });
       var names = {};
       TOPICS.forEach(function (t) { names[t.key] = t.name; });
-      var groups = {};
-      ids.forEach(function (id) {
-        var it = items[id];
-        var c = it.cat || 'Other';
-        (groups[c] = groups[c] || []).push(it);
-      });
-      var cats = Object.keys(groups).sort(function (a, b) {
-        var ia = order.indexOf(a); var ib = order.indexOf(b);
-        if (ia < 0) ia = 999;
-        if (ib < 0) ib = 999;
-        return (ia - ib) || a.localeCompare(b);
-      });
+
+      function itemLi(it) {
+        return '<li class="lh-lg"><a href="' + esc(it.url) + '">' + esc(it.title) + '</a>' +
+          (it.kind && it.kind !== 'Deep Summary' ? ' <span class="text-muted small">' + esc(it.kind) + '</span>' : '') +
+          ' <button type="button" class="rt-btn is-on" data-rt-list="' + list + '" aria-label="Remove" title="Remove"' +
+          ' data-rt-id="' + esc(it.url) + '" data-rt-title="' + esc(it.title) + '"' +
+          ' data-rt-url="' + esc(it.url) + '" data-rt-cat="' + esc(it.cat) + '"' +
+          ' data-rt-kind="' + esc(it.kind || '') + '">' +
+          '<i class="fas fa-' + (list === 'saved' ? 'bookmark' : 'book-open') + '"></i></button></li>';
+      }
+
+      var deepIds = ids.filter(function (id) { return items[id].kind === 'Deep Summary'; });
+      var otherIds = ids.filter(function (id) { return items[id].kind !== 'Deep Summary'; });
+
       var html = '';
-      cats.forEach(function (c) {
-        html += '<div class="rt-group"><h3>' + esc(names[c] || c) + '</h3><ul class="content list-unstyled ps-0">';
-        groups[c].forEach(function (it) {
-          html += '<li class="lh-lg"><a href="' + esc(it.url) + '">' + esc(it.title) + '</a>' +
-            (it.kind ? ' <span class="text-muted small">' + esc(it.kind) + '</span>' : '') +
-            ' <button type="button" class="rt-btn is-on" data-rt-list="' + list + '" aria-label="Remove" title="Remove" data-rt-id="' + esc(it.url) +
-            '" data-rt-title="' + esc(it.title) + '" data-rt-url="' + esc(it.url) +
-            '" data-rt-cat="' + esc(it.cat) + '" data-rt-kind="' + esc(it.kind || '') +
-            '"><i class="fas fa-' + (list === 'saved' ? 'bookmark' : 'book-open') + '"></i></button></li>';
-        });
+
+      if (deepIds.length) {
+        html += '<div class="rt-group"><h3>Deep Summaries</h3><ul class="content list-unstyled ps-0">';
+        deepIds.forEach(function (id) { html += itemLi(items[id]); });
         html += '</ul></div>';
-      });
+      }
+
+      if (otherIds.length) {
+        var groups = {};
+        otherIds.forEach(function (id) {
+          var it = items[id];
+          var c = it.cat || 'Other';
+          (groups[c] = groups[c] || []).push(it);
+        });
+        var cats = Object.keys(groups).sort(function (a, b) {
+          var ia = order.indexOf(a); var ib = order.indexOf(b);
+          if (ia < 0) ia = 999;
+          if (ib < 0) ib = 999;
+          return (ia - ib) || a.localeCompare(b);
+        });
+        cats.forEach(function (c) {
+          html += '<div class="rt-group"><h3>' + esc(names[c] || c) + '</h3><ul class="content list-unstyled ps-0">';
+          groups[c].forEach(function (it) { html += itemLi(it); });
+          html += '</ul></div>';
+        });
+      }
+
       return html;
     }
 
@@ -125,14 +142,17 @@
     document.addEventListener('click', function (e) {
       var b = e.target.closest('.rt-btn');
       if (!b) return;
+      var l = b.getAttribute('data-rt-list');
+      if (!l) return;
       e.preventDefault();
       e.stopPropagation();
-      var l = b.getAttribute('data-rt-list');
       var id = b.getAttribute('data-rt-id');
       if (!store[l]) store[l] = {};
       if (store[l][id]) {
         delete store[l][id];
       } else {
+        var other = l === 'saved' ? 'toread' : 'saved';
+        if (store[other]) delete store[other][id];
         store[l][id] = {
           title: b.getAttribute('data-rt-title'),
           url: b.getAttribute('data-rt-url'),

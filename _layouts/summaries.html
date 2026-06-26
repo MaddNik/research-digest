@@ -20,6 +20,7 @@ layout: page
         <button type="button" class="topic-tile" data-filter="{{ c | slugify }}">{{ c }} <span class="n">{{ cn }}</span></button>
       {% endif %}
     {% endfor %}
+    <button type="button" class="topic-tile topic-tile--bookmark" data-filter="bookmarked"><i class="fas fa-bookmark"></i> Bookmarked</button>
   </div>
 
   <ul id="summaries-content" class="conf-list list-unstyled">
@@ -32,10 +33,29 @@ layout: page
             <span class="conf-pub">{% if s.meta_line and s.meta_line != '' %}{{ s.meta_line }}{% elsif s.pub and s.pub != '' %}Published {{ s.pub }}{% elsif s.date and s.date != '' %}{{ s.date }}{% endif %}</span>
             <a class="conf-fullview" href="{% if s.source_url and s.source_url != '' %}{{ s.source_url }}{% else %}{{ s.url | relative_url }}{% endif %}" target="_blank" rel="noopener noreferrer">Full view &#8599;</a>
           </div>
+          <span class="card-actions">
+            <button type="button" class="rt-btn" data-rt-list="toread" aria-label="To read" title="To read"
+              data-rt-id="{{ s.url | relative_url }}" data-rt-title="{{ s.title | escape }}"
+              data-rt-url="{{ s.url | relative_url }}" data-rt-cat="{{ s.category | escape }}"
+              data-rt-kind="Deep Summary"><i class="fas fa-book-open"></i></button>
+            <button type="button" class="rt-btn" data-rt-list="saved" aria-label="Save" title="Save"
+              data-rt-id="{{ s.url | relative_url }}" data-rt-title="{{ s.title | escape }}"
+              data-rt-url="{{ s.url | relative_url }}" data-rt-cat="{{ s.category | escape }}"
+              data-rt-kind="Deep Summary"><i class="fas fa-bookmark"></i></button>
+            <button type="button" class="sm-btn sm-hide-btn" aria-label="Archive" title="Archive"
+              data-sm-url="{{ s.url | relative_url }}"><i class="fas fa-eye-slash"></i></button>
+          </span>
         </div>
       </li>
     {% endfor %}
   </ul>
+
+  <div id="sm-archive-section" hidden>
+    <button type="button" id="sm-archive-toggle" class="sm-archive-btn">
+      <i class="fas fa-archive"></i>
+      <span class="sm-archive-label">Show archived</span> (<span class="sm-archive-count">0</span>)
+    </button>
+  </div>
 
   <div id="summary-modal" hidden>
     <div class="sm-backdrop" data-smclose></div>
@@ -60,14 +80,29 @@ layout: page
   .topic-tile:hover { border-color: var(--link-color); }
   .topic-tile.active { background: var(--link-color); color: #fff; border-color: var(--link-color); }
   .topic-tile.active .n { color: rgba(255,255,255,.85); }
+  .topic-tile--bookmark { margin-left: auto; }
+  .topic-tile--bookmark.active { background: #f0a500; border-color: #f0a500; }
   .conf-list { margin-top: 1rem; }
-  .conf-card.card { margin-bottom: 1rem; background: var(--card-bg); box-shadow: var(--card-shadow); border: 0; }
-  .conf-name { font-size: 1.15rem; margin: 0 0 .5rem; }
+  .conf-card.card { margin-bottom: 1rem; background: var(--card-bg); box-shadow: var(--card-shadow); border: 0; border-left: 3px solid transparent; transition: border-color .15s; }
+  .conf-card.card[data-bm="saved"] { border-left-color: #f0a500; }
+  .conf-card.card[data-bm="toread"] { border-left-color: #4ea1d3; }
+  .conf-card .card-body { position: relative; }
+  .conf-name { font-size: 1.15rem; margin: 0 0 .5rem; padding-right: 5.5rem; }
   .conf-name a { color: var(--heading-color); text-decoration: none; cursor: pointer; }
   .conf-name a:hover { text-decoration: underline; }
   .conf-meta { display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-size: .9rem; }
   .conf-pub { color: var(--text-muted-color); }
   .conf-fullview { white-space: nowrap; }
+  /* archive state: dim the card */
+  .conf-card.is-archived { opacity: .45; }
+  /* sm-btn: same style as rt-btn */
+  .sm-btn { border: 0; background: transparent; cursor: pointer; color: var(--text-muted-color); font-size: 1rem; line-height: 1; padding: .15rem .2rem; }
+  .sm-btn:hover { color: var(--link-color); }
+  .sm-hide-btn.is-archived { color: #e07070; }
+  /* archive section */
+  #sm-archive-section { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--main-border-color, rgba(128,128,128,.2)); }
+  .sm-archive-btn { border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); background: transparent; color: var(--text-muted-color); border-radius: .5rem; padding: .35rem .85rem; font-size: .85rem; cursor: pointer; display: inline-flex; align-items: center; gap: .5rem; }
+  .sm-archive-btn:hover { color: var(--link-color); border-color: var(--link-color); }
   /* summary modal */
   #summary-modal[hidden] { display: none; }
   #summary-modal { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1.2rem; }
@@ -83,48 +118,182 @@ layout: page
 
 <script>
   (function () {
-    var tiles = document.querySelectorAll('.topic-tile');
     var content = document.getElementById('summaries-content');
+    var tiles = document.querySelectorAll('.topic-tile');
+    var activeFilter = 'all';
+    var showArchived = false;
+
+    /* === Hidden/archive store === */
+    var SM_KEY = 'sm_hidden';
+    function loadHidden() {
+      try { return JSON.parse(localStorage.getItem(SM_KEY) || '{}'); } catch(e) { return {}; }
+    }
+    function saveHidden(h) { localStorage.setItem(SM_KEY, JSON.stringify(h)); }
+    var smHidden = loadHidden();
+
+    /* === Read bookmarks store (same key as bookmarks-js) === */
+    var RT_KEY = 'rt_lists';
+    function bmState(url) {
+      try {
+        var bm = JSON.parse(localStorage.getItem(RT_KEY) || '{}');
+        if (bm.saved && bm.saved[url]) return 'saved';
+        if (bm.toread && bm.toread[url]) return 'toread';
+      } catch(e) {}
+      return '';
+    }
+
+    /* === Refresh left-border accent and button is-on states === */
+    function refreshBookmarkState() {
+      if (!content) return;
+      try {
+        var bm = JSON.parse(localStorage.getItem(RT_KEY) || '{}');
+        content.querySelectorAll('[data-url]').forEach(function(card) {
+          var url = card.getAttribute('data-url');
+          var state = (bm.saved && bm.saved[url]) ? 'saved' : (bm.toread && bm.toread[url]) ? 'toread' : '';
+          card.setAttribute('data-bm', state);
+          card.querySelectorAll('.rt-btn[data-rt-list]').forEach(function(b) {
+            var l = b.getAttribute('data-rt-list');
+            b.classList.toggle('is-on', !!(bm[l] && bm[l][url]));
+          });
+        });
+      } catch(e) {}
+    }
+
+    /* === Refresh hide-button icons === */
+    function refreshHideBtns() {
+      if (!content) return;
+      content.querySelectorAll('.sm-hide-btn').forEach(function(btn) {
+        var url = btn.getAttribute('data-sm-url');
+        var icon = btn.querySelector('i');
+        var card = btn.closest('.conf-card');
+        if (smHidden[url]) {
+          icon.className = 'fas fa-eye';
+          btn.title = 'Restore to view';
+          btn.classList.add('is-archived');
+          if (card) card.classList.add('is-archived');
+        } else {
+          icon.className = 'fas fa-eye-slash';
+          btn.title = 'Archive';
+          btn.classList.remove('is-archived');
+          if (card) card.classList.remove('is-archived');
+        }
+      });
+    }
+
+    /* === Main filter + visibility pass === */
+    function applyFilter() {
+      if (!content) return;
+      var items = content.querySelectorAll('[data-url]');
+      var archivedCount = 0;
+      items.forEach(function(el) {
+        var url = el.getAttribute('data-url');
+        var cat = el.getAttribute('data-cat') || '';
+        var isHid = !!smHidden[url];
+        if (isHid) {
+          archivedCount++;
+          el.style.display = showArchived ? '' : 'none';
+          return;
+        }
+        var show;
+        if (activeFilter === 'all') {
+          show = true;
+        } else if (activeFilter === 'bookmarked') {
+          show = !!bmState(url);
+        } else {
+          show = (cat === activeFilter);
+        }
+        el.style.display = show ? '' : 'none';
+      });
+
+      /* update archive section */
+      var archSection = document.getElementById('sm-archive-section');
+      var archBtn = document.getElementById('sm-archive-toggle');
+      if (archSection) archSection.hidden = (archivedCount === 0);
+      if (archBtn) {
+        var labelEl = archBtn.querySelector('.sm-archive-label');
+        var countEl = archBtn.querySelector('.sm-archive-count');
+        if (labelEl) labelEl.textContent = showArchived ? 'Hide archived' : 'Show archived';
+        if (countEl) countEl.textContent = archivedCount;
+      }
+    }
+
+    /* === Tile clicks === */
     if (content && tiles.length) {
-      var items = content.querySelectorAll('[data-tags]');
       tiles.forEach(function (t) {
         t.addEventListener('click', function () {
           tiles.forEach(function (x) { x.classList.remove('active'); });
           t.classList.add('active');
-          var f = t.getAttribute('data-filter');
-          items.forEach(function (el) {
-            var cat = el.getAttribute('data-cat') || '';
-            el.style.display = (f === 'all' || cat === f) ? '' : 'none';
-          });
+          activeFilter = t.getAttribute('data-filter');
+          applyFilter();
         });
       });
     }
 
-    var modal = document.getElementById('summary-modal');
-    if (!modal) return;
-    var frame = modal.querySelector('.sm-frame');
-    var titleEl = modal.querySelector('.sm-title');
-    var fullText = modal.querySelector('.sm-fulltext');
-    var openEl = modal.querySelector('.sm-open');
-    function open(url, title, src) {
-      titleEl.textContent = title || 'Deep Summary';
-      frame.src = url;
-      openEl.href = url;
-      if (src) { fullText.href = src; fullText.removeAttribute('hidden'); } else { fullText.setAttribute('hidden', ''); }
-      modal.removeAttribute('hidden');
-      document.body.classList.add('sm-open');
+    /* === Archive toggle === */
+    var archBtn = document.getElementById('sm-archive-toggle');
+    if (archBtn) {
+      archBtn.addEventListener('click', function() {
+        showArchived = !showArchived;
+        applyFilter();
+      });
     }
-    function close() { modal.setAttribute('hidden', ''); frame.src = 'about:blank'; document.body.classList.remove('sm-open'); }
-    document.addEventListener('click', function (e) {
-      var a = e.target.closest('.summary-open');
-      if (a) {
-        var card = a.closest('.conf-card');
-        e.preventDefault();
-        open(card.getAttribute('data-url'), card.getAttribute('data-title'), card.getAttribute('data-src'));
-        return;
-      }
-      if (e.target.closest('[data-smclose]')) close();
+
+    /* === Hide button clicks === */
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('.sm-hide-btn');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var url = btn.getAttribute('data-sm-url');
+      if (!url) return;
+      smHidden = loadHidden();
+      if (smHidden[url]) { delete smHidden[url]; } else { smHidden[url] = 1; }
+      saveHidden(smHidden);
+      refreshHideBtns();
+      applyFilter();
     });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hasAttribute('hidden')) close(); });
+
+    /* === Keep Bookmarked filter live when bookmark state changes === */
+    if (content && typeof MutationObserver !== 'undefined') {
+      var obs = new MutationObserver(function() {
+        refreshBookmarkState();
+        if (activeFilter === 'bookmarked') applyFilter();
+      });
+      obs.observe(content, { attributes: true, subtree: true, attributeFilter: ['class'] });
+    }
+
+    /* === Modal === */
+    var modal = document.getElementById('summary-modal');
+    if (modal) {
+      var frame = modal.querySelector('.sm-frame');
+      var titleEl = modal.querySelector('.sm-title');
+      var fullText = modal.querySelector('.sm-fulltext');
+      var openEl = modal.querySelector('.sm-open');
+      function openModal(url, title, src) {
+        titleEl.textContent = title || 'Deep Summary';
+        frame.src = url;
+        openEl.href = url;
+        if (src) { fullText.href = src; fullText.removeAttribute('hidden'); } else { fullText.setAttribute('hidden', ''); }
+        modal.removeAttribute('hidden');
+        document.body.classList.add('sm-open');
+      }
+      function closeModal() { modal.setAttribute('hidden', ''); frame.src = 'about:blank'; document.body.classList.remove('sm-open'); }
+      document.addEventListener('click', function (e) {
+        var a = e.target.closest('.summary-open');
+        if (a) {
+          var card = a.closest('.conf-card');
+          e.preventDefault();
+          openModal(card.getAttribute('data-url'), card.getAttribute('data-title'), card.getAttribute('data-src'));
+          return;
+        }
+        if (e.target.closest('[data-smclose]')) closeModal();
+      });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hasAttribute('hidden')) closeModal(); });
+    }
+
+    /* === Init === */
+    refreshHideBtns();
+    refreshBookmarkState();
+    applyFilter();
   })();
 </script>
