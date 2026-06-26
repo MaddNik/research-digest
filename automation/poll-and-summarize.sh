@@ -83,8 +83,8 @@ PY
   if [ "${GATE%% *}" = "SKIP" ]; then echo "no headroom (>= ${USAGE_MAX}%); exiting"; exit 0; fi
   # STALE or RUN both proceed (STALE relies on the limit-error safety net).
 
-  # --- fetch open, owner-authored summary requests ---------------------------
-  ROWS="$(api "$API/issues?state=open&labels=summary-request&creator=$OWNER&per_page=50" \
+  # --- fetch all open summary requests (any creator) -------------------------
+  ROWS="$(api "$API/issues?state=open&labels=summary-request&per_page=50" \
           | python3 -c '
 import sys, json, base64
 for it in json.load(sys.stdin):
