@@ -35,6 +35,13 @@ this shape, one entry per conference:
   start: <YYYY-MM-DD start date, for sorting>
   about: "<one or two sentences on what the conference is about>"
   url: "<official conference URL, or empty string if none found>"
+  submission: "<paper submission deadline, human readable, or omit if unknown>"
+  earlybird: "<early-bird registration deadline, human readable, or omit if unknown>"
+  late_deadline: "<late / regular / on-site registration deadline, or omit if unknown>"
+  speakers:
+    - "<Name (role, affiliation) - talk title, e.g. Jane Doe (Keynote, MIT) - Photonic computing>"
+    - "<another confirmed keynote / invited / panel speaker>"
+  panel: "<one short sentence on the panel or program highlights, or omit if unknown>"
 ```
 
 Rules:
@@ -43,6 +50,13 @@ Rules:
 - `continent` is the continent of the host city (the page groups conferences by it).
   Use "Online" only for fully virtual events.
 - Prefer the official site for `url`; if you cannot find a reliable one, set `url: ""`.
+- `submission`, `earlybird`, `late_deadline`, `speakers`, and `panel` are OPTIONAL.
+  Include a field only if you can VERIFY it from the official site or program; OMIT the
+  field entirely (do not write an empty value or a guess) when the information is not
+  available or not yet announced. These render in a collapsible "Panel & speakers"
+  sub-menu and a deadlines line, so only add them when they are real and relevant.
+- `speakers` is a list of confirmed keynote / invited / panel speakers (a few of the
+  most notable is enough); omit the whole list if none are announced yet.
 - Keep the explanatory comment lines at the top of the file.
 - No em dashes, no emojis.
 

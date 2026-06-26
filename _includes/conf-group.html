@@ -15,7 +15,25 @@
           {% if c.location %}<span class="conf-bit"><i class="fas fa-location-dot fa-fw"></i> {{ c.location }}</span>{% endif %}
           {% if c.dates %}<span class="conf-bit"><i class="far fa-calendar fa-fw"></i> {{ c.dates }}</span>{% endif %}
         </div>
+        {% if c.earlybird and c.earlybird != '' or c.late_deadline and c.late_deadline != '' or c.submission and c.submission != '' %}
+          <div class="conf-meta conf-deadlines mb-2">
+            {% if c.submission and c.submission != '' %}<span class="conf-bit"><i class="far fa-file-lines fa-fw"></i> Submission: {{ c.submission }}</span>{% endif %}
+            {% if c.earlybird and c.earlybird != '' %}<span class="conf-bit"><i class="far fa-clock fa-fw"></i> Early-bird: {{ c.earlybird }}</span>{% endif %}
+            {% if c.late_deadline and c.late_deadline != '' %}<span class="conf-bit"><i class="fas fa-hourglass-end fa-fw"></i> Late: {{ c.late_deadline }}</span>{% endif %}
+          </div>
+        {% endif %}
         {% if c.about %}<p class="conf-about mb-0">{{ c.about }}</p>{% endif %}
+        {% if c.speakers and c.speakers.size > 0 or c.panel and c.panel != '' %}
+          <details class="conf-panel">
+            <summary>Panel &amp; speakers</summary>
+            {% if c.panel and c.panel != '' %}<p class="conf-about mb-1">{{ c.panel }}</p>{% endif %}
+            {% if c.speakers and c.speakers.size > 0 %}
+              <ul class="conf-speakers">
+                {% for sp in c.speakers %}<li>{{ sp }}</li>{% endfor %}
+              </ul>
+            {% endif %}
+          </details>
+        {% endif %}
       </div>
     </li>
   {% endfor %}

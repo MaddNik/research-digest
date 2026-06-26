@@ -48,6 +48,19 @@ layout: page
   .conf-meta { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; font-size: .9rem; }
   .conf-bit { color: var(--text-muted-color); }
   .conf-about { color: var(--text-muted-color); line-height: 1.6; }
+  .conf-deadlines .conf-bit { font-size: .85rem; }
+  .conf-panel { margin-top: .6rem; }
+  .conf-panel > summary {
+    cursor: pointer;
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--link-color);
+    list-style-position: inside;
+    width: fit-content;
+  }
+  .conf-panel > summary:hover { text-decoration: underline; }
+  .conf-speakers { margin: .5rem 0 0; padding-left: 1.2rem; }
+  .conf-speakers li { color: var(--text-muted-color); line-height: 1.6; }
   .paper-topic {
     display: inline-block;
     font-size: .75rem;
