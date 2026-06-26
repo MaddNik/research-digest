@@ -141,7 +141,7 @@ PY
 
     echo "--- processing #$NUM  src=$SRC  level=$LEVEL  cat=$CAT"
     add_label "$NUM" summarizing
-    BEFORE="$(find "$RM" -maxdepth 2 -name summary.html 2>/dev/null | sort -u)"
+    BEFORE="$(find "$RM" -maxdepth 3 -name summary.html 2>/dev/null | sort -u)"
 
     PROMPT_TEXT="$(SRC="$SRC" LEVEL="$LEVEL" CAT="$CAT" envsubst '${SRC} ${LEVEL} ${CAT}' < "$PROMPT")"
     OUT="$(claude -p "$PROMPT_TEXT" --dangerously-skip-permissions --output-format text 2>&1)"
@@ -156,7 +156,7 @@ PY
       break
     fi
 
-    AFTER="$(find "$RM" -maxdepth 2 -name summary.html 2>/dev/null | sort -u)"
+    AFTER="$(find "$RM" -maxdepth 3 -name summary.html 2>/dev/null | sort -u)"
     NEW_DIR="$(comm -13 <(printf '%s\n' "$BEFORE") <(printf '%s\n' "$AFTER") | head -1)"
 
     if [ "$RC" -eq 0 ] && [ -n "$NEW_DIR" ]; then

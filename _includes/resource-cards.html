@@ -17,7 +17,9 @@
           {% if r.kind %}<span class="paper-topic">{{ r.kind }}</span>{% endif %}
           {% if r.year %}<span class="px-1">&middot;</span>{{ r.year }}{% endif %}
         </div>
-        {% if r.about %}<p class="paper-card__short mb-0">{{ r.about }}</p>{% endif %}
+        {% if r.about %}<p class="paper-card__short mb-2">{{ r.about }}</p>{% endif %}
+        <button type="button" class="paper-card__more" data-target="fhe-res-{{ forloop.index }}">Read abstract</button>
+        {% if r.url and r.url != '' %}<button type="button" class="paper-card__summary rt-summary-btn" data-pf-link="{{ r.url }}" data-pf-title="{{ r.name | escape }}" data-pf-cat="FHE">Generate Deep Summary</button>{% endif %}
         <span class="card-actions">
           <button type="button" class="rt-btn" data-rt-list="toread" aria-label="Add to read list" title="To read"
             data-rt-id="{{ r.url }}" data-rt-title="{{ r.name | escape }}"
@@ -27,6 +29,12 @@
             data-rt-url="{{ r.url }}" data-rt-cat="FHE" data-rt-kind="{{ r.kind | escape }}"><i class="fas fa-bookmark"></i></button>
         </span>
       </div>
+      <template id="fhe-res-{{ forloop.index }}">
+        <div class="pf-title">{{ r.name }}</div>
+        <div class="pf-meta">{% if r.kind %}{{ r.kind }}{% endif %}{% if r.year %} &middot; {{ r.year }}{% endif %}</div>
+        <div class="pf-body">{% if r.about %}<p>{{ r.about }}</p>{% endif %}</div>
+        <div class="pf-link">{{ r.url }}</div>
+      </template>
     </article>
   {% endfor %}
 </div>
