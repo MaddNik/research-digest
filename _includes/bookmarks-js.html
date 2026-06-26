@@ -14,7 +14,7 @@
   .rt-btn.is-on[data-rt-list="saved"]   { color: #f0a500; }
   .rt-btn.is-on[data-rt-list="toread"]  { color: #4ea1d3; }
 
-  /* Bookmark accent border — all card types globally */
+  /* Bookmark accent border - all card types globally */
   .paper-card,
   .conf-card { border-left: 3px solid transparent !important; transition: border-left-color .15s; }
   .paper-card[data-bm="saved"],
@@ -214,7 +214,7 @@
         var icon = list === 'saved' ? 'bookmark' : 'book-open';
         return catFilter
           ? '<p class="rt-empty">No ' + (list === 'saved' ? 'bookmarked' : 'to-read') + ' items in this category yet.</p>'
-          : '<p class="rt-empty">Nothing yet — use the <i class="fas fa-' + icon + '"></i> on any card.</p>';
+          : '<p class="rt-empty">Nothing yet - use the <i class="fas fa-' + icon + '"></i> on any card.</p>';
       }
       var order = TOPICS.map(function (t) { return t.key; });
       var names = {};
