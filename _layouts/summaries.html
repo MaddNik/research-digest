@@ -4,7 +4,7 @@ layout: page
 
 {% assign sums = site.data.summaries | sort: 'date' | reverse %}
 
-<p class="text-muted">Deep Summaries I have written from sources, newest first. Click a title to read it in place, or use Full view. Use the tiles to filter by category.</p>
+<p class="text-muted">Deep Summaries I have written from sources, newest first. Click a title or Read more to open it. Use the tiles to filter by category.</p>
 
 {% if sums and sums.size > 0 %}
   {%- comment -%} Filter tiles are built dynamically from the categories present in
@@ -31,7 +31,7 @@ layout: page
           <h2 class="conf-name"><a class="summary-open" href="{{ s.url | relative_url }}">{{ s.title }}</a></h2>
           <div class="conf-meta">
             <span class="conf-pub">{% if s.meta_line and s.meta_line != '' %}{{ s.meta_line }}{% elsif s.pub and s.pub != '' %}Published {{ s.pub }}{% elsif s.date and s.date != '' %}{{ s.date }}{% endif %}</span>
-            <a class="conf-fullview" href="{% if s.source_url and s.source_url != '' %}{{ s.source_url }}{% else %}{{ s.url | relative_url }}{% endif %}" target="_blank" rel="noopener noreferrer">Full view &#8599;</a>
+            <button type="button" class="conf-readmore summary-open">Read more</button>
           </div>
           <span class="card-actions">
             <button type="button" class="rt-btn" data-rt-list="toread" aria-label="Save" title="Save"
@@ -92,7 +92,8 @@ layout: page
   .conf-name a:hover { text-decoration: underline; }
   .conf-meta { display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-size: .9rem; }
   .conf-pub { color: var(--text-muted-color); }
-  .conf-fullview { white-space: nowrap; }
+  .conf-readmore { border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); background: transparent; color: var(--link-color); border-radius: .4rem; padding: .2rem .65rem; font-size: .85rem; cursor: pointer; white-space: nowrap; }
+  .conf-readmore:hover { background: rgba(42,122,226,.08); }
   /* archive state: dim the card */
   .conf-card.is-archived { opacity: .45; }
   /* sm-btn: same style as rt-btn */
