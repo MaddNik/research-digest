@@ -33,8 +33,13 @@ layout: page
 </div>
 
 <div id="fhe-content">
-  <h2 class="fhe-section px-xl-1">Resources</h2>
-  {% include resource-cards.html items=resources %}
+  <h2 class="fhe-section fhe-toggle px-xl-1" id="fhe-resources-head" role="button" tabindex="0"
+      aria-expanded="true" aria-controls="fhe-resources-wrap">
+    <span class="fhe-caret" aria-hidden="true"></span>Resources <span class="fhe-toggle-n">{{ resources.size }}</span>
+  </h2>
+  <div id="fhe-resources-wrap">
+    {% include resource-cards.html items=resources %}
+  </div>
 
   {% if papers and papers.size > 0 %}
     <h2 class="fhe-section px-xl-1">Recent FHE papers</h2>
@@ -69,6 +74,21 @@ layout: page
   }
   .resource-card .paper-card__title a { color: var(--heading-color); text-decoration: none; }
   .resource-card .paper-card__title a:hover { text-decoration: underline; }
+  .fhe-toggle { cursor: pointer; user-select: none; }
+  .fhe-toggle:hover { color: var(--link-color); }
+  .fhe-toggle-n { color: var(--text-muted-color); font-weight: 400; font-size: .85rem; }
+  .fhe-caret {
+    display: inline-block;
+    width: 0; height: 0;
+    margin-right: .5rem;
+    vertical-align: middle;
+    border-left: .42rem solid currentColor;
+    border-top: .3rem solid transparent;
+    border-bottom: .3rem solid transparent;
+    transition: transform .15s ease;
+  }
+  .fhe-toggle[aria-expanded="true"] .fhe-caret { transform: rotate(90deg); }
+  #fhe-resources-wrap.is-collapsed { display: none; }
 </style>
 
 <script>
@@ -109,5 +129,19 @@ layout: page
         applyFilter(t.getAttribute('data-filter'));
       });
     });
+
+    /* Collapsible Resources section. */
+    var head = document.getElementById('fhe-resources-head');
+    var wrap = document.getElementById('fhe-resources-wrap');
+    if (head && wrap) {
+      function toggle() {
+        var collapsed = wrap.classList.toggle('is-collapsed');
+        head.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      }
+      head.addEventListener('click', toggle);
+      head.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+      });
+    }
   })();
 </script>

@@ -16,6 +16,7 @@
 <script>
   (function () {
     var REPO = 'MaddNik/research-digest';
+    var BASE = {{ site.baseurl | default: '' | jsonify }};
     var SUMMARIES = {{ site.data.summaries | jsonify }};
 
     /* Normalize an arXiv URL variant to its bare id:
@@ -34,7 +35,9 @@
     var byId = {};
     (SUMMARIES || []).forEach(function (s) {
       var id = arxivId(s.source_url);
-      if (id && s.url) byId[id] = s.url;
+      /* s.url is root-relative (/summaries/...); prepend the site baseurl so the
+         link resolves under /research-digest/ instead of 404ing at the domain root. */
+      if (id && s.url) byId[id] = BASE + s.url;
     });
 
     /* Flip any card whose paper already has a published summary. */

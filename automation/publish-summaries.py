@@ -81,6 +81,27 @@ def build_meta_line(publisher, pub):
     return ""
 
 
+# Map the research-material sub-folder a summary lives in to a display category
+# for the Deep Summaries filter tiles. Unknown folders fall back to a humanized
+# version of the folder name, so new categories appear automatically.
+CATEGORY_MAP = {
+    "concepts-background": "Concepts & background",
+    "tfhe-foundations": "TFHE foundations",
+    "boolean-fhe-tfhe-rtl": "TFHE foundations",
+    "fhe-fpga-accelerators": "FHE hardware",
+    "tfhe-fpga-accelerators": "FHE hardware",
+    "fhe-surveys": "FHE surveys",
+    "hardware-sidechannels": "Hardware security",
+}
+
+
+def derive_category(folder):
+    if folder in CATEGORY_MAP:
+        return CATEGORY_MAP[folder]
+    words = re.split(r"[-_]+", folder or "")
+    return " ".join(w.capitalize() for w in words if w) or "Other"
+
+
 def clean(s):
     return (s or "").replace("—", " - ").replace("–", "-").strip()
 
@@ -225,6 +246,7 @@ def main():
         if "summary.html" not in files or "content.json" not in files:
             continue
         slug = os.path.basename(root)
+        category = derive_category(os.path.basename(os.path.dirname(root)))
         try:
             meta = json.load(open(os.path.join(root, "content.json")))
         except Exception:
@@ -264,6 +286,7 @@ def main():
             "slug": slug, "title": title, "source_type": source_type,
             "source_url": source_url, "pdf": pdf, "tags": tags, "pub": pub,
             "publisher": publisher, "meta_line": build_meta_line(publisher, pub),
+            "category": category,
             "url": "/summaries/%s/" % slug, "date": slug_date(slug, mtime),
         })
 
@@ -274,7 +297,7 @@ def main():
         "",
     ]
     for e in entries:
-        for k in ("slug", "title", "url", "date", "pub", "publisher", "meta_line", "source_type", "source_url", "pdf"):
+        for k in ("slug", "title", "url", "date", "category", "pub", "publisher", "meta_line", "source_type", "source_url", "pdf"):
             prefix = "- " if k == "slug" else "  "
             lines.append('%s%s: "%s"' % (prefix, k, yaml_escape(e[k])))
         tag_items = ", ".join('"%s"' % yaml_escape(t) for t in e.get("tags", []))
