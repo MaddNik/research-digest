@@ -13,6 +13,18 @@
   source_url: "https://www.zama.ai/post/tfhe-deep-dive-part-4"
   pdf: ""
   tags: ["TFHE", "FHE", "programmable bootstrapping", "blind rotation", "modulus switching", "sample extraction", "CMux", "GGSW", "lookup table", "gate bootstrapping", "neural networks", "concepts"]
+- slug: "homomorphic-encryption-from-learning-with-errors-gsw-2026-06-26"
+  title: "Homomorphic Encryption from Learning with Errors: Conceptually-Simpler, Asymptotically-Faster, Attribute-Based"
+  url: "/summaries/homomorphic-encryption-from-learning-with-errors-gsw-2026-06-26/"
+  date: "2026-06-26"
+  category: "Gsw Fhe Foundations"
+  pub: "2013"
+  publisher: "IACR ePrint 2013/340 (full version of CRYPTO 2013, LNCS 8042, pp. 75-92)"
+  meta_line: "IACR ePrint 2013/340 (full version of CRYPTO 2013, LNCS 8042, pp. 75-92)"
+  source_type: "PDF (text-layer)"
+  source_url: "https://eprint.iacr.org/2013/340"
+  pdf: ""
+  tags: ["FHE", "fully homomorphic encryption", "LWE", "GSW", "approximate eigenvector", "lattice cryptography", "identity-based encryption", "attribute-based encryption", "bootstrapping", "GapSVP"]
 - slug: "transforms-and-polynomial-multiplication-2026-06-25"
   title: "Transforms and Polynomial Multiplication for FHE"
   url: "/summaries/transforms-and-polynomial-multiplication-2026-06-25/"
