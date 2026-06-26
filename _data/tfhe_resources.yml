@@ -60,6 +60,7 @@
   tags: [tfhe]
   url: "https://github.com/zama-ai/tfhe-rs"
   about: "Actively maintained pure-Rust implementation of an enhanced TFHE variant for boolean and integer arithmetic, with Rust, C, and WASM APIs."
+  deep_summary: true
 
 - name: "Concrete (Zama)"
   kind: Library
@@ -81,6 +82,7 @@
   tags: [tfhe]
   url: "https://github.com/openfheorg/openfhe-development"
   about: "A broad FHE library supporting BGV, BFV, CKKS, and DM/CGGI (FHEW/TFHE), including CKKS to FHEW/TFHE scheme switching."
+  deep_summary: true
 
 - name: "cuFHE"
   kind: Library
