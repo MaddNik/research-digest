@@ -23,9 +23,9 @@
     transition: border-color .12s, background .12s, color .12s;
   }
   .paper-card__more:hover {
-    border-color: #14b8a6;
-    background: rgba(20,184,166,.08);
-    color: #14b8a6;
+    border-color: var(--link-color);
+    background: rgba(42,122,226,.08);
+    color: var(--link-color);
   }
   .paper-card.card {
     background: var(--card-bg);
@@ -43,7 +43,7 @@
     font-size: 1.25rem;
     cursor: pointer;
   }
-  .paper-card__title:hover { color: #14b8a6; }
+  .paper-card__title:hover { color: var(--link-color); }
   .paper-card__short {
     color: var(--text-muted-color);
     line-height: 1.65;
@@ -90,10 +90,10 @@
   .paper-modal__link {
     display: inline-block; font-weight: 600;
     padding: .4rem .9rem; border-radius: .5rem;
-    background: #14b8a6; color: #fff !important; text-decoration: none;
-    transition: background .12s;
+    background: var(--link-color); color: #fff !important; text-decoration: none;
+    transition: opacity .12s;
   }
-  .paper-modal__link:hover { background: #0d9488; }
+  .paper-modal__link:hover { opacity: .88; }
 </style>
 
 <script>

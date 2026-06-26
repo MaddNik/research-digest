@@ -77,11 +77,11 @@ layout: page
   .topic-filter { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 1.5rem; }
   .topic-tile { border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); background: var(--card-bg); color: var(--text-color); border-radius: .6rem; padding: .45rem .85rem; font-size: .9rem; font-weight: 600; cursor: pointer; }
   .topic-tile .n { color: var(--text-muted-color); font-weight: 400; margin-left: .3rem; }
-  .topic-tile:hover { border-color: #14b8a6; color: #14b8a6; }
-  .topic-tile.active { background: #14b8a6; color: #fff; border-color: #14b8a6; }
+  .topic-tile:hover { border-color: var(--link-color); color: var(--link-color); }
+  .topic-tile.active { background: var(--link-color); color: #fff; border-color: var(--link-color); }
   .topic-tile.active .n { color: rgba(255,255,255,.85); }
   .topic-tile--bookmark { margin-left: auto; }
-  .topic-tile--bookmark.active { background: #14b8a6; border-color: #14b8a6; }
+  .topic-tile--bookmark.active { background: var(--link-color); border-color: var(--link-color); }
   .conf-list { margin-top: 1rem; }
   .conf-card.card { margin-bottom: 1rem; background: var(--card-bg); box-shadow: var(--card-shadow); border: 0; border-left: 3px solid transparent; transition: border-color .15s; }
   .conf-card.card[data-bm="saved"] { border-left-color: #f0a500; }
@@ -97,12 +97,12 @@ layout: page
   .conf-card.is-archived { opacity: .45; }
   /* sm-btn: same style as rt-btn */
   .sm-btn { border: 0; background: transparent; cursor: pointer; color: var(--text-muted-color); font-size: 1rem; line-height: 1; padding: .15rem .2rem; }
-  .sm-btn:hover { color: #14b8a6; }
+  .sm-btn:hover { color: var(--link-color); }
   .sm-hide-btn.is-archived { color: #e07070; }
   /* archive section */
   #sm-archive-section { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--main-border-color, rgba(128,128,128,.2)); }
   .sm-archive-btn { border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); background: transparent; color: var(--text-muted-color); border-radius: .5rem; padding: .35rem .85rem; font-size: .85rem; cursor: pointer; display: inline-flex; align-items: center; gap: .5rem; }
-  .sm-archive-btn:hover { color: #14b8a6; border-color: #14b8a6; }
+  .sm-archive-btn:hover { color: var(--link-color); border-color: var(--link-color); }
   /* summary modal */
   #summary-modal[hidden] { display: none; }
   #summary-modal { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1.2rem; }
