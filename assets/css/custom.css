@@ -3,20 +3,53 @@
    Direction: Minimal — content-forward, dark, hairline chrome
    ═══════════════════════════════════════════════════ */
 
+/* Tokens adapt to Chirpy's light/dark mode.
+   Light mode (default): surfaces/text/borders follow Chirpy's own adaptive
+   variables so cards stay readable; accent is a contrast-safe blue.
+   Dark mode: the approved content-forward dark palette. */
 :root {
+  /* Semantic accents (light-mode tuned, readable on white) */
+  --c-accent:         #2a7ae2;
+  --c-accent-dim:     rgba(42,122,226,0.08);
+  --c-saved:          #c8841f;
+  --c-toread:         #2f7fb8;
+  --c-archived:       #c0392b;
+
+  /* Surfaces/text/borders inherit Chirpy's adaptive theme */
+  --c-surface:        var(--main-bg, #fff);
+  --c-surface-raised: var(--card-bg, #fff);
+  --c-border:         var(--main-border-color, rgba(128,128,128,.25));
+  --c-muted:          var(--text-muted-color, #6b7280);
+
+  --link-color:       var(--c-accent);
+}
+
+/* Dark palette — explicit toggle */
+html[data-mode="dark"] {
   --c-accent:         #5b9ef7;
-  --c-accent-dim:     rgba(91,158,247,0.08);
-  --c-surface:        #0f1117;
-  --c-surface-raised: #151b26;
-  --c-border:         #1e2535;
-  --c-muted:          #566070;
+  --c-accent-dim:     rgba(91,158,247,0.12);
   --c-saved:          #d4943a;
   --c-toread:         #4692c8;
   --c-archived:       #b85c5c;
+  --c-surface:        #0f1117;
+  --c-surface-raised: #151b26;
+  --c-border:         #1e2535;
+  --c-muted:          #6b7585;
+}
 
-  --link-color:        var(--c-accent);
-  --main-border-color: var(--c-border);
-  --btn-border-color:  var(--c-border);
+/* Dark palette — system preference when no explicit toggle is set */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode]) {
+    --c-accent:         #5b9ef7;
+    --c-accent-dim:     rgba(91,158,247,0.12);
+    --c-saved:          #d4943a;
+    --c-toread:         #4692c8;
+    --c-archived:       #b85c5c;
+    --c-surface:        #0f1117;
+    --c-surface-raised: #151b26;
+    --c-border:         #1e2535;
+    --c-muted:          #6b7585;
+  }
 }
 
 /* ── Filter tiles ─────────────────────────────────── */
@@ -70,6 +103,10 @@
 
 /* Deep-summary button "done" state */
 .rt-summary-btn.is-done { color: var(--c-accent) !important; border-color: var(--c-accent) !important; font-weight: 600; }
+
+/* ── Card lists (reset default <ul> bullets; Chirpy omits .list-unstyled) ── */
+.conf-list, .res-list, .paper-list { list-style: none; padding-left: 0; margin-left: 0; }
+.conf-list > li, .res-list > li { list-style: none; }
 
 /* ── Cards ────────────────────────────────────────── */
 .site-card {
@@ -229,6 +266,8 @@
 .res-list { margin-top: 1rem; }
 .res-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: .5rem; }
 .res-title-block { flex: 1; min-width: 0; }
+.res-name { font-size: 1.05rem; font-weight: 600; color: var(--heading-color); margin: 0 0 .35rem; line-height: 1.35; }
+.res-kind { font-weight: 600; color: var(--c-muted); }
 .res-links { display: flex; gap: .4rem; flex-shrink: 0; }
 .res-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .45rem; font-size: .8rem; color: var(--c-muted); }
 .res-sep { opacity: .45; }
