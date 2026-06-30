@@ -96,3 +96,141 @@
         - name: "xdma_python_wrapper"
           desc: "Python library wrapping the Xilinx xDMA PCIe kernel driver. Provides register read/write, DMA burst transfer initiation, and interrupt handling for host-to-FPGA communication."
           repo: "https://gitlab.desy.de/fpgafw/scr/xdma_python_wrapper"
+        - name: "sis8300ku_example_application"
+          desc: "Reference host application for the SIS8300KU digitizer board. Uses ChimeraTK Python bindings together with the xdma-metapackage to configure and interact with the example firmware project."
+          repo: "https://gitlab.desy.de/fpgafw/scr/sis8300ku_example_application"
+
+- name: "DesyRDL"
+  kind: "Register Map Generator"
+  org: "DESY MSK Group"
+  year: 2021
+  category: "FPGA Tools"
+  tags: [fpga, firmware, hardware, registers, python, vhdl, systemrdl]
+  url: "https://pypi.org/project/desyrdl/"
+  repo: "https://gitlab.desy.de/fpgafw/tools/desyrdl"
+  license: "Open source"
+  summary: "SystemRDL 2.0 code generator that produces VHDL register banks, C/C++ headers, and AsciiDoc documentation from hardware register descriptions. Pip-installable and designed to integrate with the DESY FWK build flow."
+  about: |
+    DesyRDL is a code generation tool developed by the MSK firmware group at DESY as
+    the open-source successor to their proprietary HECTARE register-generation tool.
+    It takes one or more SystemRDL 2.0 (.rdl) input files describing an FPGA design's
+    complete address space and generates multiple output artifacts from a single source
+    of truth.
+
+    The core output is a VHDL register bank implementation targeting AXI4-Lite,
+    including named record types so that register and field instances can be referenced
+    by their SystemRDL instance names directly in HDL source. This removes the need for
+    manually maintained address offset constants and makes register-level code
+    self-documenting. The same input files drive generation of C/C++ headers for
+    host-side software and AsciiDoc reference documentation, ensuring the register map
+    is always consistent across firmware, software, and documentation.
+
+    DesyRDL uses its own template engine (not Jinja2), allowing new output targets to
+    be added by writing additional templates without modifying the core tool. It builds
+    on the systemrdl-compiler Python library for parsing and validation. The tool is
+    available on PyPI (pip install desyrdl) and is intended to be used as part of a
+    firmware build environment such as the DESY FWK, though it can also be run
+    standalone. It is used within FWK to generate the documentation and address maps
+    consumed by the ChimeraTK device-access framework.
+  module_groups:
+    - name: "Outputs"
+      desc: "DesyRDL produces the following artifacts from SystemRDL 2.0 input."
+      modules:
+        - name: "VHDL register bank"
+          desc: "AXI4-Lite subordinate register bank with named record types. Fields and registers are accessible in HDL by their SystemRDL instance names."
+        - name: "C/C++ headers"
+          desc: "Register offset definitions and bitfield structs for host-side software interacting with the firmware over PCIe or memory-mapped interfaces."
+        - name: "AsciiDoc documentation"
+          desc: "Human-readable reference documentation for the address space, generated alongside the code to stay in sync with the implementation."
+        - name: "Address map files (.map)"
+          desc: "Machine-readable address maps consumed by ChimeraTK and other device-access frameworks for automatic register discovery."
+
+- name: "xdma_python_wrapper"
+  kind: "Python Library"
+  org: "DESY MSK Group"
+  year: 2020
+  category: "FPGA Tools"
+  tags: [fpga, firmware, hardware, pcie, dma, python, xilinx]
+  url: "https://gitlab.desy.de/fpgafw/scr/xdma_python_wrapper"
+  repo: "https://gitlab.desy.de/fpgafw/scr/xdma_python_wrapper"
+  license: "Open source"
+  summary: "Python wrapper for the Xilinx xDMA PCIe kernel driver. Abstracts register read/write, DMA burst transfers, and interrupt handling into a clean Python API for host-side interaction with FPGA designs using the Xilinx xDMA IP."
+  about: |
+    xdma_python_wrapper is a lightweight Python library that wraps the Xilinx xDMA
+    PCIe kernel driver, which is the standard driver used with Xilinx FPGA designs
+    that include the AXI DMA or PCIe DMA IP cores. The kernel driver exposes character
+    devices for control, data, and event channels, and this library provides a
+    Pythonic interface over those devices.
+
+    The library handles three main interaction modes. Register access reads and writes
+    to AXI-mapped control registers via the xDMA control channel, targeting individual
+    register addresses with configurable data widths. DMA transfers initiate bulk data
+    movement between host memory and FPGA-side memory or FIFOs using the xDMA H2C
+    (host-to-card) and C2H (card-to-host) channels, suitable for high-throughput data
+    acquisition or processing pipelines. Interrupt handling monitors the xDMA event
+    channel for FPGA-generated interrupts, allowing host software to react to firmware
+    events without polling.
+
+    The wrapper is used in DESY's reference applications such as the SIS8300KU example
+    application and integrates with the ChimeraTK Python bindings for higher-level
+    device access in control system contexts.
+
+- name: "cosimtcp"
+  kind: "HDL Co-Simulation Tool"
+  org: "DESY MSK Group"
+  year: 2019
+  category: "FPGA Tools"
+  tags: [fpga, simulation, tcl, vivado, python, matlab]
+  url: "https://github.com/mskfw/cosimtcp"
+  repo: "https://github.com/mskfw/cosimtcp"
+  license: "GPL-3.0"
+  summary: "Co-simulation framework for HDL designs that connects Xilinx Vivado or ModelSim simulators to external Python or MATLAB environments over a Tcl TCP/IP socket, enabling test logic to be written in high-level languages while the HDL runs in the vendor simulator."
+  about: |
+    cosimtcp is a co-simulation bridge that allows Python and MATLAB scripts to drive
+    and observe HDL simulations running inside Xilinx Vivado (XSim) or Mentor ModelSim.
+    Communication between the simulator and the external process is handled through a
+    Tcl TCP/IP socket server running inside the simulator's Tcl interpreter, which both
+    Vivado and ModelSim expose natively.
+
+    The external script connects to the socket and exchanges signal values and clock
+    tick commands with the simulator, allowing test stimuli to be generated and
+    responses to be analyzed in Python or MATLAB without writing HDL testbenches. This
+    is particularly useful for signal-processing firmware where the expected outputs can
+    be computed in MATLAB or NumPy and compared cycle-accurately against the HDL
+    implementation.
+
+    The tool is self-contained - a small Tcl script initializes the server inside the
+    simulator, and a Python (or MATLAB) client class handles the connection protocol.
+    It targets the common case of verifying arithmetic and signal-processing IP blocks
+    against a floating-point reference model. The repository is hosted on GitHub under
+    the mskfw organization and is licensed under GPL-3.0.
+
+- name: "fwklinux (Yocto Integration)"
+  kind: "Embedded Linux Build Integration"
+  org: "DESY MSK Group"
+  year: 2020
+  category: "FPGA Tools"
+  tags: [fpga, firmware, hardware, yocto, embedded-linux, soc, zynq]
+  url: "https://fpgafw.pages.desy.de/docs-pub/yocto-doc/quick_start_guide.html"
+  repo: "https://gitlab.desy.de/fpgafw"
+  license: "Open source"
+  summary: "Yocto-based embedded Linux build integration for FPGA SoC targets (Zynq, Zynq UltraScale+). Provides pre-built package feeds and a standardized workflow for deploying Linux alongside FPGA firmware on the same device."
+  about: |
+    fwklinux is the embedded Linux component of the DESY FWK ecosystem, providing
+    Yocto Project build integration and pre-built package feeds for FPGA SoC targets
+    used in accelerator control systems at DESY and partner facilities. It targets
+    Xilinx Zynq and Zynq UltraScale+ SoC devices where the ARM processing system runs
+    Linux alongside the FPGA programmable logic.
+
+    Rather than requiring users to set up a full Yocto build from scratch, fwklinux
+    ships generic package feeds for the supported board families, allowing custom Linux
+    images to be assembled and extended without the overhead of a complete OpenEmbedded
+    build. The integration hooks into the FWK project structure via a yocto.mk makefile
+    include, making Linux image generation part of the same command-line build flow
+    used for FPGA bitfiles.
+
+    The intended deployment workflow is: synthesize the FPGA bitfile using FWK, build
+    the Linux image using fwklinux, and combine both onto an SD card or eMMC boot
+    medium. The quick start guide covers cloning an existing firmware project,
+    preparing the Yocto build environment, and producing a bootable image for supported
+    AMC and development boards.
