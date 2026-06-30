@@ -21,6 +21,8 @@ This is a personal site for tracking research across five fields:
 
 **Conferences** tracks upcoming events in semiconductor, photonics, and cryptography research: location, focus area, dates, and submission or registration links where available. Updated monthly.
 
+**Open Source Tools** lists frameworks, libraries, and utilities relevant to the research areas covered here, with abstracts and module breakdowns where applicable.
+
 **My Research** is a personal reading list. Use the bookmark and save buttons on any card to track papers you want to read or have saved.
 
 ---

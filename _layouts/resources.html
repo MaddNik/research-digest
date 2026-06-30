@@ -1,0 +1,173 @@
+---
+layout: page
+---
+
+{% assign tools = site.data.resources %}
+{% assign cats = tools | map: 'category' | uniq | sort %}
+
+<p class="text-muted">Open source tools and frameworks worth knowing about. Click a card to expand the full abstract and module breakdown.</p>
+
+{% if tools and tools.size > 0 %}
+
+  <div class="topic-filter">
+    <button type="button" class="topic-tile active" data-filter="all">All <span class="n">{{ tools.size }}</span></button>
+    {% for c in cats %}
+      {% if c and c != '' %}
+        {% assign cn = 0 %}
+        {% for t in tools %}{% if t.category == c %}{% assign cn = cn | plus: 1 %}{% endif %}{% endfor %}
+        <button type="button" class="topic-tile" data-filter="{{ c | slugify }}">{{ c }} <span class="n">{{ cn }}</span></button>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <ul id="resources-list" class="res-list list-unstyled">
+    {% for t in tools %}
+    <li class="res-card card-wrapper card" data-cat="{{ t.category | slugify }}">
+      <div class="card-body">
+        <div class="res-head">
+          <div class="res-title-block">
+            <h2 class="res-name">{{ t.name }}</h2>
+            <div class="res-meta">
+              {% if t.kind %}<span class="res-kind">{{ t.kind }}</span>{% endif %}
+              {% if t.org %}<span class="res-sep">&middot;</span><span class="res-org">{{ t.org }}</span>{% endif %}
+              {% if t.year %}<span class="res-sep">&middot;</span><span class="res-year">{{ t.year }}</span>{% endif %}
+              {% if t.license %}<span class="res-sep">&middot;</span><span class="res-license">{{ t.license }}</span>{% endif %}
+            </div>
+          </div>
+          <div class="res-links">
+            {% if t.url and t.url != '' %}
+              <a class="res-link-btn" href="{{ t.url }}" target="_blank" rel="noopener noreferrer">Docs</a>
+            {% endif %}
+            {% if t.repo and t.repo != '' %}
+              <a class="res-link-btn" href="{{ t.repo }}" target="_blank" rel="noopener noreferrer">Repo</a>
+            {% endif %}
+          </div>
+        </div>
+
+        <p class="res-summary">{{ t.summary }}</p>
+
+        <button type="button" class="res-expand-btn" aria-expanded="false">Read more</button>
+
+        <div class="res-detail" hidden>
+          {% if t.about and t.about != '' %}
+            <div class="res-about">
+              {% assign paras = t.about | newline_to_br | split: '<br /><br />' %}
+              {% for p in paras %}
+                <p>{{ p | remove: '<br />' | strip }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {% if t.module_groups and t.module_groups.size > 0 %}
+            <h3 class="res-modules-heading">Module breakdown</h3>
+            {% for g in t.module_groups %}
+              <div class="res-mod-group">
+                <h4 class="res-mod-group-name">{{ g.name }}</h4>
+                {% if g.desc and g.desc != '' %}<p class="res-mod-group-desc">{{ g.desc }}</p>{% endif %}
+                {% if g.modules and g.modules.size > 0 %}
+                  <ul class="res-mod-list">
+                    {% for m in g.modules %}
+                      <li class="res-mod-item">
+                        <span class="res-mod-name">{% if m.repo and m.repo != '' %}<a href="{{ m.repo }}" target="_blank" rel="noopener noreferrer">{{ m.name }}</a>{% else %}{{ m.name }}{% endif %}</span>
+                        {% if m.desc and m.desc != '' %}<span class="res-mod-desc"> - {{ m.desc }}</span>{% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+              </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+
+{% else %}
+  <p>No resources listed yet.</p>
+{% endif %}
+
+<style>
+  .topic-filter { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 1.5rem; }
+  .topic-tile { border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); background: var(--card-bg); color: var(--text-color); border-radius: .6rem; padding: .45rem .85rem; font-size: .9rem; font-weight: 600; cursor: pointer; }
+  .topic-tile .n { color: var(--text-muted-color); font-weight: 400; margin-left: .3rem; }
+  .topic-tile:hover { border-color: var(--link-color); color: var(--link-color); }
+  .topic-tile.active { background: var(--link-color); color: #fff; border-color: var(--link-color); }
+  .topic-tile.active .n { color: rgba(255,255,255,.85); }
+
+  .res-list { margin-top: 1rem; }
+  .res-card.card { margin-bottom: 1rem; background: var(--card-bg); box-shadow: var(--card-shadow); border: 0; border-left: 3px solid transparent; transition: border-color .15s; }
+  .res-card .card-body { padding: 1rem 1.2rem; }
+
+  .res-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+  .res-title-block { flex: 1; min-width: 0; }
+  .res-name { font-size: 1.1rem; margin: 0 0 .35rem; color: var(--heading-color); }
+  .res-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; font-size: .82rem; color: var(--text-muted-color); }
+  .res-sep { opacity: .5; }
+  .res-kind { font-weight: 600; color: var(--text-muted-color); }
+
+  .res-links { display: flex; gap: .4rem; flex-shrink: 0; }
+  .res-link-btn { border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); background: transparent; color: var(--link-color); border-radius: .4rem; padding: .2rem .65rem; font-size: .82rem; text-decoration: none; white-space: nowrap; }
+  .res-link-btn:hover { background: rgba(42,122,226,.08); text-decoration: none; }
+
+  .res-summary { margin: .75rem 0 .5rem; font-size: .92rem; color: var(--text-color); }
+
+  .res-expand-btn { border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); background: transparent; color: var(--link-color); border-radius: .4rem; padding: .2rem .65rem; font-size: .85rem; cursor: pointer; }
+  .res-expand-btn:hover { background: rgba(42,122,226,.08); }
+  .res-expand-btn[aria-expanded="true"] { background: rgba(42,122,226,.08); }
+
+  .res-detail[hidden] { display: none; }
+  .res-detail { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--main-border-color, rgba(128,128,128,.15)); }
+  .res-about p { font-size: .92rem; margin-bottom: .75rem; line-height: 1.65; }
+
+  .res-modules-heading { font-size: .95rem; font-weight: 700; margin: 1.25rem 0 .75rem; color: var(--heading-color); }
+  .res-mod-group { margin-bottom: 1.1rem; }
+  .res-mod-group-name { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted-color); margin: 0 0 .3rem; }
+  .res-mod-group-desc { font-size: .87rem; color: var(--text-muted-color); margin: 0 0 .5rem; }
+  .res-mod-list { margin: 0; padding: 0 0 0 1rem; list-style: disc; }
+  .res-mod-item { font-size: .87rem; margin-bottom: .3rem; line-height: 1.5; }
+  .res-mod-name { font-weight: 600; color: var(--heading-color); }
+  .res-mod-name a { color: var(--link-color); text-decoration: none; }
+  .res-mod-name a:hover { text-decoration: underline; }
+  .res-mod-desc { color: var(--text-muted-color); }
+</style>
+
+<script>
+  (function () {
+    var list = document.getElementById('resources-list');
+    var tiles = document.querySelectorAll('.topic-tile');
+    var activeFilter = 'all';
+
+    function applyFilter() {
+      if (!list) return;
+      list.querySelectorAll('.res-card').forEach(function (card) {
+        var cat = card.getAttribute('data-cat') || '';
+        var show = activeFilter === 'all' || cat === activeFilter;
+        card.style.display = show ? '' : 'none';
+      });
+    }
+
+    tiles.forEach(function (t) {
+      t.addEventListener('click', function () {
+        tiles.forEach(function (x) { x.classList.remove('active'); });
+        t.classList.add('active');
+        activeFilter = t.getAttribute('data-filter');
+        applyFilter();
+      });
+    });
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.res-expand-btn');
+      if (!btn) return;
+      var card = btn.closest('.res-card');
+      var detail = card && card.querySelector('.res-detail');
+      if (!detail) return;
+      var open = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+      btn.textContent = open ? 'Read more' : 'Show less';
+      if (open) { detail.setAttribute('hidden', ''); } else { detail.removeAttribute('hidden'); }
+    });
+
+    applyFilter();
+  })();
+</script>
