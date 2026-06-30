@@ -19,7 +19,7 @@
         <p class="site-card__body">{{ post.description }}</p>
         <div class="card-actions">
           <button type="button" class="btn-ghost" data-target="{{ pfx }}pf-{{ forloop.index }}">Read abstract</button>
-          {% if post.link %}<button type="button" class="btn-ghost rt-summary-btn" data-pf-link="{{ post.link }}" data-pf-title="{{ post.title | escape }}" data-pf-cat="{{ cat }}">Generate Deep Summary</button>{% endif %}
+          {% if post.link %}<button type="button" class="btn-ghost rt-summary-btn" title="Generate a deep summary" data-pf-link="{{ post.link }}" data-pf-title="{{ post.title | escape }}" data-pf-cat="{{ cat }}">Deep Summary</button>{% endif %}
           <div class="ic-group">
             <button type="button" class="ic-btn" data-rt-list="toread" aria-label="Add to reading list" title="Add to reading list"
               data-rt-id="{{ post.url | relative_url }}" data-rt-title="{{ post.title | escape }}"

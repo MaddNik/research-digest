@@ -8,16 +8,16 @@
     color: var(--text-muted-color); font-size: 1rem; line-height: 1; padding: .15rem .2rem;
   }
   .rt-btn:hover { color: var(--link-color); }
-  .rt-btn.is-on[data-rt-list="saved"]   { color: #f0a500; }
-  .rt-btn.is-on[data-rt-list="toread"]  { color: #4ea1d3; }
+  .rt-btn.is-on[data-rt-list="saved"]   { color: var(--c-saved); }
+  .rt-btn.is-on[data-rt-list="toread"]  { color: var(--c-toread); }
 
   /* Bookmark accent border - all card types globally */
   .paper-card,
   .conf-card { border-left: 3px solid transparent !important; transition: border-left-color .15s; }
   .paper-card[data-bm="saved"],
-  .conf-card[data-bm="saved"]  { border-left-color: #f0a500 !important; }
+  .conf-card[data-bm="saved"]  { border-left-color: var(--c-saved) !important; }
   .paper-card[data-bm="toread"],
-  .conf-card[data-bm="toread"] { border-left-color: #4ea1d3 !important; }
+  .conf-card[data-bm="toread"] { border-left-color: var(--c-toread) !important; }
 
   /* Research list headings */
   .rt-group h3 {
@@ -35,19 +35,27 @@
 
   /* Count badges */
   .rt-count {
-    display: inline-block; min-width: 1.1em; padding: 0 .35em;
-    font-size: .7rem; font-weight: 700; line-height: 1.4;
+    display: inline-block; min-width: 1em; padding: 0 .35em;
+    font-size: .62rem; font-weight: 700; line-height: 1.4;
     color: #fff; background: var(--link-color); border-radius: 1rem; vertical-align: middle;
   }
-  .rt-topbar-group { margin-left: auto; display: inline-flex; align-items: center; gap: 0; }
+  .rt-count[hidden] { display: none; }
+  .rt-topbar-group { margin-left: auto; display: inline-flex; align-items: center; gap: .15rem; }
   .rt-topbar {
     position: relative; display: inline-flex; align-items: center;
-    padding: .25rem .3rem; background: transparent; border: 0;
-    color: var(--topbar-text-color, var(--text-color)); cursor: pointer;
+    padding: .25rem .35rem; background: transparent; border: 0;
+    border-radius: .3rem;
+    color: var(--c-muted); cursor: pointer;
+    transition: background .12s;
   }
-  .rt-topbar:hover { color: var(--link-color); }
-  .rt-topbar.rt-drop-open { color: var(--link-color); }
-  .rt-topbar .rt-count { position: absolute; top: -.1rem; right: -.2rem; }
+  .rt-topbar:hover,
+  .rt-topbar.rt-drop-open { background: var(--c-accent-dim); }
+  /* New-design icons: circled-plus (to-read, blue) + ribbon (saved, gold) */
+  .rt-topbar .ic-plus { font-size: 1.2rem; line-height: 1; color: var(--c-toread); }
+  .rt-topbar .rt-topbar-bm { stroke: var(--c-saved); display: block; }
+  .rt-topbar .rt-count { position: absolute; top: -.15rem; right: -.25rem; }
+  .rt-topbar[data-rt-drop="toread"] .rt-count { background: var(--c-toread); }
+  .rt-topbar[data-rt-drop="saved"]  .rt-count { background: var(--c-saved); }
 
   /* Paper-page action buttons */
   .paper-bm-actions { display: flex; gap: .5rem; margin-bottom: 1.2rem; flex-wrap: wrap; }

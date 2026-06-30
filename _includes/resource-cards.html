@@ -27,7 +27,7 @@
             {%- if r.deep_summary -%}{%- assign show_deep = true -%}{%- endif -%}
             {%- if deep_kinds contains r.kind -%}{%- assign show_deep = true -%}{%- endif -%}
           {%- endif -%}
-          {% if show_deep %}<button type="button" class="btn-ghost rt-summary-btn" data-pf-link="{{ r.url }}" data-pf-title="{{ r.name | escape }}" data-pf-cat="FHE">Generate Deep Summary</button>{% endif %}
+          {% if show_deep %}<button type="button" class="btn-ghost rt-summary-btn" title="Generate a deep summary" data-pf-link="{{ r.url }}" data-pf-title="{{ r.name | escape }}" data-pf-cat="FHE">Deep Summary</button>{% endif %}
           <div class="ic-group">
             <button type="button" class="ic-btn" data-rt-list="toread" aria-label="Add to reading list" title="Add to reading list"
               data-rt-id="{{ r.url }}" data-rt-title="{{ r.name | escape }}"

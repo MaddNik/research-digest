@@ -79,11 +79,11 @@ html[data-mode="dark"] {
   display: inline-flex; align-items: center; gap: .35rem;
 }
 .btn-ghost {
-  border: 1px solid var(--c-border);
+  border: 1px solid var(--c-accent);
   background: transparent;
-  color: var(--c-muted);
+  color: var(--c-accent);
 }
-.btn-ghost:hover { border-color: var(--c-accent); color: var(--c-accent); }
+.btn-ghost:hover { background: var(--c-accent-dim); }
 
 .btn-action {
   border: 1px solid var(--c-border);
@@ -101,8 +101,12 @@ html[data-mode="dark"] {
 }
 .btn-primary:hover { opacity: .9; text-decoration: none; }
 
-/* Deep-summary button "done" state */
-.rt-summary-btn.is-done { color: var(--c-accent) !important; border-color: var(--c-accent) !important; font-weight: 600; }
+/* Deep-summary button: status dot (hollow = generate, filled = view) */
+.rt-summary-btn::before {
+  content: ''; width: .5rem; height: .5rem; border-radius: 50%;
+  border: 1.5px solid currentColor; flex-shrink: 0;
+}
+.rt-summary-btn.is-done::before { background: currentColor; }
 
 /* ── Card lists (reset default <ul> bullets; Chirpy omits .list-unstyled) ── */
 .conf-list, .res-list, .paper-list { list-style: none; padding-left: 0; margin-left: 0; }

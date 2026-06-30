@@ -4,7 +4,7 @@ layout: page
 
 {% assign sums = site.data.summaries | sort: 'date' | reverse %}
 
-<p class="text-muted">Deep Summaries I have written from sources, newest first. Click a title or Read more to open it. Use the tiles to filter by category.</p>
+<p class="text-muted">Here are all the deep summaries I've generated so far, newest first. Click a title or Read more to open one, and use the tiles to filter by category.</p>
 
 {% if sums and sums.size > 0 %}
   {%- comment -%} Filter tiles are built dynamically from the categories present in
