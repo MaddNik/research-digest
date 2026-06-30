@@ -36,17 +36,17 @@ layout: page
           </div>
           <div class="res-links">
             {% if t.url and t.url != '' %}
-              <a class="res-link-btn" href="{{ t.url }}" target="_blank" rel="noopener noreferrer">Docs</a>
+              <a class="btn-action" href="{{ t.url }}" target="_blank" rel="noopener noreferrer">Docs</a>
             {% endif %}
             {% if t.repo and t.repo != '' %}
-              <a class="res-link-btn" href="{{ t.repo }}" target="_blank" rel="noopener noreferrer">Repo</a>
+              <a class="btn-action" href="{{ t.repo }}" target="_blank" rel="noopener noreferrer">Repo</a>
             {% endif %}
           </div>
         </div>
 
         <p class="res-summary">{{ t.summary }}</p>
 
-        <button type="button" class="res-expand-btn" aria-expanded="false">Read more</button>
+        <button type="button" class="btn-ghost res-expand-btn" aria-expanded="false">Read more</button>
 
         <div class="res-detail" hidden>
           {% if t.about and t.about != '' %}
@@ -86,51 +86,6 @@ layout: page
 {% else %}
   <p>No resources listed yet.</p>
 {% endif %}
-
-<style>
-  .topic-filter { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 1.5rem; }
-  .topic-tile { border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); background: var(--card-bg); color: var(--text-color); border-radius: .6rem; padding: .45rem .85rem; font-size: .9rem; font-weight: 600; cursor: pointer; }
-  .topic-tile .n { color: var(--text-muted-color); font-weight: 400; margin-left: .3rem; }
-  .topic-tile:hover { border-color: var(--link-color); color: var(--link-color); }
-  .topic-tile.active { background: var(--link-color); color: #fff; border-color: var(--link-color); }
-  .topic-tile.active .n { color: rgba(255,255,255,.85); }
-
-  .res-list { margin-top: 1rem; }
-  .res-card.card { margin-bottom: 1rem; background: var(--card-bg); box-shadow: var(--card-shadow); border: 0; border-left: 3px solid transparent; transition: border-color .15s; }
-  .res-card .card-body { padding: 1rem 1.2rem; }
-
-  .res-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
-  .res-title-block { flex: 1; min-width: 0; }
-  .res-name { font-size: 1.1rem; margin: 0 0 .35rem; color: var(--heading-color); }
-  .res-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; font-size: .82rem; color: var(--text-muted-color); }
-  .res-sep { opacity: .5; }
-  .res-kind { font-weight: 600; color: var(--text-muted-color); }
-
-  .res-links { display: flex; gap: .4rem; flex-shrink: 0; }
-  .res-link-btn { border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); background: transparent; color: var(--link-color); border-radius: .4rem; padding: .2rem .65rem; font-size: .82rem; text-decoration: none; white-space: nowrap; }
-  .res-link-btn:hover { background: rgba(42,122,226,.08); text-decoration: none; }
-
-  .res-summary { margin: .75rem 0 .5rem; font-size: .92rem; color: var(--text-color); }
-
-  .res-expand-btn { border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); background: transparent; color: var(--link-color); border-radius: .4rem; padding: .2rem .65rem; font-size: .85rem; cursor: pointer; }
-  .res-expand-btn:hover { background: rgba(42,122,226,.08); }
-  .res-expand-btn[aria-expanded="true"] { background: rgba(42,122,226,.08); }
-
-  .res-detail[hidden] { display: none; }
-  .res-detail { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--main-border-color, rgba(128,128,128,.15)); }
-  .res-about p { font-size: .92rem; margin-bottom: .75rem; line-height: 1.65; }
-
-  .res-modules-heading { font-size: .95rem; font-weight: 700; margin: 1.25rem 0 .75rem; color: var(--heading-color); }
-  .res-mod-group { margin-bottom: 1.1rem; }
-  .res-mod-group-name { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted-color); margin: 0 0 .3rem; }
-  .res-mod-group-desc { font-size: .87rem; color: var(--text-muted-color); margin: 0 0 .5rem; }
-  .res-mod-list { margin: 0; padding: 0 0 0 1rem; list-style: disc; }
-  .res-mod-item { font-size: .87rem; margin-bottom: .3rem; line-height: 1.5; }
-  .res-mod-name { font-weight: 600; color: var(--heading-color); }
-  .res-mod-name a { color: var(--link-color); text-decoration: none; }
-  .res-mod-name a:hover { text-decoration: underline; }
-  .res-mod-desc { color: var(--text-muted-color); }
-</style>
 
 <script>
   (function () {

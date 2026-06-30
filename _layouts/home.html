@@ -40,29 +40,6 @@ layout: default
 
 {% include paper-modal.html %}
 
-<style>
-  .topic-filter { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 1.5rem; }
-  .topic-tile {
-    border: 1px solid var(--btn-border-color, rgba(128,128,128,.35));
-    background: var(--card-bg);
-    color: var(--text-color);
-    border-radius: .6rem;
-    padding: .45rem .85rem;
-    font-size: .9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: border-color .15s ease, background .15s ease;
-  }
-  .topic-tile .n { color: var(--text-muted-color); font-weight: 400; margin-left: .3rem; }
-  .topic-tile:hover { border-color: var(--link-color); }
-  .topic-tile.active {
-    background: var(--link-color);
-    color: #fff;
-    border-color: var(--link-color);
-  }
-  .topic-tile.active .n { color: rgba(255, 255, 255, .85); }
-</style>
-
 <script>
   (function () {
     var tiles = document.querySelectorAll('.topic-tile');

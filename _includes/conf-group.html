@@ -1,9 +1,9 @@
 {%- comment -%} Renders a list of conference cards. Argument: include.items {%- endcomment -%}
 <ul class="conf-list list-unstyled">
   {% for c in include.items %}
-    <li class="conf-card card-wrapper card">
+    <li class="conf-card card-wrapper card site-card">
       <div class="card-body">
-        <h2 class="conf-name">
+        <h2 class="site-card__title">
           {% if c.url and c.url != '' %}
             <a href="{{ c.url }}" target="_blank" rel="noopener noreferrer">{{ c.name }}</a>
           {% else %}
@@ -11,7 +11,7 @@
           {% endif %}
         </h2>
         <div class="conf-meta mb-2">
-          {% if c.domain %}<span class="paper-topic">{{ c.domain }}</span>{% endif %}
+          {% if c.domain %}<span class="tag-pill">{{ c.domain }}</span>{% endif %}
           {% if c.location %}<span class="conf-bit"><i class="fas fa-location-dot fa-fw"></i> {{ c.location }}</span>{% endif %}
           {% if c.dates %}<span class="conf-bit"><i class="far fa-calendar fa-fw"></i> {{ c.dates }}</span>{% endif %}
         </div>

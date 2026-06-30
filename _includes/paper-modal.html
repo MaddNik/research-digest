@@ -6,95 +6,9 @@
     <h2 id="paper-modal-title" class="paper-modal__title"></h2>
     <div class="paper-modal__meta text-muted small"></div>
     <div class="paper-modal__body content"></div>
-    <a class="paper-modal__link" href="#" target="_blank" rel="noopener noreferrer">Read the paper &rarr;</a>
+    <a class="paper-modal__link btn-primary" href="#" target="_blank" rel="noopener noreferrer">Read the paper &rarr;</a>
   </div>
 </div>
-
-<style>
-  .paper-card__more {
-    align-self: flex-start;
-    border: 1px solid var(--btn-border-color, rgba(128,128,128,.35));
-    background: transparent;
-    color: var(--text-color);
-    border-radius: .5rem;
-    padding: .25rem .75rem;
-    font-size: .85rem;
-    cursor: pointer;
-    transition: border-color .12s, background .12s, color .12s;
-  }
-  .paper-card__more:hover {
-    border-color: var(--link-color);
-    background: rgba(42,122,226,.08);
-    color: var(--link-color);
-  }
-  .paper-card.card {
-    background: var(--card-bg);
-    box-shadow: var(--card-shadow);
-    border: 0;
-  }
-  .home-topic {
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    padding-bottom: .3rem;
-    border-bottom: 1px solid var(--main-border-color, rgba(128,128,128,.25));
-  }
-  .paper-card__title {
-    color: var(--heading-color);
-    font-size: 1.25rem;
-    cursor: pointer;
-  }
-  .paper-card__title:hover { color: var(--link-color); }
-  .paper-card__short {
-    color: var(--text-muted-color);
-    line-height: 1.65;
-    font-size: .95rem;
-  }
-  .paper-topic {
-    display: inline-block;
-    font-size: .75rem;
-    font-weight: 600;
-    letter-spacing: .02em;
-    padding: .12rem .6rem;
-    border-radius: 1rem;
-    background: transparent;
-    border: 1px solid var(--btn-border-color, rgba(128,128,128,.35));
-    color: var(--text-muted-highlight-color) !important;
-    text-decoration: none;
-  }
-  .paper-topic:hover { text-decoration: none; opacity: .85; }
-  body.paper-modal-open { overflow: hidden; }
-  .paper-modal[hidden] { display: none; }
-  .paper-modal {
-    position: fixed; inset: 0; z-index: 2000;
-    display: flex; align-items: center; justify-content: center;
-    padding: 1rem;
-  }
-  .paper-modal__backdrop {
-    position: absolute; inset: 0; background: rgba(0,0,0,.5);
-  }
-  .paper-modal__dialog {
-    position: relative; z-index: 1;
-    width: min(680px, 100%); max-height: 85vh; overflow-y: auto;
-    background: var(--card-bg, #fff); color: var(--text-color, #1b1b1e);
-    border-radius: .75rem; padding: 1.5rem 1.75rem;
-    box-shadow: 0 10px 40px rgba(0,0,0,.35);
-  }
-  .paper-modal__close {
-    position: absolute; top: .5rem; right: .75rem;
-    border: 0; background: transparent; font-size: 1.6rem; line-height: 1;
-    color: var(--text-muted-color, #828282); cursor: pointer;
-  }
-  .paper-modal__title { margin-top: 0; margin-right: 1.5rem; font-size: 1.3rem; }
-  .paper-modal__meta { margin-bottom: 1rem; }
-  .paper-modal__body { margin-bottom: 1.25rem; }
-  .paper-modal__link {
-    display: inline-block; font-weight: 600;
-    padding: .4rem .9rem; border-radius: .5rem;
-    background: var(--link-color); color: #fff !important; text-decoration: none;
-    transition: opacity .12s;
-  }
-  .paper-modal__link:hover { opacity: .88; }
-</style>
 
 <script>
   (function () {
@@ -129,7 +43,7 @@
     }
 
     document.addEventListener('click', function (e) {
-      var trigger = e.target.closest('.paper-card__more, .paper-card__title');
+      var trigger = e.target.closest('[data-target]');
       if (trigger) {
         var card = trigger.closest('.paper-card');
         var id = trigger.getAttribute('data-target') || (card ? card.getAttribute('data-paper-id') : null);

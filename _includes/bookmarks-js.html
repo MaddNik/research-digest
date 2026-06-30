@@ -3,9 +3,6 @@
   my-research page targets have no scope and always show everything. {%- endcomment -%}
 
 <style>
-  .paper-card .card-body { position: relative; }
-  .paper-card__title { padding-right: 3.3rem; }
-  .card-actions { position: absolute; top: .8rem; right: .8rem; display: inline-flex; gap: .15rem; }
   .rt-btn {
     border: 0; background: transparent; cursor: pointer;
     color: var(--text-muted-color); font-size: 1rem; line-height: 1; padding: .15rem .2rem;
@@ -149,13 +146,13 @@
     }
 
     function refreshButtons() {
-      document.querySelectorAll('.rt-btn').forEach(function (b) {
+      document.querySelectorAll('[data-rt-list]').forEach(function (b) {
         var l = b.getAttribute('data-rt-list');
         var id = b.getAttribute('data-rt-id');
         b.classList.toggle('is-on', !!(store[l] && store[l][id]));
       });
       document.querySelectorAll('.paper-card, .conf-card').forEach(function (card) {
-        var btn = card.querySelector('.rt-btn[data-rt-id]');
+        var btn = card.querySelector('[data-rt-id]');
         if (!btn) return;
         var id = btn.getAttribute('data-rt-id');
         var bm = (store.saved && store.saved[id]) ? 'saved'
@@ -308,7 +305,7 @@
         openDrop(trigger.getAttribute('data-rt-drop'), trigger);
         return;
       }
-      var b = e.target.closest('.rt-btn');
+      var b = e.target.closest('[data-rt-list]');
       if (!b) return;
       var l = b.getAttribute('data-rt-list');
       if (!l) return;

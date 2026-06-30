@@ -49,48 +49,6 @@ layout: page
 
 {% include paper-modal.html %}
 
-<style>
-  .topic-filter { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 1.5rem; }
-  .topic-tile {
-    border: 1px solid var(--btn-border-color, rgba(128,128,128,.35));
-    background: var(--card-bg);
-    color: var(--text-color);
-    border-radius: .6rem;
-    padding: .45rem .85rem;
-    font-size: .9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: border-color .15s ease, background .15s ease;
-  }
-  .topic-tile .n { color: var(--text-muted-color); font-weight: 400; margin-left: .3rem; }
-  .topic-tile:hover { border-color: var(--link-color); }
-  .topic-tile.active { background: var(--link-color); color: #fff; border-color: var(--link-color); }
-  .topic-tile.active .n { color: rgba(255, 255, 255, .85); }
-  .fhe-section {
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    padding-bottom: .3rem;
-    border-bottom: 1px solid var(--main-border-color, rgba(128,128,128,.25));
-  }
-  .resource-card .paper-card__title a { color: var(--heading-color); text-decoration: none; }
-  .resource-card .paper-card__title a:hover { text-decoration: underline; }
-  .fhe-toggle { cursor: pointer; user-select: none; }
-  .fhe-toggle:hover { color: var(--link-color); }
-  .fhe-toggle-n { color: var(--text-muted-color); font-weight: 400; font-size: .85rem; }
-  .fhe-caret {
-    display: inline-block;
-    width: 0; height: 0;
-    margin-right: .5rem;
-    vertical-align: middle;
-    border-left: .42rem solid currentColor;
-    border-top: .3rem solid transparent;
-    border-bottom: .3rem solid transparent;
-    transition: transform .15s ease;
-  }
-  .fhe-toggle[aria-expanded="true"] .fhe-caret { transform: rotate(90deg); }
-  #fhe-resources-wrap.is-collapsed { display: none; }
-</style>
-
 <script>
   (function () {
     var tiles = document.querySelectorAll('.topic-tile');

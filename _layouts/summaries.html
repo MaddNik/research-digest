@@ -25,36 +25,53 @@ layout: page
 
   <ul id="summaries-content" class="conf-list list-unstyled">
     {% for s in sums %}
-      <li class="conf-card card-wrapper card" data-cat="{{ s.category | slugify }}" data-tags="{{ s.tags | join: ' ' }}"
+      <li class="conf-card card-wrapper card site-card" data-cat="{{ s.category | slugify }}" data-tags="{{ s.tags | join: ' ' }}"
           data-url="{{ s.url | relative_url }}" data-title="{{ s.title | escape }}" data-src="{{ s.source_url }}">
         <div class="card-body">
-          <h2 class="conf-name"><a class="summary-open" href="{{ s.url | relative_url }}">{{ s.title }}</a></h2>
-          <div class="conf-meta">
+          <h2 class="site-card__title"><a class="summary-open" href="{{ s.url | relative_url }}">{{ s.title }}</a></h2>
+          <div class="site-card__meta">
             <span class="conf-pub">{% if s.meta_line and s.meta_line != '' %}{{ s.meta_line }}{% elsif s.pub and s.pub != '' %}Published {{ s.pub }}{% elsif s.date and s.date != '' %}{{ s.date }}{% endif %}</span>
-            <button type="button" class="conf-readmore summary-open">Read more</button>
           </div>
-          <span class="card-actions">
-            <button type="button" class="rt-btn" data-rt-list="toread" aria-label="Save" title="Save"
-              data-rt-id="{{ s.url | relative_url }}" data-rt-title="{{ s.title | escape }}"
-              data-rt-url="{{ s.url | relative_url }}" data-rt-cat="{{ s.category | escape }}"
-              data-rt-kind="Deep Summary" data-rt-tags="{{ s.tags | join: ',' }}"><i class="fas fa-book-open"></i></button>
-            <button type="button" class="rt-btn" data-rt-list="saved" aria-label="Bookmark" title="Bookmark"
-              data-rt-id="{{ s.url | relative_url }}" data-rt-title="{{ s.title | escape }}"
-              data-rt-url="{{ s.url | relative_url }}" data-rt-cat="{{ s.category | escape }}"
-              data-rt-kind="Deep Summary" data-rt-tags="{{ s.tags | join: ',' }}"><i class="fas fa-bookmark"></i></button>
-            <button type="button" class="sm-btn sm-hide-btn" aria-label="Archive" title="Archive"
-              data-sm-url="{{ s.url | relative_url }}"><i class="fas fa-eye-slash"></i></button>
-          </span>
+          <div class="card-actions">
+            <button type="button" class="btn-ghost summary-open">Read more</button>
+            <div class="ic-group">
+              <button type="button" class="ic-btn" data-rt-list="toread" aria-label="Add to reading list" title="Add to reading list"
+                data-rt-id="{{ s.url | relative_url }}" data-rt-title="{{ s.title | escape }}"
+                data-rt-url="{{ s.url | relative_url }}" data-rt-cat="{{ s.category | escape }}"
+                data-rt-kind="Deep Summary" data-rt-tags="{{ s.tags | join: ',' }}"><span class="ic-plus">&#8853;</span></button>
+              <button type="button" class="ic-btn ic-bm" data-rt-list="saved" aria-label="Bookmark" title="Bookmark"
+                data-rt-id="{{ s.url | relative_url }}" data-rt-title="{{ s.title | escape }}"
+                data-rt-url="{{ s.url | relative_url }}" data-rt-cat="{{ s.category | escape }}"
+                data-rt-kind="Deep Summary" data-rt-tags="{{ s.tags | join: ',' }}">
+                <svg width="12" height="16" viewBox="0 0 10 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round">
+                  <path d="M1 0.7 H9 V13 L5 9.8 L1 13 Z"/>
+                </svg>
+              </button>
+              <button type="button" class="ic-btn ic-eye" aria-label="Archive" title="Archive" data-sm-url="{{ s.url | relative_url }}">
+                <svg class="eye-open" width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round">
+                  <path d="M8 0.5 C2.5 0.5 0.5 5.5 0.5 5.5 C0.5 5.5 2.5 10.5 8 10.5 C13.5 10.5 15.5 5.5 15.5 5.5 C15.5 5.5 13.5 0.5 8 0.5 Z"/>
+                  <circle cx="8" cy="5.5" r="2.2"/>
+                </svg>
+                <svg class="eye-slash" width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round">
+                  <path d="M8 0.5 C2.5 0.5 0.5 5.5 0.5 5.5 C0.5 5.5 2.5 10.5 8 10.5 C13.5 10.5 15.5 5.5 15.5 5.5 C15.5 5.5 13.5 0.5 8 0.5 Z"/>
+                  <circle cx="8" cy="5.5" r="2.2"/>
+                  <line x1="1.5" y1="1" x2="14.5" y2="10" stroke-width="1.4"/>
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
       </li>
     {% endfor %}
   </ul>
 
-  <div id="sm-archive-section" hidden>
-    <button type="button" id="sm-archive-toggle" class="sm-archive-btn">
-      <i class="fas fa-archive"></i>
-      <span class="sm-archive-label">Show archived</span> (<span class="sm-archive-count">0</span>)
+  <div class="sm-archive-panel" id="sm-archive-panel" style="display:none">
+    <button class="sm-archive-header" id="sm-archive-header" type="button">
+      <span class="sm-archive-chevron"></span>
+      Archived
+      <span class="sm-archive-count-badge" id="sm-archive-badge">0</span>
     </button>
+    <div class="sm-archive-list" id="sm-archive-list"></div>
   </div>
 
   <div id="summary-modal" hidden>
@@ -73,56 +90,15 @@ layout: page
   <p>No deep summaries published yet. Create one in your research-material directory and it will appear here.</p>
 {% endif %}
 
-<style>
-  .topic-filter { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 1.5rem; }
-  .topic-tile { border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); background: var(--card-bg); color: var(--text-color); border-radius: .6rem; padding: .45rem .85rem; font-size: .9rem; font-weight: 600; cursor: pointer; }
-  .topic-tile .n { color: var(--text-muted-color); font-weight: 400; margin-left: .3rem; }
-  .topic-tile:hover { border-color: var(--link-color); color: var(--link-color); }
-  .topic-tile.active { background: var(--link-color); color: #fff; border-color: var(--link-color); }
-  .topic-tile.active .n { color: rgba(255,255,255,.85); }
-  .topic-tile--bookmark { margin-left: auto; }
-  .topic-tile--bookmark.active { background: var(--link-color); border-color: var(--link-color); }
-  .conf-list { margin-top: 1rem; }
-  .conf-card.card { margin-bottom: 1rem; background: var(--card-bg); box-shadow: var(--card-shadow); border: 0; border-left: 3px solid transparent; transition: border-color .15s; }
-  .conf-card.card[data-bm="saved"] { border-left-color: #f0a500; }
-  .conf-card.card[data-bm="toread"] { border-left-color: #4ea1d3; }
-  .conf-card .card-body { position: relative; }
-  .conf-name { font-size: 1.15rem; margin: 0 0 .5rem; padding-right: 5.5rem; }
-  .conf-name a { color: var(--heading-color); text-decoration: none; cursor: pointer; }
-  .conf-name a:hover { text-decoration: underline; }
-  .conf-meta { display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-size: .9rem; }
-  .conf-pub { color: var(--text-muted-color); }
-  .conf-readmore { border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); background: transparent; color: var(--link-color); border-radius: .4rem; padding: .2rem .65rem; font-size: .85rem; cursor: pointer; white-space: nowrap; }
-  .conf-readmore:hover { background: rgba(42,122,226,.08); }
-  /* archive state: dim the card */
-  .conf-card.is-archived { opacity: .45; }
-  /* sm-btn: same style as rt-btn */
-  .sm-btn { border: 0; background: transparent; cursor: pointer; color: var(--text-muted-color); font-size: 1rem; line-height: 1; padding: .15rem .2rem; }
-  .sm-btn:hover { color: var(--link-color); }
-  .sm-hide-btn.is-archived { color: #e07070; }
-  /* archive section */
-  #sm-archive-section { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--main-border-color, rgba(128,128,128,.2)); }
-  .sm-archive-btn { border: 1px solid var(--btn-border-color, rgba(128,128,128,.35)); background: transparent; color: var(--text-muted-color); border-radius: .5rem; padding: .35rem .85rem; font-size: .85rem; cursor: pointer; display: inline-flex; align-items: center; gap: .5rem; }
-  .sm-archive-btn:hover { color: var(--link-color); border-color: var(--link-color); }
-  /* summary modal */
-  #summary-modal[hidden] { display: none; }
-  #summary-modal { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1.2rem; }
-  .sm-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.6); }
-  .sm-dialog { position: relative; z-index: 1; width: min(1100px, 100%); height: 90vh; display: flex; flex-direction: column; background: var(--card-bg); border-radius: .6rem; overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,.4); }
-  .sm-head { display: flex; align-items: center; gap: 1rem; padding: .6rem 1rem; border-bottom: 1px solid var(--main-border-color, rgba(128,128,128,.25)); }
-  .sm-title { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sm-head a { white-space: nowrap; font-size: .9rem; }
-  .sm-close { border: 0; background: transparent; font-size: 1.6rem; line-height: 1; cursor: pointer; color: var(--text-muted-color); }
-  .sm-frame { flex: 1; width: 100%; border: 0; background: #fff; }
-  body.sm-open { overflow: hidden; }
-</style>
-
 <script>
   (function () {
     var content = document.getElementById('summaries-content');
+    var archivePanel  = document.getElementById('sm-archive-panel');
+    var archiveList   = document.getElementById('sm-archive-list');
+    var archiveBadge  = document.getElementById('sm-archive-badge');
+    var archiveHeader = document.getElementById('sm-archive-header');
     var tiles = document.querySelectorAll('.topic-tile');
     var activeFilter = 'all';
-    var showArchived = false;
 
     /* === Hidden/archive store === */
     var SM_KEY = 'sm_hidden';
@@ -131,6 +107,13 @@ layout: page
     }
     function saveHidden(h) { localStorage.setItem(SM_KEY, JSON.stringify(h)); }
     var smHidden = loadHidden();
+
+    /* === Update archive panel badge and visibility === */
+    function updateArchiveBadge() {
+      var count = archiveList ? archiveList.querySelectorAll('[data-url]').length : 0;
+      if (archiveBadge) archiveBadge.textContent = count;
+      if (archivePanel) archivePanel.style.display = count > 0 ? '' : 'none';
+    }
 
     /* === Read bookmark state for Bookmarked filter tile === */
     function bmState(url) {
@@ -142,46 +125,13 @@ layout: page
       return '';
     }
 
-    /* === Sync bookmark accent + button states via the global renderer === */
-    function refreshBookmarkState() {
-      if (window._rtRenderAll) window._rtRenderAll();
-    }
-
-    /* === Refresh hide-button icons === */
-    function refreshHideBtns() {
-      if (!content) return;
-      content.querySelectorAll('.sm-hide-btn').forEach(function(btn) {
-        var url = btn.getAttribute('data-sm-url');
-        var icon = btn.querySelector('i');
-        var card = btn.closest('.conf-card');
-        if (smHidden[url]) {
-          icon.className = 'fas fa-eye';
-          btn.title = 'Restore to view';
-          btn.classList.add('is-archived');
-          if (card) card.classList.add('is-archived');
-        } else {
-          icon.className = 'fas fa-eye-slash';
-          btn.title = 'Archive';
-          btn.classList.remove('is-archived');
-          if (card) card.classList.remove('is-archived');
-        }
-      });
-    }
-
-    /* === Main filter + visibility pass === */
+    /* === Main filter pass on visible cards in main list === */
     function applyFilter() {
       if (!content) return;
       var items = content.querySelectorAll('[data-url]');
-      var archivedCount = 0;
       items.forEach(function(el) {
         var url = el.getAttribute('data-url');
         var cat = el.getAttribute('data-cat') || '';
-        var isHid = !!smHidden[url];
-        if (isHid) {
-          archivedCount++;
-          el.style.display = showArchived ? '' : 'none';
-          return;
-        }
         var show;
         if (activeFilter === 'all') {
           show = true;
@@ -192,17 +142,43 @@ layout: page
         }
         el.style.display = show ? '' : 'none';
       });
+    }
 
-      /* update archive section */
-      var archSection = document.getElementById('sm-archive-section');
-      var archBtn = document.getElementById('sm-archive-toggle');
-      if (archSection) archSection.hidden = (archivedCount === 0);
-      if (archBtn) {
-        var labelEl = archBtn.querySelector('.sm-archive-label');
-        var countEl = archBtn.querySelector('.sm-archive-count');
-        if (labelEl) labelEl.textContent = showArchived ? 'Hide archived' : 'Show archived';
-        if (countEl) countEl.textContent = archivedCount;
-      }
+    /* === Move a card to the archive section === */
+    function archiveCard(card, url) {
+      smHidden[url] = 1;
+      saveHidden(smHidden);
+      var eyeBtn = card.querySelector('.ic-eye');
+      if (eyeBtn) eyeBtn.classList.add('is-on');
+      if (archiveList) archiveList.appendChild(card);
+      card.style.display = '';
+      updateArchiveBadge();
+    }
+
+    /* === Move a card back to main list === */
+    function restoreCard(card, url) {
+      delete smHidden[url];
+      saveHidden(smHidden);
+      var eyeBtn = card.querySelector('.ic-eye');
+      if (eyeBtn) eyeBtn.classList.remove('is-on');
+      if (content) content.appendChild(card);
+      applyFilter();
+      updateArchiveBadge();
+    }
+
+    /* === Initialize from stored state: move already-archived cards === */
+    function initArchive() {
+      if (!content) return;
+      var items = Array.prototype.slice.call(content.querySelectorAll('[data-url]'));
+      items.forEach(function(card) {
+        var url = card.getAttribute('data-url');
+        if (smHidden[url]) {
+          var eyeBtn = card.querySelector('.ic-eye');
+          if (eyeBtn) eyeBtn.classList.add('is-on');
+          if (archiveList) archiveList.appendChild(card);
+        }
+      });
+      updateArchiveBadge();
     }
 
     /* === Tile clicks === */
@@ -217,31 +193,18 @@ layout: page
       });
     }
 
-    /* === Archive toggle === */
-    var archBtn = document.getElementById('sm-archive-toggle');
-    if (archBtn) {
-      archBtn.addEventListener('click', function() {
-        showArchived = !showArchived;
-        applyFilter();
+    /* === Archive header toggle === */
+    if (archiveHeader) {
+      archiveHeader.addEventListener('click', function() {
+        archivePanel.classList.toggle('open');
       });
     }
 
-    /* === Hide button clicks === */
-    document.addEventListener('click', function(e) {
-      var btn = e.target.closest('.sm-hide-btn');
-      if (!btn) return;
-      e.preventDefault();
-      e.stopPropagation();
-      var url = btn.getAttribute('data-sm-url');
-      if (!url) return;
-      smHidden = loadHidden();
-      if (smHidden[url]) { delete smHidden[url]; } else { smHidden[url] = 1; }
-      saveHidden(smHidden);
-      refreshHideBtns();
-      applyFilter();
-    });
-
     /* === Keep Bookmarked filter live when bookmark state changes === */
+    function refreshBookmarkState() {
+      if (window._rtRenderAll) window._rtRenderAll();
+    }
+
     if (content && typeof MutationObserver !== 'undefined') {
       var obs = new MutationObserver(function() {
         refreshBookmarkState();
@@ -250,37 +213,61 @@ layout: page
       obs.observe(content, { attributes: true, subtree: true, attributeFilter: ['class'] });
     }
 
-    /* === Modal === */
-    var modal = document.getElementById('summary-modal');
-    if (modal) {
-      var frame = modal.querySelector('.sm-frame');
-      var titleEl = modal.querySelector('.sm-title');
-      var fullText = modal.querySelector('.sm-fulltext');
-      var openEl = modal.querySelector('.sm-open');
-      function openModal(url, title, src) {
-        titleEl.textContent = title || 'Deep Summary';
-        frame.src = url;
-        openEl.href = url;
-        if (src) { fullText.href = src; fullText.removeAttribute('hidden'); } else { fullText.setAttribute('hidden', ''); }
-        modal.removeAttribute('hidden');
-        document.body.classList.add('sm-open');
+    /* === Single delegated click handler (eye + modal + close) === */
+    document.addEventListener('click', function(e) {
+      /* Eye button: archive or restore */
+      var eyeBtn = e.target.closest('.ic-eye');
+      if (eyeBtn) {
+        e.preventDefault();
+        var card = eyeBtn.closest('[data-url]');
+        if (!card) return;
+        var url = card.getAttribute('data-url');
+        if (!url) return;
+        smHidden = loadHidden();
+        if (smHidden[url]) { restoreCard(card, url); } else { archiveCard(card, url); }
+        return;
       }
-      function closeModal() { modal.setAttribute('hidden', ''); frame.src = 'about:blank'; document.body.classList.remove('sm-open'); }
-      document.addEventListener('click', function (e) {
+
+      /* Modal triggers */
+      var modal = document.getElementById('summary-modal');
+      if (modal) {
         var a = e.target.closest('.summary-open');
         if (a) {
-          var card = a.closest('.conf-card');
+          var card = a.closest('[data-url]');
+          if (!card) return;
           e.preventDefault();
-          openModal(card.getAttribute('data-url'), card.getAttribute('data-title'), card.getAttribute('data-src'));
+          var frame = modal.querySelector('.sm-frame');
+          var titleEl = modal.querySelector('.sm-title');
+          var fullText = modal.querySelector('.sm-fulltext');
+          var openEl = modal.querySelector('.sm-open');
+          var src = card.getAttribute('data-src');
+          titleEl.textContent = card.getAttribute('data-title') || 'Deep Summary';
+          frame.src = card.getAttribute('data-url');
+          openEl.href = card.getAttribute('data-url');
+          if (src) { fullText.href = src; fullText.removeAttribute('hidden'); } else { fullText.setAttribute('hidden', ''); }
+          modal.removeAttribute('hidden');
+          document.body.classList.add('sm-open');
           return;
         }
-        if (e.target.closest('[data-smclose]')) closeModal();
-      });
-      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hasAttribute('hidden')) closeModal(); });
-    }
+        if (e.target.closest('[data-smclose]')) {
+          modal.setAttribute('hidden', '');
+          modal.querySelector('.sm-frame').src = 'about:blank';
+          document.body.classList.remove('sm-open');
+        }
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      var modal = document.getElementById('summary-modal');
+      if (e.key === 'Escape' && modal && !modal.hasAttribute('hidden')) {
+        modal.setAttribute('hidden', '');
+        modal.querySelector('.sm-frame').src = 'about:blank';
+        document.body.classList.remove('sm-open');
+      }
+    });
 
     /* === Init === */
-    refreshHideBtns();
+    initArchive();
     refreshBookmarkState();
     applyFilter();
   })();
