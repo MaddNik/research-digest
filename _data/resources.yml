@@ -234,3 +234,190 @@
     medium. The quick start guide covers cloning an existing firmware project,
     preparing the Yocto build environment, and producing a bootable image for supported
     AMC and development boards.
+
+- name: "wolfSSL"
+  kind: "TLS / Crypto Library"
+  org: "wolfSSL Inc."
+  year: 2006
+  category: "Security Libraries"
+  tags: [tls, dtls, cryptography, embedded, iot, post-quantum, fips, c]
+  url: "https://www.wolfssl.com/documentation/manuals/wolfssl/"
+  repo: "https://github.com/wolfSSL/wolfssl"
+  license: "GPLv3 + commercial (dual license)"
+  summary: "Compact, portable TLS/SSL library written in ANSI C for embedded, IoT, RTOS, and cloud systems. Implements TLS 1.3 and DTLS 1.3, is up to 20x smaller than OpenSSL, ships the FIPS 140-3 validated wolfCrypt engine, and provides native post-quantum algorithms (ML-KEM, ML-DSA) with hybrid TLS 1.3 key exchange."
+  about: |
+    wolfSSL is a lightweight, high-performance implementation of the SSL/TLS protocols
+    written in ANSI C, designed from the ground up for resource-constrained and embedded
+    environments while scaling up to servers and the cloud. Originally released as CyaSSL
+    (with its crypto engine known as CTaoCrypt), it is developed and maintained by wolfSSL
+    Inc. The library implements SSL 3.0 through TLS 1.3, and DTLS 1.0 through DTLS 1.3, and
+    is frequently cited as being up to twenty times smaller than OpenSSL, with a typical
+    build footprint in the tens to low hundreds of kilobytes and modest runtime RAM usage.
+
+    Cryptography is provided by wolfCrypt, wolfSSL's underlying C crypto engine, which holds
+    FIPS 140-3 validation (certificates #4718 and #5041, with historical FIPS 140-2 support
+    under #3389). wolfCrypt covers modern primitives including AES, ChaCha20-Poly1305,
+    Curve25519, SHA-2, SHA-3, RSA, and ECDSA/ECDH, plus assembly-optimized routines for
+    x86_64, ARM, and RISC-V and crypto callbacks for hardware offload on NXP, STM32,
+    Microchip, and Xilinx/AMD platforms.
+
+    wolfSSL provides native, standards-based post-quantum cryptography rather than relying
+    on external wrappers: ML-KEM (Kyber) key encapsulation, ML-DSA (Dilithium) signatures,
+    and the stateful hash-based schemes LMS, XMSS, and SLH-DSA. These are integrated into
+    the (D)TLS 1.3 layer, including hybrid ECDHE + ML-KEM key exchange, and position the
+    library for CNSA 2.0 compliance. The earlier Open Quantum Safe liboqs integration has
+    been deprecated in favor of these native implementations.
+
+    An OpenSSL compatibility layer eases migration, and the ecosystem includes language
+    bindings for Java (JSSE/JCE), C#, and Python. The current release at the time of writing
+    is 5.9.2 (June 2026). wolfSSL is dual-licensed: an open-source license (historically
+    GPLv2, moved to GPLv3 around v5.8.2) and a commercial license for proprietary products.
+  module_groups:
+    - name: "Core cryptography"
+      desc: "The lightweight C crypto engine underpinning the whole product family."
+      modules:
+        - name: "wolfCrypt"
+          desc: "FIPS 140-3 validated cryptographic engine (formerly CTaoCrypt). Provides symmetric ciphers, hashes, public-key crypto, and the native post-quantum algorithms. Usable standalone or as the backend for wolfSSL TLS."
+          repo: "https://github.com/wolfSSL/wolfssl"
+    - name: "Secure protocol libraries"
+      desc: "Small-footprint C implementations of adjacent secure protocols, built on wolfCrypt."
+      modules:
+        - name: "wolfSSH"
+          desc: "Lightweight SSHv2 client and server library in ANSI C for embedded and RTOS targets."
+          repo: "https://github.com/wolfSSL/wolfssh"
+        - name: "wolfMQTT"
+          desc: "Small C client implementation of the MQTT messaging protocol for constrained IoT devices."
+          repo: "https://github.com/wolfSSL/wolfMQTT"
+    - name: "Platform and device security"
+      desc: "Secure boot, hardware root of trust, and runtime protection for embedded systems."
+      modules:
+        - name: "wolfBoot"
+          desc: "Portable, OS-agnostic secure bootloader for 32-bit MCUs. Uses wolfCrypt for firmware authentication and secure over-the-air firmware updates."
+          repo: "https://github.com/wolfSSL/wolfBoot"
+        - name: "wolfTPM"
+          desc: "Portable, native C TPM 2.0 stack for embedded use, with recently added post-quantum support."
+          repo: "https://github.com/wolfSSL/wolfTPM"
+        - name: "wolfSentry"
+          desc: "Universal embedded intrusion detection and prevention system with a built-in static and dynamic firewall engine."
+          repo: "https://github.com/wolfSSL/wolfsentry"
+    - name: "OpenSSL interoperability"
+      desc: "Adapters and utilities that let existing OpenSSL-based software route crypto through the FIPS-validated wolfCrypt engine."
+      modules:
+        - name: "wolfEngine"
+          desc: "OpenSSL engine that redirects cryptographic operations to wolfCrypt (including for FIPS compliance)."
+          repo: "https://github.com/wolfSSL/wolfEngine"
+        - name: "wolfProvider"
+          desc: "OpenSSL 3.x provider backed by wolfCrypt, the provider-API successor to engines."
+          repo: "https://github.com/wolfSSL/wolfProvider"
+        - name: "wolfPKCS11"
+          desc: "PKCS#11 interface implementation backed by wolfCrypt."
+          repo: "https://github.com/wolfSSL/wolfPKCS11"
+        - name: "wolfCLU"
+          desc: "wolfSSL command-line utility, an OpenSSL-CLI-like tool for keys, certificates, and crypto operations."
+          repo: "https://github.com/wolfSSL/wolfCLU"
+
+- name: "Mbed TLS"
+  kind: "TLS / Crypto Library"
+  org: "Trusted Firmware (originally PolarSSL; ARM)"
+  year: 2009
+  category: "Security Libraries"
+  tags: [tls, cryptography, embedded, iot, c]
+  url: "https://www.trustedfirmware.org/projects/mbed-tls/"
+  repo: "https://github.com/Mbed-TLS/mbedtls"
+  license: "Apache-2.0"
+  summary: "Embedded-focused TLS and crypto library in C, now stewarded by Trusted Firmware after starting life as PolarSSL. wolfSSL's closest embedded competitor; ships on billions of devices."
+  about: |
+    Mbed TLS (formerly PolarSSL, later ARM mbed TLS) is a widely deployed C library
+    providing TLS and cryptographic primitives for resource-constrained and embedded
+    systems. It is now maintained as a Trusted Firmware project. It is the closest
+    like-for-like competitor to wolfSSL in the embedded space and runs on an enormous
+    installed base of IoT and mobile devices.
+
+    Compared with wolfSSL, Mbed TLS uses the permissive Apache-2.0 license (versus
+    wolfSSL's GPL/commercial dual model), which some proprietary integrators prefer.
+    wolfSSL differentiates on a smaller configurable footprint, broader FIPS 140-3
+    validation, DTLS 1.3, and a wider native post-quantum algorithm set.
+
+- name: "BearSSL"
+  kind: "TLS / Crypto Library"
+  org: "Thomas Pornin"
+  year: 2016
+  category: "Security Libraries"
+  tags: [tls, cryptography, embedded, minimal, c]
+  url: "https://www.bearssl.org/"
+  repo: "https://www.bearssl.org/gitweb/?p=BearSSL;a=summary"
+  license: "MIT"
+  summary: "Very small, constant-time TLS 1.0-1.2 implementation in C aimed at tiny embedded and bootstrap contexts, with a minimal server fitting in roughly 20 kB of code and 25 kB of RAM."
+  about: |
+    BearSSL is a compact implementation of the SSL/TLS protocol (versions 3.0 to 1.2)
+    written in C by Thomas Pornin, with a strong emphasis on small code size, low RAM
+    usage, and constant-time cryptography to resist timing side channels. A minimal TLS
+    server can fit in around 20 kB of code and 25 kB of RAM, making it attractive for the
+    smallest microcontrollers and boot ROMs.
+
+    It is frequently cited as the permissively licensed (MIT) free alternative to wolfSSL
+    for deep-embedded use. Relative to wolfSSL it has a smaller feature set, does not
+    implement TLS 1.3, and offers no commercial support contracts or FIPS validation.
+
+- name: "s2n-tls"
+  kind: "TLS Library"
+  org: "Amazon Web Services"
+  year: 2015
+  category: "Security Libraries"
+  tags: [tls, cryptography, cloud, server, c]
+  url: "https://github.com/aws/s2n-tls"
+  repo: "https://github.com/aws/s2n-tls"
+  license: "Apache-2.0"
+  summary: "Small, fast, security-first C99 implementation of the TLS protocol from AWS, designed for simplicity and formal verification, with a server/cloud focus rather than deep embedded."
+  about: |
+    s2n-tls (short for signal-to-noise) is AWS's implementation of the TLS protocol,
+    written in C99 with an explicit goal of being small, fast, and easy to review. Its
+    codebase is deliberately compact and is subjected to extensive automated testing and
+    formal verification. It delegates the underlying cryptography to a pluggable library
+    (such as OpenSSL, BoringSSL, or AWS-LC).
+
+    Compared with wolfSSL, s2n-tls uses the permissive Apache-2.0 license and targets
+    server and cloud workloads (it underpins AWS services) rather than the deep-embedded,
+    RTOS, and bare-metal niches where wolfSSL is strongest.
+
+- name: "Botan"
+  kind: "Crypto / TLS Library"
+  org: "randombit and community"
+  year: 2001
+  category: "Security Libraries"
+  tags: [tls, cryptography, post-quantum, cpp, pkcs11]
+  url: "https://botan.randombit.net/"
+  repo: "https://github.com/randombit/botan"
+  license: "BSD-2-Clause"
+  summary: "Broad C++ cryptography toolkit that also implements TLS 1.3, X.509, PKCS#11, TPM, and post-quantum algorithms. Permissively licensed, but heavier than embedded-tuned C libraries."
+  about: |
+    Botan is a mature, general-purpose cryptography library written in C++ (with a C API
+    and Python bindings). Beyond a large catalog of cryptographic primitives it provides
+    TLS 1.2/1.3, X.509 certificate handling, PKCS#11 and TPM support, and post-quantum
+    algorithms. It is permissively licensed under BSD-2-Clause.
+
+    Relative to wolfSSL, Botan is a C++ toolkit rather than a lean C library, and is
+    heavier and less specialized for the smallest embedded targets, but it offers a very
+    broad feature surface for desktop, server, and application cryptography.
+
+- name: "rustls"
+  kind: "TLS Library"
+  org: "rustls project (ISRG-supported)"
+  year: 2016
+  category: "Security Libraries"
+  tags: [tls, cryptography, memory-safe, rust, server]
+  url: "https://github.com/rustls/rustls"
+  repo: "https://github.com/rustls/rustls"
+  license: "Apache-2.0 / MIT / ISC"
+  summary: "Modern, memory-safe TLS 1.2/1.3 library written in Rust. Secure by default with no legacy or insecure crypto, and increasingly used via C bindings from non-Rust code."
+  about: |
+    rustls is a modern TLS library written in Rust, providing TLS 1.2 and TLS 1.3. Because
+    it is written in a memory-safe language it structurally avoids the buffer-overflow and
+    use-after-free vulnerabilities that have historically affected C-based TLS stacks. It is
+    secure by default, omitting obsolete protocol versions and weak cipher suites, and is
+    supported in part by the Internet Security Research Group (ISRG).
+
+    Relative to wolfSSL, rustls differs primarily by language and ecosystem: it targets
+    Rust applications (and, increasingly, C code via the rustls-ffi bindings) rather than
+    the C/embedded-first world of wolfSSL, and it does not chase the deep-embedded or FIPS
+    niches that wolfSSL serves.
