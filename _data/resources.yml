@@ -133,6 +133,15 @@
     standalone. It is used within FWK to generate the documentation and address maps
     consumed by the ChimeraTK device-access framework.
   module_groups:
+    - name: "Input & engine"
+      desc: "How DesyRDL ingests a register description and turns it into output artifacts."
+      modules:
+        - name: "SystemRDL 2.0 input"
+          desc: "One or more .rdl files describing the design's complete address space, serving as the single source of truth for every generated output."
+        - name: "systemrdl-compiler"
+          desc: "The upstream Python parser and elaborator that DesyRDL builds on to read and validate SystemRDL 2.0 before generation."
+        - name: "Template engine"
+          desc: "DesyRDL's own (non-Jinja2) template engine; new output targets are added by writing additional templates without modifying the core tool."
     - name: "Outputs"
       desc: "DesyRDL produces the following artifacts from SystemRDL 2.0 input."
       modules:
@@ -174,6 +183,25 @@
     The wrapper is used in DESY's reference applications such as the SIS8300KU example
     application and integrates with the ChimeraTK Python bindings for higher-level
     device access in control system contexts.
+  module_groups:
+    - name: "Interaction modes"
+      desc: "The three host-to-FPGA interaction modes the library exposes over the xDMA driver."
+      modules:
+        - name: "Register access"
+          desc: "Reads and writes AXI-mapped control registers over the xDMA control channel, targeting individual addresses with configurable data widths."
+        - name: "DMA transfers"
+          desc: "Bulk data movement between host memory and FPGA memory or FIFOs using the H2C (host-to-card) and C2H (card-to-host) streaming channels."
+        - name: "Interrupt handling"
+          desc: "Monitors the xDMA event channel for FPGA-generated interrupts so host software can react to firmware events without polling."
+    - name: "xDMA channels"
+      desc: "The character devices exposed by the Xilinx xDMA kernel driver that the wrapper drives."
+      modules:
+        - name: "Control channel"
+          desc: "Register read/write path to the AXI-Lite control interface."
+        - name: "H2C / C2H channels"
+          desc: "Host-to-card and card-to-host DMA streaming channels for high-throughput data movement."
+        - name: "Event channel"
+          desc: "Delivers FPGA user interrupts to host software."
 
 - name: "cosimtcp"
   kind: "HDL Co-Simulation Tool"
@@ -204,6 +232,23 @@
     It targets the common case of verifying arithmetic and signal-processing IP blocks
     against a floating-point reference model. The repository is hosted on GitHub under
     the mskfw organization and is licensed under GPL-3.0.
+  module_groups:
+    - name: "Components"
+      desc: "The two halves of the co-simulation bridge plus the client libraries that drive it."
+      modules:
+        - name: "Tcl socket server"
+          desc: "A small Tcl script that starts a TCP/IP socket server inside the simulator's native Tcl interpreter, exchanging signal values and clock-tick commands with the external process."
+        - name: "Python client"
+          desc: "A Python client class that connects to the socket and drives stimuli and reads responses, letting test logic use NumPy and the scientific Python stack."
+        - name: "MATLAB client"
+          desc: "A MATLAB client class providing the same connection protocol for MATLAB-based reference models."
+    - name: "Supported simulators"
+      desc: "Vendor simulators whose Tcl interpreters host the socket server."
+      modules:
+        - name: "Xilinx Vivado (XSim)"
+          desc: "The Vivado simulator, driven over its built-in Tcl console."
+        - name: "Mentor ModelSim"
+          desc: "ModelSim and Questa, driven over their Tcl interpreter."
 
 - name: "fwklinux (Yocto Integration)"
   kind: "Embedded Linux Build Integration"
@@ -234,6 +279,16 @@
     medium. The quick start guide covers cloning an existing firmware project,
     preparing the Yocto build environment, and producing a bootable image for supported
     AMC and development boards.
+  module_groups:
+    - name: "Components"
+      desc: "What fwklinux adds on top of a stock Yocto / OpenEmbedded setup to fit the FWK flow."
+      modules:
+        - name: "Yocto package feeds"
+          desc: "Pre-built generic package feeds for the supported board families, so custom Linux images can be assembled without a full from-scratch OpenEmbedded build."
+        - name: "yocto.mk build hook"
+          desc: "A makefile include that folds Linux image generation into the same command-line FWK build flow used for FPGA bitfiles."
+        - name: "Supported board families"
+          desc: "Xilinx Zynq and Zynq UltraScale+ SoC targets (MicroTCA AMC carriers and development boards) where the ARM processing system runs Linux alongside the programmable logic."
 
 - name: "hdl-registers"
   kind: "Register Map Generator"
@@ -264,6 +319,31 @@
     documentation at hdl-registers.com. It fills the same role as DESY's DesyRDL in
     this list: a vendor-neutral, definition-driven way to build AXI-Lite register
     banks without hand-maintaining address offsets across HDL, software, and docs.
+  module_groups:
+    - name: "Generators"
+      desc: "Output artifacts produced from a single TOML/JSON/YAML register definition, kept in sync from one source of truth."
+      modules:
+        - name: "VHDL register file"
+          desc: "Synthesizable VHDL register file with an AXI-Lite wrapper for the FPGA or ASIC design."
+        - name: "SystemVerilog AXI-Lite"
+          desc: "SystemVerilog variant of the AXI-Lite register file."
+        - name: "C header"
+          desc: "C header with register addresses and bit-field definitions for embedded and host software."
+        - name: "C++ class"
+          desc: "C++ class abstraction over the register map for host-side software."
+        - name: "HTML documentation"
+          desc: "Human-readable HTML register map generated alongside the code so docs stay in sync."
+        - name: "Python API"
+          desc: "Python register API for scripting, test benches, and build automation."
+    - name: "Ecosystem"
+      desc: "Sister projects by the same author that hdl-registers integrates with."
+      modules:
+        - name: "tsfpga"
+          desc: "Vendor-neutral FPGA build system that hdl-registers plugs into to run register generation in real time during the build."
+          repo: "https://github.com/tsfpga/tsfpga"
+        - name: "hdl-modules"
+          desc: "Reusable, vendor-neutral VHDL module library from the same ecosystem."
+          repo: "https://github.com/hdl-modules/hdl-modules"
 
 - name: "wolfSSL"
   kind: "TLS / Crypto Library"
@@ -354,19 +434,62 @@
   tags: [tls, cryptography, embedded, iot, c]
   url: "https://www.trustedfirmware.org/projects/mbed-tls/"
   repo: "https://github.com/Mbed-TLS/mbedtls"
-  license: "Apache-2.0"
+  license: "Apache-2.0 or GPLv2 (dual license)"
   summary: "Embedded-focused TLS and crypto library in C, now stewarded by Trusted Firmware after starting life as PolarSSL. wolfSSL's closest embedded competitor; ships on billions of devices."
   about: |
     Mbed TLS (formerly PolarSSL, later ARM mbed TLS) is a widely deployed C library
-    providing TLS and cryptographic primitives for resource-constrained and embedded
-    systems. It is now maintained as a Trusted Firmware project. It is the closest
+    providing the TLS and DTLS protocols along with the X.509 and cryptographic
+    primitives that support them, designed to be small and portable for embedded and
+    IoT use. It moved from Arm to the Trusted Firmware project, which governs it today,
+    and is dual-licensed under Apache-2.0 or GPL-2.0-or-later. It is the closest
     like-for-like competitor to wolfSSL in the embedded space and runs on an enormous
     installed base of IoT and mobile devices.
 
-    Compared with wolfSSL, Mbed TLS uses the permissive Apache-2.0 license (versus
-    wolfSSL's GPL/commercial dual model), which some proprietary integrators prefer.
-    wolfSSL differentiates on a smaller configurable footprint, broader FIPS 140-3
-    validation, DTLS 1.3, and a wider native post-quantum algorithm set.
+    Architecturally it is organized into three complementary libraries with a clear
+    dependency flow: the TLS/DTLS protocol layer (libmbedtls) depends on the X.509
+    certificate layer (libmbedx509), which in turn depends on the cryptography layer
+    (historically libmbedcrypto, now libtfpsacrypto). This layering lets integrators
+    pull in only the parts they need on constrained targets.
+
+    A defining modern change is the adoption of the PSA (Platform Security Architecture)
+    Cryptography API as the primary crypto interface, and the split-out of that
+    implementation into a separate repository, TF-PSA-Crypto. Mbed TLS now consumes
+    TF-PSA-Crypto as a Git submodule for its crypto layer while keeping X.509 and
+    (D)TLS itself, and the same crypto implementation is reused by other Trusted
+    Firmware projects such as TF-A, TF-M, and OP-TEE. The PSA implementation is built
+    around a cryptographic driver interface that dispatches operations to hardware
+    accelerators or secure elements instead of the built-in software routines.
+
+    Compared with wolfSSL, Mbed TLS is permissively licensed (Apache-2.0 or GPLv2),
+    which some proprietary integrators prefer over wolfSSL's GPL/commercial model. The
+    current major line is 4.x (with 3.6 as the long-term-support branch). wolfSSL
+    differentiates on a smaller configurable footprint, broader FIPS 140-3 validation,
+    DTLS 1.3, and a wider native post-quantum algorithm set.
+  module_groups:
+    - name: "Protocol & PKI"
+      desc: "The TLS/DTLS protocol engine and X.509 certificate handling, in the main mbedtls repository."
+      modules:
+        - name: "libmbedtls"
+          desc: "TLS and DTLS protocol engine: handshake, record layer, and session management."
+          repo: "https://github.com/Mbed-TLS/mbedtls"
+        - name: "libmbedx509"
+          desc: "X.509 certificate, CRL, and CSR parsing plus certificate-chain verification."
+          repo: "https://github.com/Mbed-TLS/mbedtls"
+    - name: "Cryptography"
+      desc: "The PSA Crypto API implementation, split into its own repository and consumed as a submodule."
+      modules:
+        - name: "TF-PSA-Crypto"
+          desc: "Reference implementation of the PSA Cryptography API (the crypto backend, historically libmbedcrypto). Also used by TF-A, TF-M, and OP-TEE."
+          repo: "https://github.com/Mbed-TLS/TF-PSA-Crypto"
+        - name: "PSA crypto driver interface"
+          desc: "Driver/accelerator dispatch layer within TF-PSA-Crypto that routes operations to hardware crypto engines or secure elements."
+          repo: "https://github.com/Mbed-TLS/TF-PSA-Crypto"
+    - name: "Shared tooling"
+      desc: "Common build and test infrastructure shared across the Mbed TLS repositories."
+      modules:
+        - name: "mbedtls-framework"
+          desc: "Shared build/test framework included as a submodule across the Mbed TLS repos."
+          repo: "https://github.com/Mbed-TLS/mbedtls-framework"
 
 - name: "BearSSL"
   kind: "TLS / Crypto Library"
@@ -383,11 +506,42 @@
     written in C by Thomas Pornin, with a strong emphasis on small code size, low RAM
     usage, and constant-time cryptography to resist timing side channels. A minimal TLS
     server can fit in around 20 kB of code and 25 kB of RAM, making it attractive for the
-    smallest microcontrollers and boot ROMs.
+    smallest microcontrollers and boot ROMs. It is a single-author, single-repository
+    codebase organized internally into well-defined subsystems, distributed under the
+    MIT license. The last release is version 0.6 (August 2018) and the project describes
+    itself as beta-quality with an API that is not yet frozen.
+
+    The SSL/TLS engine is exposed through an I/O-agnostic state-machine API (the br_ssl_*
+    family): the application drives it by feeding and extracting record and application
+    data buffers, which suits event loops and constrained environments. Certificate
+    handling is provided by X.509 processing engines, from a minimal chain-validation
+    engine up to fuller decoder and known-key profiles. The low-level cryptography is
+    grouped into br_-prefixed primitive families, and a central design goal is that these
+    run in constant time to avoid leaking secrets through timing.
 
     It is frequently cited as the permissively licensed (MIT) free alternative to wolfSSL
     for deep-embedded use. Relative to wolfSSL it has a smaller feature set, does not
     implement TLS 1.3, and offers no commercial support contracts or FIPS validation.
+  module_groups:
+    - name: "Protocol engine"
+      desc: "The I/O-agnostic SSL/TLS state machine that the application drives with data buffers."
+      modules:
+        - name: "SSL/TLS engine (br_ssl_*)"
+          desc: "Client and server engines and the record layer, exposed as a state machine that never performs I/O itself (bearssl_ssl.h)."
+    - name: "X.509 processing"
+      desc: "Certificate parsing and chain validation, from minimal to full profiles."
+      modules:
+        - name: "Minimal validation engine"
+          desc: "br_x509_minimal: basic chain validation (name matching, basic constraints, key usage, signature verification) with no general path building."
+        - name: "Decoder & full profiles"
+          desc: "Certificate decoder, known-key engine, and the fuller client profile for broader cipher-suite and validation support."
+    - name: "Crypto primitives & tooling"
+      desc: "Constant-time low-level primitives (the br_ API families) plus the command-line tool."
+      modules:
+        - name: "br_ primitive families"
+          desc: "Block ciphers, hashes, HMAC, RSA, elliptic curves/ECDSA, RNG, AEAD, KDF, TLS PRF, and PEM, all aggregated by including bearssl.h."
+        - name: "brssl CLI"
+          desc: "Stand-alone command-line tool, e.g. to extract certificates and emit C source for hard-coded trust anchors."
 
 - name: "s2n-tls"
   kind: "TLS Library"
@@ -400,15 +554,57 @@
   license: "Apache-2.0"
   summary: "Small, fast, security-first C99 implementation of the TLS protocol from AWS, designed for simplicity and formal verification, with a server/cloud focus rather than deep embedded."
   about: |
-    s2n-tls (short for signal-to-noise) is AWS's implementation of the TLS protocol,
-    written in C99 with an explicit goal of being small, fast, and easy to review. Its
-    codebase is deliberately compact and is subjected to extensive automated testing and
-    formal verification. It delegates the underlying cryptography to a pluggable library
-    (such as OpenSSL, BoringSSL, or AWS-LC).
+    s2n-tls (short for signal-to-noise) is AWS's C99 implementation of the TLS/SSL
+    protocols, first released in 2015 with an explicit goal of being small, fast, and
+    easy to review. It supports SSLv3 through TLS 1.3 with modern cipher suites
+    (AES-GCM, ChaCha20-Poly1305) and forward secrecy. The core library implements the
+    TLS state machine, record and handshake logic, and the public API (s2n.h), and is
+    licensed under Apache-2.0.
+
+    A defining design choice is that s2n-tls delegates the underlying cryptography to a
+    pluggable libcrypto backend: AWS-LC (AWS's own crypto library) is the default, with
+    OpenSSL, LibreSSL, and BoringSSL also supported. This keeps the protocol code
+    focused on correctness while the primitives come from a battle-tested crypto
+    library. For non-C consumers, Rust bindings live in the same repository under
+    bindings/rust: s2n-tls-sys (low-level FFI), the safe s2n-tls crate on top of it, and
+    s2n-tls-tokio for async integration.
+
+    s2n-tls is notable for a heavy correctness and verification pedigree: continuous
+    fuzzing, CBMC memory-safety proofs, SAW-based formal proofs (by Galois) of the HMAC
+    and DRBG implementations, and SideTrail for timing/side-channel balance. Its QUIC
+    sibling, s2n-quic, is a separate Rust project rather than a component of s2n-tls.
 
     Compared with wolfSSL, s2n-tls uses the permissive Apache-2.0 license and targets
     server and cloud workloads (it underpins AWS services) rather than the deep-embedded,
     RTOS, and bare-metal niches where wolfSSL is strongest.
+  module_groups:
+    - name: "Core C TLS library"
+      desc: "The protocol engine and public API; crypto is delegated elsewhere."
+      modules:
+        - name: "s2n-tls engine (s2n.h)"
+          desc: "C99 TLS 1.0-1.3 state machine, record and handshake logic, and the public API."
+          repo: "https://github.com/aws/s2n-tls"
+    - name: "Crypto backend & Rust bindings"
+      desc: "The pluggable libcrypto that supplies primitives, and the Rust bindings tree."
+      modules:
+        - name: "libcrypto backend"
+          desc: "Pluggable crypto provider: AWS-LC by default, or OpenSSL / LibreSSL / BoringSSL."
+          repo: "https://github.com/aws/aws-lc"
+        - name: "s2n-tls-sys"
+          desc: "Low-level, bindgen-generated Rust FFI bindings (bindings/rust)."
+          repo: "https://github.com/aws/s2n-tls"
+        - name: "s2n-tls (Rust) & s2n-tls-tokio"
+          desc: "Safe high-level Rust wrapper and its Tokio async integration."
+          repo: "https://crates.io/crates/s2n-tls"
+    - name: "Correctness & verification"
+      desc: "The tooling that gives s2n-tls its security-first reputation."
+      modules:
+        - name: "CBMC proofs"
+          desc: "C Bounded Model Checker memory-safety proofs (tests/cbmc)."
+        - name: "SAW proofs"
+          desc: "Galois formal proofs establishing equivalence of the HMAC and DRBG C code to Cryptol specifications."
+        - name: "SideTrail & fuzzing"
+          desc: "SideTrail timing/side-channel balance verification plus continuous fuzzing and third-party penetration testing."
 
 - name: "Botan"
   kind: "Crypto / TLS Library"
@@ -421,14 +617,54 @@
   license: "BSD-2-Clause"
   summary: "Broad C++ cryptography toolkit that also implements TLS 1.3, X.509, PKCS#11, TPM, and post-quantum algorithms. Permissively licensed, but heavier than embedded-tuned C libraries."
   about: |
-    Botan is a mature, general-purpose cryptography library written in C++ (with a C API
-    and Python bindings). Beyond a large catalog of cryptographic primitives it provides
-    TLS 1.2/1.3, X.509 certificate handling, PKCS#11 and TPM support, and post-quantum
-    algorithms. It is permissively licensed under BSD-2-Clause.
+    Botan (Japanese for peony) is a mature, general-purpose cryptography toolkit written
+    in C++ (current major version Botan 3), maintained by Jack Lloyd and contributors and
+    released under the permissive BSD-2-Clause license. Its goal is to provide the tools
+    to build practical systems: modern AEAD ciphers, TLS 1.3, X.509 PKI, PKCS#11 and TPM
+    hardware support, memory-hard password hashing, and post-quantum cryptography.
 
-    Relative to wolfSSL, Botan is a C++ toolkit rather than a lean C library, and is
-    heavier and less specialized for the smallest embedded targets, but it offers a very
-    broad feature surface for desktop, server, and application cryptography.
+    A central feature is its modular build system (a Python configure.py) that lets
+    integrators enable or disable individual algorithm and feature modules at fine
+    granularity, and can also produce an amalgamation build that collapses the sources
+    into a single file. The algorithm catalog spans block and stream ciphers with AEAD
+    modes, a wide range of hashes and MACs, password hashing (Argon2, scrypt, PBKDF2),
+    and public-key cryptography including an extensive post-quantum suite.
+
+    For non-C++ consumers, Botan ships a stable C89 FFI API, a Python wrapper (botan3.py,
+    versioned to track the C++ major version) built on that FFI, and a featureful
+    command-line tool. Relative to wolfSSL, Botan is a C++ toolkit rather than a lean C
+    library, and is heavier and less specialized for the smallest embedded targets, but
+    it offers a very broad feature surface for desktop, server, and application crypto.
+  module_groups:
+    - name: "Core cryptographic modules"
+      desc: "Fine-grained algorithm modules selected through the modular build."
+      modules:
+        - name: "Ciphers & AEAD"
+          desc: "Block and stream ciphers (AES, ARIA, Camellia, SM4, ChaCha20, and more) with AEAD modes (GCM, OCB, SIV, CCM, ChaCha20Poly1305)."
+        - name: "Hashes, MACs & password hashing"
+          desc: "SHA-1/2/3, BLAKE2, SM3 and others; HMAC, CMAC, GMAC, KMAC, Poly1305; Argon2, scrypt, bcrypt, PBKDF2."
+        - name: "Public-key & post-quantum"
+          desc: "RSA, ECDSA, DH, ECDH, X25519/X448, plus post-quantum ML-KEM, ML-DSA, SLH-DSA, FrodoKEM, Classic McEliece, XMSS, and HSS/LMS."
+    - name: "Protocols, PKI & hardware"
+      desc: "Protocol and public-key-infrastructure features and hardware/standards support."
+      modules:
+        - name: "TLS 1.2/1.3 & DTLS"
+          desc: "Client and server TLS 1.2 and 1.3, plus DTLS 1.2."
+        - name: "X.509 / PKIX"
+          desc: "X.509v3 certificates, CRL and PKIX path validation, and certificate stores."
+        - name: "PKCS#11 & TPM"
+          desc: "PKCS#11 wrapper for hardware tokens and TPM 2.0 support."
+    - name: "APIs, bindings & tooling"
+      desc: "How the toolkit is consumed and built."
+      modules:
+        - name: "C++ API"
+          desc: "The primary, native application interface."
+        - name: "FFI C89 API"
+          desc: "Stable C89 C API (the ffi module) designed to be callable from other languages' FFI."
+        - name: "Python wrapper (botan3.py)"
+          desc: "ctypes-based Python binding layered over the C89 FFI, versioned to the C++ major release."
+        - name: "Command-line tool & build system"
+          desc: "Featureful CLI plus the modular configure.py build with amalgamation support."
 
 - name: "rustls"
   kind: "TLS Library"
@@ -441,13 +677,63 @@
   license: "Apache-2.0 / MIT / ISC"
   summary: "Modern, memory-safe TLS 1.2/1.3 library written in Rust. Secure by default with no legacy or insecure crypto, and increasingly used via C bindings from non-Rust code."
   about: |
-    rustls is a modern TLS library written in Rust, providing TLS 1.2 and TLS 1.3. Because
-    it is written in a memory-safe language it structurally avoids the buffer-overflow and
-    use-after-free vulnerabilities that have historically affected C-based TLS stacks. It is
-    secure by default, omitting obsolete protocol versions and weak cipher suites, and is
-    supported in part by the Internet Security Research Group (ISRG).
+    rustls is a modern TLS library written in Rust, implementing TLS 1.2 and TLS 1.3 for
+    both clients and servers. Because it is written in a memory-safe language it
+    structurally avoids the buffer-overflow and use-after-free vulnerabilities that have
+    historically affected C-based TLS stacks. It is secure by default, omitting obsolete
+    protocol versions and weak cipher suites, and receives full-time funding from ISRG's
+    Prossimo initiative (the memory-safety program from the team behind Let's Encrypt). It
+    is triple-licensed under Apache-2.0, MIT, or ISC.
 
-    Relative to wolfSSL, rustls differs primarily by language and ecosystem: it targets
-    Rust applications (and, increasingly, C code via the rustls-ffi bindings) rather than
-    the C/embedded-first world of wolfSSL, and it does not chase the deep-embedded or FIPS
-    niches that wolfSSL serves.
+    Rather than a monolith, rustls is distributed as a crate ecosystem. The core rustls
+    crate implements the protocol and its configuration types (ClientConfig/ServerConfig).
+    Since version 0.22 the cryptographic provider is pluggable via a CryptoProvider
+    abstraction, and from 0.24 a provider must be chosen explicitly; two first-party
+    providers ship, aws-lc-rs (the default, with the fullest features including
+    post-quantum) and ring (simpler cross-platform builds). Certificate handling is
+    factored into dedicated crates for PKI types and chain verification, and an OS-native
+    verifier is available.
+
+    For non-Rust consumers, rustls-ffi exposes C bindings and can operate in a
+    FIPS-140-3 mode through the aws-lc-rs FIPS module. Common integrations include
+    tokio-rustls (async I/O) and hyper-rustls (HTTPS for the Hyper stack). Relative to
+    wolfSSL, rustls differs primarily by language and ecosystem: it targets Rust
+    applications (and, increasingly, C code via rustls-ffi) rather than the C/embedded-first
+    world of wolfSSL, though its aws-lc-rs provider does offer a FIPS story.
+  module_groups:
+    - name: "Core TLS & PKI"
+      desc: "The protocol engine plus the certificate types and verification crates."
+      modules:
+        - name: "rustls"
+          desc: "Core TLS 1.2/1.3 client and server engine and configuration types."
+          repo: "https://github.com/rustls/rustls"
+        - name: "rustls-pki-types"
+          desc: "Shared X.509 certificate and key type definitions used across the ecosystem."
+          repo: "https://github.com/rustls/pki-types"
+        - name: "rustls-webpki"
+          desc: "Certificate-chain verification (the webpki crate maintained by the rustls org)."
+          repo: "https://github.com/rustls/webpki"
+        - name: "rustls-platform-verifier"
+          desc: "Verifier that integrates with the OS-native trust store."
+          repo: "https://github.com/rustls/rustls-platform-verifier"
+    - name: "Crypto providers"
+      desc: "Pluggable CryptoProvider backends supplying the primitives."
+      modules:
+        - name: "aws-lc-rs"
+          desc: "Default provider; fullest feature set including post-quantum, and a FIPS-140-3 module behind the fips feature."
+          repo: "https://github.com/aws/aws-lc-rs"
+        - name: "ring"
+          desc: "Alternative provider with easier cross-platform builds and a more limited feature set."
+          repo: "https://github.com/briansmith/ring"
+    - name: "Bindings & integrations"
+      desc: "C bindings and common async/HTTP integration crates."
+      modules:
+        - name: "rustls-ffi"
+          desc: "C API bindings for non-Rust consumers, with optional FIPS via aws-lc-rs."
+          repo: "https://github.com/rustls/rustls-ffi"
+        - name: "tokio-rustls"
+          desc: "Tokio async I/O integration."
+          repo: "https://github.com/rustls/tokio-rustls"
+        - name: "hyper-rustls"
+          desc: "HTTPS integration for the Hyper HTTP stack."
+          repo: "https://github.com/rustls/hyper-rustls"
