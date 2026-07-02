@@ -737,3 +737,62 @@
         - name: "hyper-rustls"
           desc: "HTTPS integration for the Hyper HTTP stack."
           repo: "https://github.com/rustls/hyper-rustls"
+
+- name: "Pepper (Pantherun)"
+  kind: "FPGA Security Platform"
+  org: "Pantherun Technologies"
+  year: 2024
+  category: "Hardware Security"
+  tags: [fpga, encryption, aes, hardware-security, pqc, iot, soc]
+  url: "https://pepper.pantherun.com/"
+  license: "Proprietary / commercial"
+  summary: "FPGA System-on-Chip development platform from Pantherun Technologies, built around a patented key-exchange-free real-time AES encryption IP with post-quantum support, aimed at secure edge, industrial, and defence hardware. Fully reprogrammable from RTL up to the application layer."
+  about: |
+    Pepper is an FPGA System-on-Chip (SoC) development platform from Pantherun
+    Technologies, a Bengaluru-based encryption company. It is designed for building
+    secure edge, industrial, automotive, railway, and defence hardware, and is
+    reprogrammable end to end: users can customize the design at the RTL level and
+    work up through embedded software, middleware, and the application layer on the
+    same board. It won "Best in Show" at Electronica 2024 and has been showcased on
+    Altera's FPGA platform.
+
+    Its distinguishing feature is a customizable AES encryption IP core built into the
+    FPGA, based on Pantherun's patented "key-exchange-free" approach: unique encryption
+    keys are generated independently at both ends of a link so that no key is ever
+    transmitted over the channel, which the company markets as latency-free, real-time
+    AES (128/192/256-bit) with added side-channel-attack protection. The platform also
+    ships a full Layer 2/3 network stack, multiple VPN protocols, and firewall options,
+    and is designed to support post-quantum cryptography. Onboard interfaces include
+    Ethernet, USB, Wi-Fi, 4G, GPIO, and GPS, and the board is CE and FCC certified.
+
+    Note on licensing: Pantherun markets Pepper as an "open-source development
+    platform," but no official public source repository or open-source license could be
+    found, and the underlying encryption technology is patented. It is therefore listed
+    here as proprietary / commercial rather than as verified open source. See the
+    product site at pepper.pantherun.com and the company at pantherun.com for details.
+  module_groups:
+    - name: "Full-stack customization"
+      desc: "Pepper is reprogrammable at every layer, not just as a fixed appliance."
+      modules:
+        - name: "FPGA / RTL layer"
+          desc: "Reprogrammable FPGA fabric where the design, including the encryption IP, is customized at register-transfer level."
+        - name: "Embedded software"
+          desc: "Firmware and drivers running on the SoC's processing system alongside the programmable logic."
+        - name: "Middleware & application"
+          desc: "Higher-level middleware and application layers built on top of the embedded stack for the target product."
+    - name: "Security"
+      desc: "The encryption, network-security, and attack-resistance features that define the platform."
+      modules:
+        - name: "Key-exchange-free AES IP"
+          desc: "Patented AES encryption core (128/192/256-bit) that generates matching keys independently at each end, so no key is transmitted over the channel."
+        - name: "Post-quantum & side-channel protection"
+          desc: "Extensions for post-quantum cryptography and protection against side-channel attacks."
+        - name: "Network stack, VPN & firewall"
+          desc: "Built-in Layer 2/3 network stack, multiple VPN protocols, and firewall options."
+    - name: "Interfaces & certification"
+      desc: "Physical connectivity and regulatory certification of the board."
+      modules:
+        - name: "Connectivity"
+          desc: "Ethernet, USB, Wi-Fi, 4G, GPIO, and GPS interfaces."
+        - name: "Certification"
+          desc: "CE and FCC certified."
