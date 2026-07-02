@@ -235,6 +235,36 @@
     preparing the Yocto build environment, and producing a bootable image for supported
     AMC and development boards.
 
+- name: "hdl-registers"
+  kind: "Register Map Generator"
+  org: "Lukas Vik"
+  year: 2020
+  category: "FPGA Tools"
+  tags: [fpga, registers, axi-lite, vhdl, systemverilog, python, code-generation]
+  url: "https://hdl-registers.com"
+  repo: "https://github.com/hdl-registers/hdl-registers"
+  license: "BSD-3-Clause"
+  summary: "Open-source HDL register code generator that turns a single register definition file into a synthesizable AXI-Lite register file plus matching software and documentation. Generates VHDL and SystemVerilog register cores alongside C, C++, HTML, and Python artifacts, and is fast enough to run inline in the build."
+  about: |
+    hdl-registers is an open-source register interface code generator for FPGA and
+    ASIC designs. From a single register definition file (TOML, JSON, or YAML) it
+    generates a complete, synthesizable AXI-Lite register file together with the
+    software and documentation needed to use it, keeping firmware, software, and
+    docs in sync from one source of truth.
+
+    Its generators produce a VHDL AXI-Lite register file wrapper (and a
+    SystemVerilog variant), C header and C++ class abstractions for host and
+    embedded software, an HTML register map for documentation, and a Python API for
+    scripting and test benches. The tool is designed to be fast enough to run as a
+    normal step inside the build flow rather than as a separate manual generation
+    pass.
+
+    It is part of the same ecosystem as the tsfpga build system and the hdl-modules
+    library, and is distributed under the permissive BSD-3-Clause license with
+    documentation at hdl-registers.com. It fills the same role as DESY's DesyRDL in
+    this list: a vendor-neutral, definition-driven way to build AXI-Lite register
+    banks without hand-maintaining address offsets across HDL, software, and docs.
+
 - name: "wolfSSL"
   kind: "TLS / Crypto Library"
   org: "wolfSSL Inc."

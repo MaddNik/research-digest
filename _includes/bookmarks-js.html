@@ -128,7 +128,7 @@
         return o;
       } catch (e) { return { toread: {}, saved: {} }; }
     }
-    function save(o) { localStorage.setItem(KEY, JSON.stringify(o)); }
+    function save(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} }
     var store = load();
 
     function esc(s) {

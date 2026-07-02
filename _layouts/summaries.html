@@ -105,7 +105,7 @@ layout: page
     function loadHidden() {
       try { return JSON.parse(localStorage.getItem(SM_KEY) || '{}'); } catch(e) { return {}; }
     }
-    function saveHidden(h) { localStorage.setItem(SM_KEY, JSON.stringify(h)); }
+    function saveHidden(h) { try { localStorage.setItem(SM_KEY, JSON.stringify(h)); } catch (e) {} }
     var smHidden = loadHidden();
 
     /* === Update archive panel badge and visibility === */
