@@ -198,7 +198,7 @@ defaults:
       layout: page
       permalink: /:title/
   - scope:
-      path: "private"
+      path: "vault"
     values:
       sitemap: false
 

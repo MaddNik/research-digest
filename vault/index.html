@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Vault</title>
+<style>
+:root{--bg:#0f1115;--surface:#181b20;--ink:#e6e8eb;--muted:#9aa0a8;--line:#2a2f37;--accent:#6ea8fe}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:#15151a;border-bottom:1px solid #333;font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:#8ab4f8;text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+code{background:#0b0d11;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:14px}
+ul.vault-list{list-style:none;padding:0;margin:0}
+ul.vault-list li{padding:12px 0;border-bottom:1px solid var(--line)}
+ul.vault-list a{font-weight:600;font-size:16.5px;text-decoration:none}
+ul.vault-list a:hover{text-decoration:underline}
+ul.vault-list .d{color:var(--muted);font-size:13.5px;margin-top:2px}
+#gate{max-width:420px;margin:18vh auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:34px 38px;text-align:center}
+#gate h1{font-size:19px;color:#fff;margin:0 0 6px}
+#gate p{color:var(--muted);font-size:13.5px;margin:0 0 18px}
+#pw{width:100%;padding:9px 12px;border-radius:6px;border:1px solid var(--line);background:#0b0d11;color:var(--ink);font-size:15px}
+#go{margin-top:12px;width:100%;padding:9px 12px;border-radius:6px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:15px;cursor:pointer}
+#go:hover{background:rgba(110,168,254,.12)}
+#err{color:#e07070;font-size:13px;margin-top:10px;min-height:1.2em}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style>
+</head>
+<body>
+<div id="rt-bar"><a href="#" id="lock" hidden>Lock vault</a></div>
+<div id="gate">
+  <h1>Vault</h1>
+  <p>Enter the vault passkey. Decryption happens entirely in your browser.</p>
+  <input id="pw" type="password" autocomplete="off" autofocus>
+  <button id="go" type="button">Unlock</button>
+  <div id="err"></div>
+</div>
+<main class="doc" id="content" hidden></main>
+<script id="payload" type="application/json">{"v":1,"kdf":"PBKDF2-SHA256","iter":600000,"salt":"AwGG2701RnaMjScY1rCAEQ==","iv":"A0qGOs3ynMQ60CB8","ct":"UH+7ubos52S/84F0s0x8qhc8jyC6V/tvuPnQcrMNOKLQEKftEXgaz3051aaolMb41QExcigQCmSViJ9MwBtopI6xs0kIrv8nbhA8KX+ERyzM9IaZy/7mGYivMmfBiJUIV0RVf+a+xCxIv+XpuqWHh5f8YW611HmUbb3bFU+j8Nti04YgSeLOPHJVlq1RMlMIUnmSzhIPHZafLIUjq7nV+cIqnfwX9JqlY95jSayc1B6axR3qtG6J0Ycr1qyTqRgNxpqRdlbbV7Ky7DE05LO1eYdUZrEbe/a2lwh6l5Ghe3t6rjXBtpxLql7i7TMc/mKZy5LVHzVdut8EjhC3zZxguWM2k7vRduxTzseXgrqr4v3puqzEHtJY+9wHFyXmlKBJwst8WDE71clu2mxnh8dHgMDkOf09KWvRLzfR41Ijfz1h4hrHtwXHoCseN0Zd0SK0iyUmh1q9yXMJKZghmoatt2tzQGQVl47N+8GYWFCmvpHpNLT0LUUaZBa4R0lf599dPpdWJzw4AziYIjn0XK0WAxdMRiKoBIg3i8P3zz8uLMC62aAGNdRXIjTwuQ89h8pcFvdp8BfHtNmud7toF4QS7yd3VECo5xaElI1I2k+Fjl3hsdmVcq7lrsKt9f+LRjSmOaXqYJuiXz6VCNseUSCpQytOCbfuIkMdgdmoQpmN9vv02Pen1omCx6NOlvFCvdBG++3XK69Ce3YUFF53v68uIhzVKboYOE0b3jvtoIm9C9kAGxegFcnGi6FpEdEEYp9N0Ly3w0J3pDegg61VlR/W4Qwb2NY5x/MDKXGneR20g45AUMjvxvzNWjnEB4D9vVtzvMTZE3cJ64L9GHq4kQzBMi8Ni4UchdhWQc5isp8mVo5+zGJwwT5/Qzo="}</script>
+<script>
+(function () {
+  var meta = JSON.parse(document.getElementById('payload').textContent);
+  var CACHE = 'rt_vault_pass';
+  function b64(s) { var bin = atob(s), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; }
+  async function tryDecrypt(pw) {
+    var base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+    var key = await crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: b64(meta.salt), iterations: meta.iter, hash: 'SHA-256' },
+      base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(meta.iv) }, key, b64(meta.ct));
+    return new TextDecoder().decode(pt);
+  }
+  function reveal(html) {
+    document.getElementById('content').innerHTML = html;
+    document.getElementById('content').hidden = false;
+    var g = document.getElementById('gate'); if (g) g.remove();
+    var l = document.getElementById('lock'); if (l) l.hidden = false;
+  }
+  async function unlock() {
+    var err = document.getElementById('err');
+    err.textContent = '';
+    var pw = document.getElementById('pw').value;
+    if (!pw) return;
+    try {
+      var html = await tryDecrypt(pw);
+      try { sessionStorage.setItem(CACHE, pw); } catch (e) {}
+      reveal(html);
+    } catch (e) {
+      err.textContent = 'Wrong passkey.';
+    }
+  }
+  document.getElementById('go').addEventListener('click', unlock);
+  document.getElementById('pw').addEventListener('keydown', function (e) { if (e.key === 'Enter') unlock(); });
+  document.getElementById('lock').addEventListener('click', function (e) {
+    e.preventDefault();
+    try { sessionStorage.removeItem(CACHE); } catch (err) {}
+    location.reload();
+  });
+  /* auto-unlock from the per-tab session cache */
+  (async function () {
+    var cached = null;
+    try { cached = sessionStorage.getItem(CACHE); } catch (e) {}
+    if (!cached) return;
+    try { reveal(await tryDecrypt(cached)); }
+    catch (e) { try { sessionStorage.removeItem(CACHE); } catch (err) {} }
+  })();
+})();
+</script>
+</body></html>
