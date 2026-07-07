@@ -1,55 +1,108 @@
 /* ═══════════════════════════════════════════════════
    Research Digest — Design System
-   Direction: Minimal — content-forward, dark, hairline chrome
+   Palette: "lab paper" (light) / "oscilloscope screen" (dark).
+   One accent — phosphor teal, the color of a signal trace — carries
+   the identity across both themes; neutrals are biased slightly toward
+   teal/green so they read as chosen. Red/amber/green are functional
+   status colors only, kept separate from the accent.
+
+   Wiring: this Chirpy build is Bootstrap 5.3 and switches on the
+   [data-bs-theme] attribute (set by the sidebar mode-toggle via
+   theme.min.js). custom.css loads LAST, so equal-specificity overrides
+   win. Palette tokens are defined once per theme; Chirpy's chrome
+   variables and our own --c-* tokens are then mapped to them once, so
+   the theme switcher drives both the theme chrome and our components.
    ═══════════════════════════════════════════════════ */
 
-/* Tokens adapt to Chirpy's light/dark mode.
-   Light mode (default): surfaces/text/borders follow Chirpy's own adaptive
-   variables so cards stay readable; accent is a contrast-safe blue.
-   Dark mode: the approved content-forward dark palette. */
-:root {
-  /* Semantic accents (light-mode tuned, readable on white) */
-  --c-accent:         #2a7ae2;
-  --c-accent-dim:     rgba(42,122,226,0.08);
-  --c-saved:          #c8841f;
-  --c-toread:         #2f7fb8;
-  --c-archived:       #c0392b;
-
-  /* Surfaces/text/borders inherit Chirpy's adaptive theme */
-  --c-surface:        var(--main-bg, #fff);
-  --c-surface-raised: var(--card-bg, #fff);
-  --c-border:         var(--main-border-color, rgba(128,128,128,.25));
-  --c-muted:          var(--text-muted-color, #6b7280);
-
-  --link-color:       var(--c-accent);
+/* ── Palette tokens per theme ─────────────────────── */
+/* Light — "lab paper" (default, explicit light, system light) */
+:root,
+:root[data-bs-theme="light"] {
+  --paper:  #F3F5F4;  --card: #FFFFFF;  --ink: #161A1C;
+  --muted:  #5C6670;  --line: #DBE0DE;
+  --accent: #0C8C80;  --accent-dim: rgba(12,140,128,.09);
+  --good:   #2E8B5B;  --warn: #9C7414;  --bad: #C1493A;
 }
-
-/* Dark palette — explicit toggle */
-html[data-mode="dark"] {
-  --c-accent:         #5b9ef7;
-  --c-accent-dim:     rgba(91,158,247,0.12);
-  --c-saved:          #d4943a;
-  --c-toread:         #4692c8;
-  --c-archived:       #b85c5c;
-  --c-surface:        #0f1117;
-  --c-surface-raised: #151b26;
-  --c-border:         #1e2535;
-  --c-muted:          #6b7585;
+/* Dark — "oscilloscope screen" (explicit dark) */
+:root[data-bs-theme="dark"] {
+  --paper:  #0B0F12;  --card: #111619;  --ink: #E7EEEA;
+  --muted:  #95A2A1;  --line: #1F282C;
+  --accent: #2CD4BE;  --accent-dim: rgba(44,212,190,.14);
+  --good:   #4FC98A;  --warn: #D6A63A;  --bad: #F0725E;
 }
-
-/* Dark palette — system preference when no explicit toggle is set */
+/* Dark — system preference when no explicit choice is set */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-mode]) {
-    --c-accent:         #5b9ef7;
-    --c-accent-dim:     rgba(91,158,247,0.12);
-    --c-saved:          #d4943a;
-    --c-toread:         #4692c8;
-    --c-archived:       #b85c5c;
-    --c-surface:        #0f1117;
-    --c-surface-raised: #151b26;
-    --c-border:         #1e2535;
-    --c-muted:          #6b7585;
+  :root:not([data-bs-theme]) {
+    --paper:  #0B0F12;  --card: #111619;  --ink: #E7EEEA;
+    --muted:  #95A2A1;  --line: #1F282C;
+    --accent: #2CD4BE;  --accent-dim: rgba(44,212,190,.14);
+    --good:   #4FC98A;  --warn: #D6A63A;  --bad: #F0725E;
   }
+}
+
+/* ── Map Chirpy chrome + our tokens to the palette (once) ──
+   Written at the same specificity Chirpy uses (0,2,0) and loaded after
+   it, so these win in every mode. var() resolves per the themed tokens
+   above, so all three contexts are covered by this single block. */
+:root[data-bs-theme="light"],
+:root[data-bs-theme="dark"],
+:root:not([data-bs-theme]) {
+  /* our component tokens */
+  --c-accent: var(--accent);            --c-accent-dim: var(--accent-dim);
+  --c-surface: var(--paper);            --c-surface-raised: var(--card);
+  --c-border: var(--line);              --c-muted: var(--muted);
+  --c-good: var(--good);                --c-warn: var(--warn);  --c-bad: var(--bad);
+  --c-saved: var(--warn);               --c-toread: var(--accent);  --c-archived: var(--bad);
+
+  /* Chirpy surfaces / text / borders */
+  --main-bg: var(--paper);              --mask-bg: var(--line);
+  --card-bg: var(--card);               --card-hover-bg: var(--card);
+  --main-border-color: var(--line);
+  --text-color: var(--ink);             --heading-color: var(--ink);
+  --text-muted-color: var(--muted);     --text-muted-highlight-color: var(--ink);
+  --post-list-text-color: var(--muted); --label-color: var(--muted);
+  --blockquote-border-color: var(--line); --blockquote-text-color: var(--muted);
+
+  /* links / accent */
+  --link-color: var(--accent);          --link-underline-color: var(--accent-dim);
+  --toc-highlight: var(--accent);       --checkbox-checked-color: var(--accent);
+
+  /* sidebar / header / topbar */
+  --site-title-color: var(--accent);    --site-subtitle-color: var(--muted);
+  --sidebar-bg: var(--card);            --sidebar-border-color: var(--line);
+  --sidebar-muted-color: var(--muted);  --sidebar-active-color: var(--accent);
+  --sidebar-hover-bg: var(--accent-dim);
+  --sidebar-btn-bg: var(--paper);       --sidebar-btn-color: var(--muted);
+  --avatar-border-color: var(--line);
+  --topbar-bg: var(--paper);            --topbar-text-color: var(--ink);
+
+  /* search / menus / buttons */
+  --search-border-color: var(--line);   --search-icon-color: var(--muted);
+  --input-focus-border-color: var(--accent);
+  --menu-bg: var(--card);               --menu-border-color: var(--line);
+  --menu-active-color: var(--accent);
+  --btn-share-color: var(--muted);      --btn-share-hover-color: var(--accent);
+  --btn-patinator-text-color: var(--muted); --btn-paginator-hover-color: var(--accent-dim);
+
+  /* tables / tags / categories / timeline */
+  --tb-odd-bg: var(--card);             --tb-border-color: var(--line);
+  --tag-border: var(--line);            --tag-hover: var(--accent-dim);
+  --search-tag-bg: var(--paper);
+  --categories-border: var(--line);     --categories-hover-bg: var(--accent-dim);
+  --categories-icon-hover-color: var(--accent);
+  --timeline-color: var(--line);        --timeline-node-bg: var(--muted);
+  --timeline-year-dot-color: var(--accent);
+  --language-border-color: var(--line);
+
+  /* code / prompts (status icons use the functional trio) */
+  --inline-code-bg: var(--accent-dim);  --code-color: var(--ink);
+  --code-header-muted-color: var(--muted); --kbd-text-color: var(--ink);
+  --prompt-tip-icon-color: var(--good);
+  --prompt-warning-icon-color: var(--warn);
+  --prompt-danger-icon-color: var(--bad);
+  --prompt-info-icon-color: var(--accent);
+
+  --link-color: var(--accent);
 }
 
 /* ── Filter tiles ─────────────────────────────────── */
@@ -65,7 +118,7 @@ html[data-mode="dark"] {
 .topic-tile:hover  { color: var(--text-color); }
 .topic-tile.active { color: var(--c-accent); border-bottom-color: var(--c-accent); }
 .topic-tile .n     { color: var(--c-muted); font-weight: 400; margin-left: .25rem; font-size: .78rem; }
-.topic-tile.active .n    { color: rgba(91,158,247,.7); }
+.topic-tile.active .n    { color: var(--c-accent); opacity: .7; }
 .topic-tile--right       { margin-left: auto; }
 .topic-tile--bookmark    { margin-left: auto; }
 
