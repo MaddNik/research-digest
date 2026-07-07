@@ -122,8 +122,8 @@ def slug_date(slug, fallback):
 
 ENHANCE_HEAD = """
 <style>
-#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:#15151a;border-bottom:1px solid #333;font:600 14px/1.4 system-ui,-apple-system,sans-serif}
-#rt-bar a{color:#8ab4f8;text-decoration:none}
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:var(--surface);border-bottom:1px solid var(--line);font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:var(--accent);text-decoration:none}
 #rt-bar a:hover{text-decoration:underline}
 figure img{cursor:zoom-in}
 #rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
@@ -131,7 +131,7 @@ figure img{cursor:zoom-in}
 #rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
 #rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
 #rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
-a.rt-figref,a.rt-eqref{color:#1a73e8;text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+a.rt-figref,a.rt-eqref{color:var(--accent);text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
 body{counter-reset:rt-eq}
 mjx-container[display="true"]{position:relative;padding-right:2.4em}
 mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
@@ -210,6 +210,30 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 """
 
 
+# Canonical site palette ("lab paper" light / "oscilloscope" dark). Standalone
+# summary pages carry their own <style>; normalize it to the site palette so
+# every published page stays aligned regardless of the source's own colors.
+NEW_ROOT = (":root{--bg:#F3F5F4;--surface:#FFFFFF;--ink:#161A1C;--muted:#5C6670;"
+            "--line:#DBE0DE;--accent:#0C8C80}\n"
+            "@media (prefers-color-scheme:dark){:root{--bg:#0B0F12;--surface:#111619;"
+            "--ink:#E7EEEA;--muted:#95A2A1;--line:#1F282C;--accent:#2CD4BE}}")
+
+
+def normalize_palette(html):
+    # Replace a legacy dark-only palette block with the light+dark site palette.
+    html = re.sub(r":root\{--bg:#0f1115;.*?--accent:#6ea8fe\}", NEW_ROOT, html, flags=re.S)
+    # Legacy stray colors -> palette tokens (idempotent; no-ops once converted).
+    for a, b in (
+        ("html{color-scheme:dark}", "html{color-scheme:light dark}"),
+        ("background:#15151a;border-bottom:1px solid #333",
+         "background:var(--surface);border-bottom:1px solid var(--line)"),
+        ("#rt-bar a{color:#8ab4f8", "#rt-bar a{color:var(--accent)"),
+        ("color:#1a73e8", "color:var(--accent)"),
+    ):
+        html = html.replace(a, b)
+    return html
+
+
 def inject(path, source_url, meta_line=""):
     try:
         html = open(path, encoding="utf-8").read()
@@ -236,6 +260,7 @@ def inject(path, source_url, meta_line=""):
         html = html.replace("</body>", ENHANCE_TAIL + "</body>", 1)
     else:
         html += ENHANCE_TAIL
+    html = normalize_palette(html)
     open(path, "w", encoding="utf-8").write(html)
 
 

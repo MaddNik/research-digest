@@ -100,20 +100,21 @@ function shell({ title, payload, isIndex }) {
 <meta name="robots" content="noindex, nofollow">
 <title>${esc(title)}</title>
 <style>
-:root{--bg:#0f1115;--surface:#181b20;--ink:#e6e8eb;--muted:#9aa0a8;--line:#2a2f37;--accent:#6ea8fe}
+:root{--bg:#F3F5F4;--surface:#FFFFFF;--ink:#161A1C;--muted:#5C6670;--line:#DBE0DE;--accent:#0C8C80;--accent-dim:rgba(12,140,128,.12);--bad:#C1493A}
+@media (prefers-color-scheme:dark){:root{--bg:#0B0F12;--surface:#111619;--ink:#E7EEEA;--muted:#95A2A1;--line:#1F282C;--accent:#2CD4BE;--accent-dim:rgba(44,212,190,.16);--bad:#F0725E}}
 *{box-sizing:border-box}
-html{color-scheme:dark}
+html{color-scheme:light dark}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:#15151a;border-bottom:1px solid #333;font:600 14px/1.4 system-ui,-apple-system,sans-serif}
-#rt-bar a{color:#8ab4f8;text-decoration:none}
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:var(--surface);border-bottom:1px solid var(--line);font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:var(--accent);text-decoration:none}
 #rt-bar a:hover{text-decoration:underline}
 .doc{max-width:820px;margin:40px auto;background:var(--surface);padding:48px 56px;border:1px solid var(--line);border-radius:8px}
-header h1{margin:0 0 4px;font-size:28px;color:#fff}
+header h1{margin:0 0 4px;font-size:28px;color:var(--ink)}
 .meta{color:var(--muted);font-size:13px;margin:0 0 24px}
 section{margin:0 0 28px}
-section h2{font-size:20px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:6px}
+section h2{font-size:20px;color:var(--ink);border-bottom:1px solid var(--line);padding-bottom:6px}
 a{color:var(--accent)}
-code{background:#0b0d11;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:14px}
+code{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:14px}
 ul.vault-list{list-style:none;padding:0;margin:0}
 ul.vault-list li{padding:12px 0;border-bottom:1px solid var(--line)}
 ul.vault-list a.doc-link{font-weight:600;font-size:16.5px;text-decoration:none}
@@ -121,18 +122,18 @@ ul.vault-list a.doc-link:hover{text-decoration:underline}
 ul.vault-list .d{color:var(--muted);font-size:13.5px;margin-top:2px}
 p.vault-empty{color:var(--muted)}
 .share-btn{margin-left:10px;padding:2px 10px;font-size:12.5px;border-radius:6px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;vertical-align:2px}
-.share-btn:hover{background:rgba(110,168,254,.12)}
+.share-btn:hover{background:var(--accent-dim)}
 .share-out{margin-top:8px}
 .share-out[hidden]{display:none}
-.share-out input{width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--line);background:#0b0d11;color:var(--ink);font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.share-out input{width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .share-note{color:var(--muted);font-size:12px;margin-top:4px}
 #gate{max-width:420px;margin:18vh auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:34px 38px;text-align:center}
-#gate h1{font-size:19px;color:#fff;margin:0 0 6px}
+#gate h1{font-size:19px;color:var(--ink);margin:0 0 6px}
 #gate p{color:var(--muted);font-size:13.5px;margin:0 0 18px}
-#pw{width:100%;padding:9px 12px;border-radius:6px;border:1px solid var(--line);background:#0b0d11;color:var(--ink);font-size:15px}
+#pw{width:100%;padding:9px 12px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:15px}
 #go{margin-top:12px;width:100%;padding:9px 12px;border-radius:6px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:15px;cursor:pointer}
-#go:hover{background:rgba(110,168,254,.12)}
-#err{color:#e07070;font-size:13px;margin-top:10px;min-height:1.2em}
+#go:hover{background:var(--accent-dim)}
+#err{color:var(--bad);font-size:13px;margin-top:10px;min-height:1.2em}
 @media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
 </style>
 </head>

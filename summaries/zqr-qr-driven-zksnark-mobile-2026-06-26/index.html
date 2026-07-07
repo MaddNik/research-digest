@@ -3,10 +3,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>zQR: A Verifiable QR-Driven zkSNARK Proof Verification Framework for Mobile Platforms</title>
 <style>
-:root{--bg:#0f1115;--surface:#181b20;--ink:#e6e8eb;--muted:#9aa0a8;
- --line:#2a2f37;--accent:#6ea8fe}
+:root{--bg:#F3F5F4;--surface:#FFFFFF;--ink:#161A1C;--muted:#5C6670;--line:#DBE0DE;--accent:#0C8C80}
+@media (prefers-color-scheme:dark){:root{--bg:#0B0F12;--surface:#111619;--ink:#E7EEEA;--muted:#95A2A1;--line:#1F282C;--accent:#2CD4BE}}
 *{box-sizing:border-box}
-html{color-scheme:dark}
+html{color-scheme:light dark}
 body{margin:0;background:var(--bg);color:var(--ink);
  font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
 .doc{max-width:820px;margin:40px auto;background:var(--surface);
@@ -27,8 +27,8 @@ figure img{max-width:100%;height:auto;background:#fff;padding:10px;
 @media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
 </style>
 <style>
-#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:#15151a;border-bottom:1px solid #333;font:600 14px/1.4 system-ui,-apple-system,sans-serif}
-#rt-bar a{color:#8ab4f8;text-decoration:none}
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:var(--surface);border-bottom:1px solid var(--line);font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:var(--accent);text-decoration:none}
 #rt-bar a:hover{text-decoration:underline}
 figure img{cursor:zoom-in}
 #rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
@@ -36,7 +36,7 @@ figure img{cursor:zoom-in}
 #rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
 #rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
 #rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
-a.rt-figref,a.rt-eqref{color:#1a73e8;text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+a.rt-figref,a.rt-eqref{color:var(--accent);text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
 body{counter-reset:rt-eq}
 mjx-container[display="true"]{position:relative;padding-right:2.4em}
 mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
