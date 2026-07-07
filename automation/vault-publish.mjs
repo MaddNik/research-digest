@@ -1,13 +1,15 @@
 #!/usr/bin/env node
-/* Vault publisher (v2, multi-key): builds the passkey-gated /vault/ section
-   from a PRIVATE workspace directory that must never be committed to git.
+/* Vault publisher (v2, multi-key + per-article share links): builds the
+   passkey-gated /vault/ section from a PRIVATE workspace directory that must
+   never be committed to git.
 
    Usage:
      PASSKEY_OWNER='...' PASSKEY_COLLAB='...' node automation/vault-publish.mjs <workspace-dir>
 
    Workspace layout (plaintext, keep outside the repo):
      index.json    manifest:
-                   { "audiences": { "<aud>": { "env": "PASSKEY_..." }, ... },
+                   { "audiences": { "<aud>": { "env": "PASSKEY_...",
+                                               "canShare": true|false }, ... },
                      "sections": [ { "name", "desc",
                        "docs": [ { "slug", "file", "title", "desc", "date",
                                    "audiences": ["owner", ...] } ] } ] }
@@ -19,17 +21,23 @@
 
    Crypto (LUKS-style key slots):
    - Each payload body is encrypted ONCE under a random 256-bit content key
-     (AES-256-GCM, random IV).
-   - Per audience allowed on that payload, a key slot {salt, iv, wrap} wraps
-     the content key: wrap = AES-GCM(PBKDF2-SHA256(passkey, salt, 600000),
-     contentKey). The browser tries each slot with the entered passphrase; a
-     GCM-authenticated unwrap yields the content key.
-   - The index page carries a separate encrypted view per audience, rendered
-     only from that audience's document list, so a keyholder cannot see even
-     the titles of documents outside their audience.
-   - Passkeys are only ever KDF inputs; they appear nowhere in the output.
-     Re-run with new env values to rotate keys. Decoy slots could be added for
-     padding if slot-count metadata ever matters. */
+     (AES-256-GCM, random IV). Per audience allowed on that payload, a key slot
+     {salt, iv, wrap} wraps the content key under PBKDF2-SHA256(passkey, salt,
+     600000). The browser tries each slot with the entered passphrase; an
+     authenticated unwrap yields the content key.
+   - The index carries a separate encrypted view per audience so a keyholder
+     cannot see even the titles of documents outside their audience.
+
+   Per-article share links (capability URLs):
+   - An audience with "canShare": true gets, in its (encrypted) index view, the
+     raw per-document content key embedded on a Share button. Since that index
+     view is itself encrypted under the audience's passkey, the embedded keys
+     are protected by that passkey. The button builds a link of the form
+     <origin>/research-digest/vault/<slug>/#k=<base64url-content-key>. A
+     recipient opening that link decrypts that ONE document directly from the
+     key in the URL fragment - no passkey, no other access. Fragments are never
+     sent to the server, so the key is not logged. Revoke a link by
+     re-publishing that document (fresh content key). */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -53,6 +61,10 @@ for (const [name, cfg] of Object.entries(audiences)) {
   passkeys[name] = pw;
 }
 
+function b64url(buf) {
+  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 function wrapSlot(passkey, contentKey) {
   const salt = crypto.randomBytes(16);
   const iv = crypto.randomBytes(12);
@@ -62,17 +74,18 @@ function wrapSlot(passkey, contentKey) {
   return { salt: salt.toString('base64'), iv: iv.toString('base64'), wrap: wrap.toString('base64') };
 }
 
-/* one unit = one body encrypted under a fresh content key + slots for the
-   audiences allowed to read it */
-function makeUnit(plaintext, audNames) {
-  const contentKey = crypto.randomBytes(32);
+function encBody(plaintext, contentKey) {
   const iv = crypto.randomBytes(12);
   const c = crypto.createCipheriv('aes-256-gcm', contentKey, iv);
   const ct = Buffer.concat([c.update(plaintext, 'utf8'), c.final(), c.getAuthTag()]);
-  return {
-    slots: audNames.map(a => wrapSlot(passkeys[a], contentKey)),
-    body: { iv: iv.toString('base64'), ct: ct.toString('base64') },
-  };
+  return { iv: iv.toString('base64'), ct: ct.toString('base64') };
+}
+
+/* one unit = one body encrypted under a content key + slots for the audiences
+   allowed to read it. contentKey may be supplied (docs) or generated (index). */
+function makeUnit(plaintext, audNames, contentKey) {
+  const ck = contentKey || crypto.randomBytes(32);
+  return { slots: audNames.map(a => wrapSlot(passkeys[a], ck)), body: encBody(plaintext, ck) };
 }
 
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -103,10 +116,16 @@ a{color:var(--accent)}
 code{background:#0b0d11;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:14px}
 ul.vault-list{list-style:none;padding:0;margin:0}
 ul.vault-list li{padding:12px 0;border-bottom:1px solid var(--line)}
-ul.vault-list a{font-weight:600;font-size:16.5px;text-decoration:none}
-ul.vault-list a:hover{text-decoration:underline}
+ul.vault-list a.doc-link{font-weight:600;font-size:16.5px;text-decoration:none}
+ul.vault-list a.doc-link:hover{text-decoration:underline}
 ul.vault-list .d{color:var(--muted);font-size:13.5px;margin-top:2px}
 p.vault-empty{color:var(--muted)}
+.share-btn{margin-left:10px;padding:2px 10px;font-size:12.5px;border-radius:6px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;vertical-align:2px}
+.share-btn:hover{background:rgba(110,168,254,.12)}
+.share-out{margin-top:8px}
+.share-out[hidden]{display:none}
+.share-out input{width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--line);background:#0b0d11;color:var(--ink);font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.share-note{color:var(--muted);font-size:12px;margin-top:4px}
 #gate{max-width:420px;margin:18vh auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:34px 38px;text-align:center}
 #gate h1{font-size:19px;color:#fff;margin:0 0 6px}
 #gate p{color:var(--muted);font-size:13.5px;margin:0 0 18px}
@@ -130,15 +149,20 @@ p.vault-empty{color:var(--muted)}
 <script id="payload" type="application/json">${payload}</script>
 <script>
 (function () {
+  var IS_INDEX = ${isIndex ? 'true' : 'false'};
   var meta = JSON.parse(document.getElementById('payload').textContent);
   var CACHE = 'rt_vault_pass';
-  function b64(s) { var bin = atob(s), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; }
+  function b64(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; var bin = atob(s), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; }
   async function kdf(pw, salt) {
     var base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
     return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: meta.iter, hash: 'SHA-256' },
       base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
   }
-  /* try every slot of every unit; return the first body that decrypts */
+  async function decBody(body, contentKey) {
+    var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(body.iv) }, contentKey, b64(body.ct));
+    return new TextDecoder().decode(pt);
+  }
+  /* passkey path: try every slot of every unit; return the first body that decrypts */
   async function tryDecrypt(pw) {
     for (var u = 0; u < meta.units.length; u++) {
       var unit = meta.units[u];
@@ -148,12 +172,20 @@ p.vault-empty{color:var(--muted)}
           var kek = await kdf(pw, b64(slot.salt));
           var raw = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(slot.iv) }, kek, b64(slot.wrap));
           var contentKey = await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['decrypt']);
-          var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(unit.body.iv) }, contentKey, b64(unit.body.ct));
-          return new TextDecoder().decode(pt);
+          return await decBody(unit.body, contentKey);
         } catch (e) { /* wrong slot for this key; keep trying */ }
       }
     }
     throw new Error('no slot matched');
+  }
+  /* share-link path (document pages only): decrypt this doc's single body
+     directly from a content key carried in the URL fragment (#k=...) */
+  async function tryShareLink() {
+    var m = location.hash.match(/[#&]k=([^&]+)/);
+    if (!m || IS_INDEX || !meta.units.length) return null;
+    var raw = b64(decodeURIComponent(m[1]));
+    var contentKey = await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['decrypt']);
+    return await decBody(meta.units[0].body, contentKey);
   }
   function reveal(html) {
     document.getElementById('content').innerHTML = html;
@@ -183,8 +215,30 @@ p.vault-empty{color:var(--muted)}
     try { sessionStorage.removeItem(CACHE); } catch (err) {}
     location.reload();
   });
-  /* auto-unlock from the per-tab session cache */
+  /* Share buttons in an owner index view: mint a capability URL for one doc */
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('.share-btn') : null;
+    if (!btn) return;
+    e.preventDefault();
+    var url = location.origin + btn.getAttribute('data-url') + '#k=' + btn.getAttribute('data-k');
+    var li = btn.closest('li');
+    var out = li ? li.querySelector('.share-out') : null;
+    if (!out) return;
+    var input = out.querySelector('input');
+    var note = out.querySelector('.share-note');
+    input.value = url;
+    out.hidden = false;
+    input.focus(); input.select();
+    note.textContent = 'Anyone with this link can read this one article — nothing else in the vault.';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () {
+        note.textContent = 'Link copied — anyone with it can read this one article, nothing else.';
+      }).catch(function () {});
+    }
+  });
+  /* auto-unlock: first a share link, then the per-tab passkey cache */
   (async function () {
+    try { var h = await tryShareLink(); if (h != null) { reveal(h); return; } } catch (e) {}
     var cached = null;
     try { cached = sessionStorage.getItem(CACHE); } catch (e) {}
     if (!cached) return;
@@ -197,9 +251,10 @@ p.vault-empty{color:var(--muted)}
 `;
 }
 
-/* documents: one unit each, slots for the doc's audiences */
+/* documents: one unit each; keep each doc's content key for share links */
 let count = 0;
 const audDocs = {};
+const docKeys = {};
 for (const a of Object.keys(audiences)) audDocs[a] = [];
 for (const sec of manifest.sections) {
   for (const doc of sec.docs) {
@@ -209,8 +264,10 @@ for (const sec of manifest.sections) {
       if (!(a in passkeys)) { console.error(`doc ${doc.slug}: unknown audience "${a}"`); process.exit(1); }
       audDocs[a].push({ sec, doc });
     }
+    const ck = crypto.randomBytes(32);
+    docKeys[doc.slug] = b64url(ck);
     const inner = fs.readFileSync(path.join(ws, doc.file), 'utf8');
-    const payload = JSON.stringify({ v: 2, iter: ITER, units: [makeUnit(inner, auds)] });
+    const payload = JSON.stringify({ v: 2, iter: ITER, units: [makeUnit(inner, auds, ck)] });
     const out = path.join(REPO, 'vault', doc.slug, 'index.html');
     fs.mkdirSync(path.dirname(out), { recursive: true });
     fs.writeFileSync(out, shell({ title: 'Vault document', payload, isIndex: false }));
@@ -219,8 +276,10 @@ for (const sec of manifest.sections) {
   }
 }
 
-/* index: one unit per audience, each rendering only that audience's docs */
+/* index: one unit per audience, each rendering only that audience's docs;
+   audiences with canShare get per-entry Share buttons carrying the content key */
 function renderIndexView(audName) {
+  const canShare = !!(audiences[audName] && audiences[audName].canShare);
   let html = `<header><h1>Vault</h1><p class="meta">Private documents &middot; unlocked for this tab &middot; use Lock to re-gate</p></header>`;
   const mine = audDocs[audName];
   if (!mine.length) {
@@ -237,8 +296,16 @@ function renderIndexView(audName) {
     if (sec.desc) html += `<p class="d" style="color:#9aa0a8;font-size:14px">${esc(sec.desc)}</p>`;
     html += `<ul class="vault-list">`;
     for (const doc of docs) {
-      html += `<li><a href="${BASE}${encodeURIComponent(doc.slug)}/">${esc(doc.title)}</a>` +
-        `<div class="d">${esc(doc.desc || '')}${doc.date ? ' &middot; ' + esc(doc.date) : ''}</div></li>`;
+      const url = `${BASE}${encodeURIComponent(doc.slug)}/`;
+      html += `<li><a class="doc-link" href="${url}">${esc(doc.title)}</a>`;
+      if (canShare) {
+        html += `<button type="button" class="share-btn" data-url="${url}" data-k="${docKeys[doc.slug]}">Share link</button>`;
+      }
+      html += `<div class="d">${esc(doc.desc || '')}${doc.date ? ' &middot; ' + esc(doc.date) : ''}</div>`;
+      if (canShare) {
+        html += `<div class="share-out" hidden><input readonly onclick="this.select()"><div class="share-note"></div></div>`;
+      }
+      html += `</li>`;
     }
     html += `</ul></section>`;
   }

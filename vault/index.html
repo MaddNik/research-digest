@@ -20,10 +20,16 @@ a{color:var(--accent)}
 code{background:#0b0d11;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:14px}
 ul.vault-list{list-style:none;padding:0;margin:0}
 ul.vault-list li{padding:12px 0;border-bottom:1px solid var(--line)}
-ul.vault-list a{font-weight:600;font-size:16.5px;text-decoration:none}
-ul.vault-list a:hover{text-decoration:underline}
+ul.vault-list a.doc-link{font-weight:600;font-size:16.5px;text-decoration:none}
+ul.vault-list a.doc-link:hover{text-decoration:underline}
 ul.vault-list .d{color:var(--muted);font-size:13.5px;margin-top:2px}
 p.vault-empty{color:var(--muted)}
+.share-btn{margin-left:10px;padding:2px 10px;font-size:12.5px;border-radius:6px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;vertical-align:2px}
+.share-btn:hover{background:rgba(110,168,254,.12)}
+.share-out{margin-top:8px}
+.share-out[hidden]{display:none}
+.share-out input{width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--line);background:#0b0d11;color:var(--ink);font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.share-note{color:var(--muted);font-size:12px;margin-top:4px}
 #gate{max-width:420px;margin:18vh auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:34px 38px;text-align:center}
 #gate h1{font-size:19px;color:#fff;margin:0 0 6px}
 #gate p{color:var(--muted);font-size:13.5px;margin:0 0 18px}
@@ -44,18 +50,23 @@ p.vault-empty{color:var(--muted)}
   <div id="err"></div>
 </div>
 <main class="doc" id="content" hidden></main>
-<script id="payload" type="application/json">{"v":2,"iter":600000,"units":[{"slots":[{"salt":"nbuQ2Ls0piZHt9SyMYj7hA==","iv":"/obJ5VKtI7DPujmf","wrap":"BeW3WgNAWipEs8d2UnTNDDU6NggjJvgu6Lqwj6uHlNk3M+tfvbxyDb1X0i7dcvO+"}],"body":{"iv":"qJjIzEBIF394dSjI","ct":"/S+A3TOxSYRxFTRoRXhR597CGjzkT3s0xHaxq0GmwR7hWIoLQYSsNr7kBNZii+QLg7wEwBfeldj8D+5l5ub/kMG92ZwNm0glTX9ac41yWYmob8dA2UFoOwuce671gSifrQm7VYHnltlBrcQ6Y1qM5HHiR2IiAIgpG7LT9qyQ/3eKO8A+Ef02li7Ywfaa7xMhm/4NQWzyxhtac7pB8GG4SeoJ7yJ4Ik6DaR1/6Em46eGDXQuR6g4m7v9fqEBueDTCLKxkmG7hBLn27UAnvkkhGiX7L9Ik5v3//JoHyDlH3ihDpD+XkJMCjtLcm9v1gRuZ/Xm29ilWk9kVPMlBNnaQtLtau7PCATxDS03GRrzCdvbHRJZ4ZE8WmEyLjuAhoV7wqnOlVoGGVu6xww52mRFs6hLaO//EdybBj2g8K6AOEHdx+7iYZ611u6gLd02TEugkhdxV804wxl5M5wZJFSUVRtZ14xQaxSaltExfo0y/9eIsSLJLhxvkVvj9rhzBnXIF+UIuJzqIYURv31w283AsaYGutqOQTaWbqKh06eb8JVLMbgbtZ3f8Ttp3mnafYcWGh1ASPPrDOHjVXGbk/fQz3MnAH/rdcV3iyPA3CrfyjmnN6kw/+JynUvxKA0M2e7/ct/U/eAxmGZsJK8y9vKURN07IJ3qsG/jm5wWuXiJ37TQwb+WOv9oQxnoVlIelqhw5aqC7sRXLY0fngBSuW6WLqZaX6uwICuDmY+uIWzrasc3x6j2Fxc83lmvE8BnEEXek/+BgE7r9NtvswRu+6Payu+XCfwJ4Ot0KOw0po9SB+FKfbUdqa5VNcCrznbX6vZePXD2plC1bvJRQ/aEgwBQpzF83GDPvCbEsFjvhkWbBNG1m8XLinm574Eo="}},{"slots":[{"salt":"mj57e/BYAFgAabJcYX+JjA==","iv":"jQqIBHQholXru7U7","wrap":"4NLDCTB3L4JryADnffHgx5QnNOQPriuqX9kExMS2wnH7jQxnU7aQxAW5ALJspS0i"}],"body":{"iv":"Rp4xrB+QvCZvuxyG","ct":"Wrvf9pW7ZkU1bbw6CC6G7hvVnH9n9SvE5ri1hz9My0RW9H1lSbrn6ztRYIJwfIXMqD7TSqPcbH8kbMBL2VsAsCPwqImxuTDcwKLsTTmJKyCjK42DAJx7bshSGw8c4LD3nnfUPiPRuIc+mhsLWcJkH01S+jpNW3t+9JFFO377i2f9bksH1WdMAlr9SXC4A/YSajk6T/Bv+Q61kY1mbVrRmzC5QieQ/OCGfBqrezfST1XfBxicvA7V9vcCW4q2F0fP//qMdT2ity7hthZRjZPpkc9gq5mNNYNJkX+QgaWuO1Cc92MU44pb+pdFXkxn2A=="}}]}</script>
+<script id="payload" type="application/json">{"v":2,"iter":600000,"units":[{"slots":[{"salt":"3zcN8z/jNpoBl1nIlL74Vw==","iv":"8HpGemenbfn89Vfp","wrap":"NQuK26Y7lWjBjFevl9ptEkFm7qXDxXzUToPBorgSlhYixmplV6SQDMgYjnwtXjG4"}],"body":{"iv":"7c1RMsVYnorLbF59","ct":"23f63lDtMemLwzmdB8Yli17r7bS2/7GAktsv1knXZCP4UYxXWhbDsCxzPxvdrWytJQwWgGdtemAPOnkviO1tmFcAWAycRKjXW8XslrjE42wo8ZQemIbGi43H/x4NDQ6+JDrRW6yCVU8C45Khn6fK3UJ/ctvpuFcra6AxZsNWVaUTCYyKp8WPXMIAtCIa17NqAOi96GDqkQJF8t7CQY54g6PG1yxkaLik5T4fZ21Y+txwHrx9Yz5qxXDnHsANKHEoJ2kXcEWIsZ1UIrL6f96xmEID5vFJoMeKu4npjDJCpjgT20SXWNyvFj9JGokIpOMMODOQQWGWk9H9uHYR3UjYCEcTfGWax+Myn8pVmTbXNKylSTA4hOADjLf3OKDpH7pR9de6UPPItn3mF1dOJerAs9QNtBdMX78vJ0iW+ExjOv+w9zeDNg/YfB8wIzvmBANhTtEIXLOfgSdwlzMLeXY3/yGiTVTnRQMI27asjno/doepP0EgPNtXU1XsILMeFUT5czLvCd2RjZjEZvHWJl5Y0ewCb4WLQjbMZd5uqCNK+d924M5R4MjXBr8azSpXXBaWQubS3GOE9NUdCxY3bSyPupxkHG0dmbx2F0JIn8pCcsy7mSlaV52xm7IxASrXzny+zhl6ux6fH7xpmOak711yJTirW9fagaAKh2JD7BaFXx0iBxHUyBNnjmGyoe0JQWuyYu0XTrR9KwLm+xul+DF6q9o3vZOmGEh3CCQT/Z8vGy97HZE4cGrBNaIUDN0r6Axo6LNs7yWS6tzfjUE/FI1crVKqnU3MYN1sG/Q2CzPoQRwIAIEAkSdtxgUjMerAM4uMBG8qoZN0kmcN0hShOpIbX+/j3YGPm+f14vZM0OZXqTeebjgTvZF65xDdsGviHG1YgzmQW7UOoXoG/aez8HBuDtewRncxpS14vnwcKTsq1yLRU0hVkVQgTZ0QG/dZPkBasv5lYfBiRDdb6rivjiRoMRtfWhhwCmLhU6c4uYbnYqWoCwdMqpygkyhq+ML7q1oCpxIndDeqnHDdKaan2+uPw13cJ8njrXPF6gExfPAGURZhhUVv9Got64lXpA7yOuqZLpxufkJP/WDmPmY4qV0nWfwa5cDdF1SnbtdaT51dzEnLSFdudvmVXh8UHKKdcOYqWclt4H7SZnibA+RMWJO4lc9vvLlrGBaQxOzpflu2Fyy2qvp7em2nwcPfwCOL+mK0LE8hOrMPi7CRVosbLdb1VXpoHLDiRQymN2M0jqMJYIp9kjB+nXY="}},{"slots":[{"salt":"KlSAMff+UMUUozDX7me0ng==","iv":"e/PLy/QKM6G6PrVo","wrap":"el98UDCdG4sJ8hSaC450+ObXUOp2MBf0YB8N0kJFBqcUMDXhi0FzMf6me+WSgObq"}],"body":{"iv":"KoPF9fbIc72kqABx","ct":"Y5SDG7TdAMPVk7yit8N99P2j5U+m6rJNcPT1Zx7XwLhtFUYUhzCpDGFf9l6+vjDULk0bkEnb3CvToyfEgKS06wN3L8lU4p5igH3QMPDAh5bQkwbM3Ey5+AA7iVZIXW60AHc/mHAbo0ZLDkEj04nqw/ozM0fFSUb8Ylhabtdr6tw52rU/JKgr8rJishNJJTOSrvxgEQ2TBkQq/PLBRwMUm02FSLl2Pea7FPHljM1NNUejdDlug2a+pV8z6fzoCUA8JpVyqupUBLffZ8e1tKTAsDVvpAldcQpd6oY/DwKi6+0ZJjPs7tPhYWlKhdhxeQ=="}}]}</script>
 <script>
 (function () {
+  var IS_INDEX = true;
   var meta = JSON.parse(document.getElementById('payload').textContent);
   var CACHE = 'rt_vault_pass';
-  function b64(s) { var bin = atob(s), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; }
+  function b64(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; var bin = atob(s), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; }
   async function kdf(pw, salt) {
     var base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
     return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: meta.iter, hash: 'SHA-256' },
       base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
   }
-  /* try every slot of every unit; return the first body that decrypts */
+  async function decBody(body, contentKey) {
+    var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(body.iv) }, contentKey, b64(body.ct));
+    return new TextDecoder().decode(pt);
+  }
+  /* passkey path: try every slot of every unit; return the first body that decrypts */
   async function tryDecrypt(pw) {
     for (var u = 0; u < meta.units.length; u++) {
       var unit = meta.units[u];
@@ -65,12 +76,20 @@ p.vault-empty{color:var(--muted)}
           var kek = await kdf(pw, b64(slot.salt));
           var raw = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(slot.iv) }, kek, b64(slot.wrap));
           var contentKey = await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['decrypt']);
-          var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(unit.body.iv) }, contentKey, b64(unit.body.ct));
-          return new TextDecoder().decode(pt);
+          return await decBody(unit.body, contentKey);
         } catch (e) { /* wrong slot for this key; keep trying */ }
       }
     }
     throw new Error('no slot matched');
+  }
+  /* share-link path (document pages only): decrypt this doc's single body
+     directly from a content key carried in the URL fragment (#k=...) */
+  async function tryShareLink() {
+    var m = location.hash.match(/[#&]k=([^&]+)/);
+    if (!m || IS_INDEX || !meta.units.length) return null;
+    var raw = b64(decodeURIComponent(m[1]));
+    var contentKey = await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['decrypt']);
+    return await decBody(meta.units[0].body, contentKey);
   }
   function reveal(html) {
     document.getElementById('content').innerHTML = html;
@@ -100,8 +119,30 @@ p.vault-empty{color:var(--muted)}
     try { sessionStorage.removeItem(CACHE); } catch (err) {}
     location.reload();
   });
-  /* auto-unlock from the per-tab session cache */
+  /* Share buttons in an owner index view: mint a capability URL for one doc */
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('.share-btn') : null;
+    if (!btn) return;
+    e.preventDefault();
+    var url = location.origin + btn.getAttribute('data-url') + '#k=' + btn.getAttribute('data-k');
+    var li = btn.closest('li');
+    var out = li ? li.querySelector('.share-out') : null;
+    if (!out) return;
+    var input = out.querySelector('input');
+    var note = out.querySelector('.share-note');
+    input.value = url;
+    out.hidden = false;
+    input.focus(); input.select();
+    note.textContent = 'Anyone with this link can read this one article — nothing else in the vault.';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () {
+        note.textContent = 'Link copied — anyone with it can read this one article, nothing else.';
+      }).catch(function () {});
+    }
+  });
+  /* auto-unlock: first a share link, then the per-tab passkey cache */
   (async function () {
+    try { var h = await tryShareLink(); if (h != null) { reveal(h); return; } } catch (e) {}
     var cached = null;
     try { cached = sessionStorage.getItem(CACHE); } catch (e) {}
     if (!cached) return;
