@@ -219,9 +219,23 @@ NEW_ROOT = (":root{--bg:#F3F5F4;--surface:#FFFFFF;--ink:#161A1C;--muted:#5C6670;
             "--ink:#E7EEEA;--muted:#95A2A1;--line:#1F282C;--accent:#2CD4BE}}")
 
 
+CODE_BLOCK = (
+    "pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;"
+    "padding:14px 16px;overflow-x:auto;line-height:1.5;margin:1rem 0}\n"
+    "pre code{background:none;border:0;padding:0;border-radius:0;display:block;"
+    "white-space:pre;font-size:13px}\n"
+    "code{background:var(--surface);border:1px solid var(--line);border-radius:4px;"
+    "padding:1px 5px;font-size:14px}"
+)
+
+
 def normalize_palette(html):
     # Replace a legacy dark-only palette block with the light+dark site palette.
     html = re.sub(r":root\{--bg:#0f1115;.*?--accent:#6ea8fe\}", NEW_ROOT, html, flags=re.S)
+    # Give <pre> the code-block styling and reset <code> inside it, so a code
+    # block renders as ONE block instead of an inline background per wrapped
+    # line. Also aligns inline code to the palette. Idempotent.
+    html = re.sub(r"code\{background:#0b0d11;[^}]*\}", CODE_BLOCK, html)
     # Legacy stray colors -> palette tokens (idempotent; no-ops once converted).
     for a, b in (
         ("html{color-scheme:dark}", "html{color-scheme:light dark}"),
