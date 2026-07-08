@@ -2,6 +2,18 @@
 # Regenerated from research-material; entries with a summaries/<slug>/
 # folder but no research-material source are preserved as-is.
 
+- slug: "resource-estimation-cggi-ckks-fractlcore-2026-07-08"
+  title: "Resource Estimation of CGGI and CKKS Scheme Workloads on FracTLcore® Computing Fabric"
+  url: "/summaries/resource-estimation-cggi-ckks-fractlcore-2026-07-08/"
+  date: "2026-07-08"
+  category: "Fhe Asic Accelerators"
+  pub: "October 2025"
+  publisher: "arXiv (Cornami, Inc.)"
+  meta_line: "arXiv (Cornami, Inc.) · October 2025"
+  source_type: "PDF (text-layer)"
+  source_url: "https://arxiv.org/abs/2510.16025"
+  pdf: ""
+  tags: ["Cornami", "FHE hardware accelerator", "CGGI", "TFHE-rs", "CKKS", "FracTLcore", "Mx2", "systolic array", "MLIR", "HEIR compiler", "resource estimation"]
 - slug: "wolfssl-2026-07-02"
   title: "wolfSSL: A Compact, FIPS-Validated TLS 1.3 Library for Embedded and Post-Quantum Deployments"
   url: "/summaries/wolfssl-2026-07-02/"
