@@ -1,0 +1,92 @@
+---
+layout: compress
+swcache: true
+---
+{%- comment -%}
+  Whole-site search index (overrides the theme's posts-only search.json).
+  Indexes posts, deep summaries, open-source tools, conferences and tab pages.
+  Each entry carries a "type" so results can be labelled. The private vault is
+  never indexed. A running `sep` puts commas between entries without a trailing
+  comma, keeping the JSON valid across all sections.
+{%- endcomment -%}
+[
+{%- assign sep = '' -%}
+
+{%- comment -%} Posts {%- endcomment -%}
+{%- for post in site.posts -%}
+{{ sep }}
+{
+  "title": {{ post.title | jsonify }},
+  "url": {{ post.url | relative_url | jsonify }},
+  "categories": {{ post.categories | join: ', ' | jsonify }},
+  "tags": {{ post.tags | join: ', ' | jsonify }},
+  "date": {{ post.date | jsonify }},
+  "type": "Post",
+  {% capture content -%}{% include post-summary.html full_text=true %}{%- endcapture -%}
+  "content": {{ content | jsonify }}
+}
+{%- assign sep = ',' -%}
+{%- endfor -%}
+
+{%- comment -%} Deep summaries {%- endcomment -%}
+{%- for s in site.data.summaries -%}
+{{ sep }}
+{% capture scontent %}{{ s.title }}. {{ s.publisher }}. {{ s.meta_line }}. {{ s.category }}. {{ s.tags | join: ', ' }}{% endcapture %}
+{
+  "title": {{ s.title | jsonify }},
+  "url": {{ s.url | relative_url | jsonify }},
+  "categories": {{ s.category | jsonify }},
+  "tags": {{ s.tags | join: ', ' | jsonify }},
+  "date": {{ s.date | jsonify }},
+  "type": "Summary",
+  "content": {{ scontent | strip_html | strip_newlines | jsonify }}
+}
+{%- assign sep = ',' -%}
+{%- endfor -%}
+
+{%- comment -%} Open-source tools {%- endcomment -%}
+{%- for r in site.data.resources -%}
+{{ sep }}
+{% capture rcontent %}{{ r.name }}. {{ r.kind }}. {{ r.org }}. {{ r.summary }} {{ r.about }} {{ r.tags | join: ', ' }}{% endcapture %}
+{
+  "title": {{ r.name | jsonify }},
+  "url": {{ '/resources/' | relative_url | jsonify }},
+  "categories": {{ r.category | default: r.kind | jsonify }},
+  "tags": {{ r.tags | join: ', ' | jsonify }},
+  "type": "Tool",
+  "content": {{ rcontent | strip_html | strip_newlines | jsonify }}
+}
+{%- assign sep = ',' -%}
+{%- endfor -%}
+
+{%- comment -%} Conferences {%- endcomment -%}
+{%- for c in site.data.conferences -%}
+{{ sep }}
+{% capture ccontent %}{{ c.name }}. {{ c.domain }}. {{ c.location }}. {{ c.dates }}. {{ c.about }}{% endcapture %}
+{
+  "title": {{ c.name | jsonify }},
+  "url": {{ '/conferences/' | relative_url | jsonify }},
+  "categories": {{ c.domain | jsonify }},
+  "tags": {{ c.location | jsonify }},
+  "type": "Conference",
+  "content": {{ ccontent | strip_html | strip_newlines | jsonify }}
+}
+{%- assign sep = ',' -%}
+{%- endfor -%}
+
+{%- comment -%} Tab / static pages (skip dynamic listings and the private vault) {%- endcomment -%}
+{%- for page in site.tabs -%}
+{%- unless page.url contains 'vault' or page.url contains 'archives' or page.url contains 'tags' -%}
+{{ sep }}
+{
+  "title": {{ page.title | jsonify }},
+  "url": {{ page.url | relative_url | jsonify }},
+  "categories": "",
+  "tags": "",
+  "type": "Page",
+  "content": {{ page.content | strip_html | strip_newlines | jsonify }}
+}
+{%- assign sep = ',' -%}
+{%- endunless -%}
+{%- endfor -%}
+]

@@ -105,6 +105,20 @@
   --link-color: var(--accent);
 }
 
+/* ── Search result type badge ─────────────────────── */
+.rt-stype {
+  display: inline-block;
+  font-size: .68rem; font-weight: 700; line-height: 1.4;
+  text-transform: uppercase; letter-spacing: .04em;
+  color: var(--c-accent);
+  background: var(--c-accent-dim);
+  border: 1px solid var(--c-accent);
+  border-radius: 1rem;
+  padding: 0 .5rem;
+  margin-right: .5rem;
+  align-self: center;
+}
+
 /* ── Filter tiles ─────────────────────────────────── */
 .topic-filter { display: flex; flex-wrap: wrap; gap: .35rem; margin: 1rem 0 1.5rem; }
 .topic-tile {
