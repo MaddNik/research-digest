@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Conjugate-Pair FFT, and how it compares to Cooley-Tukey</title>
+<style>
+:root{--bg:#F3F5F4;--surface:#FFFFFF;--ink:#161A1C;--muted:#5C6670;--line:#DBE0DE;--accent:#0C8C80}
+@media (prefers-color-scheme:dark){:root{--bg:#0B0F12;--surface:#111619;--ink:#E7EEEA;--muted:#95A2A1;--line:#1F282C;--accent:#2CD4BE}}
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;line-height:1.5;margin:1rem 0}
+pre code{background:none;border:0;padding:0;border-radius:0;display:block;white-space:pre;font-size:13px}
+code{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:var(--surface);border-bottom:1px solid var(--line);font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:var(--accent);text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+#rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
+#rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
+a.rt-figref,a.rt-eqref{color:var(--accent);text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+body{counter-reset:rt-eq}
+mjx-container[display="true"]{position:relative;padding-right:2.4em}
+mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Deep Summaries</a></div><main class="doc">
+<header><h1>The Conjugate-Pair FFT, and how it compares to Cooley-Tukey</h1><p class="meta">Research Tracker - background note</p></header>
+<section><h2>Why the FFT matters here</h2>
+<p>Almost every fast (T)FHE kernel reduces to multiplying polynomials in a ring such as
+$\mathbb{Z}_q[X]/(X^N+1)$. Done naively, multiplying two degree $N$ polynomials costs
+$O(N^2)$ coefficient products. A Fast Fourier Transform (FFT) turns that convolution into
+$O(N\log N)$ work: transform both operands, multiply pointwise, transform back. The
+Discrete Fourier Transform (DFT) it accelerates is</p>
+$$X[k]=\sum_{n=0}^{N-1} x[n]\,\omega_N^{nk},\qquad \omega_N=e^{-2\pi i/N},$$
+<p>shown in Equation 1, where $\omega_N$ is a primitive $N$-th root of unity. Evaluating
+Equation 1 directly is $O(N^2)$; the FFT family computes exactly the same result in
+$O(N\log N)$ by recursively reusing shared sub-sums. This note compares the classic
+radix-2 Cooley-Tukey FFT with the conjugate-pair FFT, and explains why the latter is
+attractive for FPGA and ASIC accelerators. For where transforms sit inside TFHE itself
+(NTT, negacyclic convolution, gadget decomposition), see the companion note
+"Transforms and Polynomial Multiplication for FHE".</p>
+</section>
+<section><h2>Radix-2 Cooley-Tukey: the baseline</h2>
+<p>The Cooley-Tukey algorithm (1965) splits a length $N$ DFT (with $N$ a power of two)
+into the DFT of the even-indexed samples and the DFT of the odd-indexed samples, each of
+length $N/2$. Writing $E[k]$ for the even sub-DFT and $O[k]$ for the odd one, the two output
+halves recombine through a single "butterfly":</p>
+$$X[k]=E[k]+\omega_N^{k}\,O[k],\qquad X[k+N/2]=E[k]-\omega_N^{k}\,O[k],$$
+<p>as in Equation 2, for $0\le k \lt N/2$. The factor $\omega_N^{k}$ is the twiddle factor.
+Recursing until length 1 gives $\log_2 N$ stages of $N/2$ butterflies each, so the cost is on
+the order of $N\log_2 N$ operations, and in optimized real-arithmetic terms roughly
+$5N\log_2 N$ real additions and multiplications. This is the textbook FFT and maps to a very
+regular butterfly datapath, which is why it is so common in hardware.</p>
+<p>A decimation-in-time radix-2 pass, in place, looks like this:</p>
+<pre><code>radix2_dit(x[0..N-1]):
+    bit_reverse_permute(x)
+    for s in 1 .. log2(N):              # stage
+        m = 2**s
+        w_m = exp(-2*pi*i / m)          # stage root
+        for j in 0 .. N-1 step m:       # each length-m block
+            w = 1
+            for r in 0 .. m/2 - 1:      # butterflies
+                u = x[j + r]
+                t = w * x[j + r + m/2]
+                x[j + r]        = u + t
+                x[j + r + m/2]  = u - t
+                w = w * w_m
+    return x</code></pre>
+<p>Each inner iteration loads a fresh twiddle $w$; over a full transform the algorithm touches
+$\tfrac{N}{2}\log_2 N$ twiddle values, and the distinct twiddles per stage double every stage.
+Twiddle generation and twiddle memory bandwidth, not the adds, are often what limit a hardware
+FFT.</p>
+</section>
+<section><h2>Split-radix: fewer operations</h2>
+<p>Split-radix (Yavne 1968; Duhamel and Hollmann 1984) improves on radix-2 by treating the
+even and odd parts asymmetrically. It splits the length $N$ DFT into one half-length DFT over
+the even indices, plus two quarter-length DFTs over the indices $n\equiv 1$ and
+$n\equiv 3 \pmod 4$. With $U[k]$ the length $N/2$ even sub-DFT and $Z_1[k],Z_2[k]$ the two
+length $N/4$ odd sub-DFTs, the recombination is</p>
+$$X[k]=U[k]+\big(\omega_N^{k}\,Z_1[k]+\omega_N^{3k}\,Z_2[k]\big),$$
+<p>given in Equation 3. Because the two odd sub-transforms are only a quarter length, split-radix
+performs about $4N\log_2 N$ real operations, versus roughly $5N\log_2 N$ for radix-2 Cooley-Tukey.
+For power-of-two sizes it held the record for the lowest exact operation count for decades. The
+price is a slightly less uniform recursion (an $L$-shaped butterfly mixing one half-length and two
+quarter-length results), and, awkwardly for hardware, two different twiddle factors per butterfly:
+$\omega_N^{k}$ and $\omega_N^{3k}$.</p>
+</section>
+<section><h2>The conjugate-pair FFT</h2>
+<p>The conjugate-pair FFT (Kamar and Elcherif 1989; popularized by Bernstein and by the
+"tangent FFT" line of work) is a re-indexing of split-radix that removes the awkward
+$\omega_N^{3k}$ twiddle. It cyclically shifts the last quarter-length subsequence by four
+positions before transforming it. Call that shifted transform $Z_2'[k]$. The shift converts the
+troublesome $\omega_N^{3k}$ into $\omega_N^{-k}$, so the recombination becomes</p>
+$$X[k]=U[k]+\omega_N^{k}\,Z_1[k]+\omega_N^{-k}\,Z_2'[k],$$
+<p>shown in Equation 4. The key observation is that the two remaining twiddle factors are complex
+conjugates of each other,</p>
+$$\omega_N^{-k}=\overline{\omega_N^{k}},$$
+<p>as in Equation 5. Instead of two independent twiddles per butterfly, there is now a single
+twiddle $\omega_N^{k}$ and its conjugate, which comes for free by negating the imaginary part. The
+arithmetic operation count is identical to ordinary split-radix (about $4N\log_2 N$ real
+operations), so the conjugate-pair form is not cheaper in adds and multiplies. Its advantage is
+structural:</p>
+<ul>
+<li>Only one twiddle table indexed by $k$ is needed; the second factor is that table's conjugate.
+This roughly halves twiddle ROM size and, more importantly, twiddle load bandwidth.</li>
+<li>Both quarter-length sub-transforms read the <em>same</em> twiddle address, giving a regular,
+conflict-free memory access pattern that suits banked on-chip RAM and SIMD lanes.</li>
+<li>It is the natural starting point for the "tangent FFT" (Van Buskirk; Bernstein 2007), which
+rescales these conjugate twiddles to push the operation count slightly below $4N\log_2 N$.</li>
+</ul>
+<p>A decimation-in-time conjugate-pair recursion, sketched:</p>
+<pre><code>conjpair_fft(x[0..N-1]):
+    if N == 1: return x
+    U  = conjpair_fft( x[0], x[2], x[4], ... )        # even indices,  length N/2
+    Z1 = conjpair_fft( x[1], x[5], x[9], ... )        # n = 1 mod 4,   length N/4
+    Z2 = conjpair_fft( x[N-1], x[3], x[7], ... )      # n = 3 mod 4, shifted by -4 -> Z2'
+    for k in 0 .. N/4 - 1:
+        w  = exp(-2*pi*i*k / N)                        # single twiddle
+        a  = w * Z1[k]
+        b  = conj(w) * Z2[k]                           # conjugate twiddle, no extra table
+        t1 = a + b
+        t2 = i * (b - a)                               # rotate by -90 degrees
+        X[k]         = U[k]        + t1
+        X[k + N/2]   = U[k]        - t1
+        X[k + N/4]   = U[k + N/4]  + t2
+        X[k + 3*N/4] = U[k + N/4]  - t2
+    return X</code></pre>
+<p>Note that $Z_2$ is fed the input in shifted order (the $X[N-1]$ first), which is exactly the
+cyclic $-4$ shift that produces $Z_2'$ and turns $\omega_N^{3k}$ into $\omega_N^{-k}$.</p>
+</section>
+<section><h2>Side-by-side comparison</h2>
+<p>The three algorithms compute the identical DFT of Equation 1; they differ in operation count,
+twiddle handling, and how friendly they are to a pipelined datapath.</p>
+<pre><code>Property              Radix-2 Cooley-Tukey   Split-radix            Conjugate-pair
+-------------------   --------------------   --------------------   --------------------
+Real operations       ~ 5 N log2 N           ~ 4 N log2 N           ~ 4 N log2 N
+Recursion shape       even / odd (2-way)     even + two odd (L)     even + two odd (L)
+Twiddles / butterfly  1  (w^k)               2  (w^k and w^3k)      1 + its conjugate
+Distinct twiddle ROM  1 table                up to 2 tables         1 table (conj is free)
+Memory access         very regular           two twiddle streams    one twiddle stream
+Op count record?      no                     long-standing record   ties split-radix
+Extends to            -                      -                      tangent FFT (below 4N log2 N)</code></pre>
+<p>In short: radix-2 is the simplest and most regular but does the most arithmetic; split-radix
+does the least arithmetic but wants two twiddle streams; the conjugate-pair FFT keeps
+split-radix's low operation count while collapsing back to a single twiddle stream, trading a
+slightly more intricate index schedule for smaller, higher-bandwidth-friendly twiddle storage.</p>
+</section>
+<section><h2>Why this matters for FHE hardware</h2>
+<p>TFHE and related schemes work in the negacyclic ring $\mathbb{Z}_q[X]/(X^N+1)$. One fast route
+for that product is a complex FFT with negacyclic pre- and post-weighting: fold the sign-flip of
+the wrap-around $X^N=-1$ into a weight $\psi$ with $\psi^2=\omega_N$,</p>
+$$\hat{x}[n]=x[n]\,\psi^{n},\qquad \psi=e^{-\pi i/N},$$
+<p>as in Equation 6, transform with an ordinary length $N$ complex FFT, multiply pointwise, and
+unweight after the inverse transform. Libraries that take this complex-FFT route (for example the
+FFT backend used by Concrete and other TFHE stacks) lean on split-radix and conjugate-pair
+kernels precisely because floating-point FFT throughput dominates gate-bootstrapping time.</p>
+<p>On an FPGA or ASIC the bottleneck is rarely the multipliers; it is feeding them. Twiddle ROM
+capacity, twiddle read ports, and memory-bank conflicts set the achievable clock and utilization.
+The conjugate-pair FFT is appealing there because it delivers the split-radix operation count from
+a single twiddle table whose conjugate is obtained by negating one sign bit, and because both
+quarter-length sub-transforms hit the same twiddle address, which keeps banked RAM access regular.
+The same "spend an index trick to save memory traffic" instinct shows up in the NTT dataflows and
+systolic layouts discussed in the companion transforms note; conjugate-pair FFT is the complex-FFT
+counterpart of that idea.</p>
+<p>Further reading: Duhamel and Hollmann, "Split-radix FFT algorithm" (1984); Kamar and Elcherif,
+"Conjugate pair fast Fourier transform" (1989); Bernstein, "The tangent FFT" (2007); Frigo and
+Johnson on FFTW's split-radix codelets.</p>
+</section>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/\bfig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+})();
+function rtSetupEquations(){
+  var prev=document.getElementById('rt-eqprev');
+  if(!prev){prev=document.createElement('div');prev.id='rt-eqprev';document.body.appendChild(prev);}
+  function showEq(html,e){prev.innerHTML=html;prev.style.display='block';var x=Math.min(e.clientX+20,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+20,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hideEq(){prev.style.display='none';}
+  var eqs=document.querySelectorAll('mjx-container[display="true"]'),htmlByNum={};
+  for(var i=0;i<eqs.length;i++){var n=i+1;eqs[i].id='eq'+n;htmlByNum[n]=eqs[i].outerHTML;}
+  if(!eqs.length)return;
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='script'||tg==='style')continue;
+    if(pn.closest&&pn.closest('mjx-container'))continue;
+    if(/\beq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!htmlByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#eq'+num;a.className='rt-eqref';a.textContent=m[0];
+      (function(h){a.addEventListener('mousemove',function(e){showEq(h,e);});a.addEventListener('mouseleave',hideEq);})(htmlByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+}
+window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],tags:'none'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},startup:{pageReady:function(){return MathJax.startup.defaultPageReady().then(function(){rtSetupEquations();});}}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>

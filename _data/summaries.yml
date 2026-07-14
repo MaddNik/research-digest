@@ -2,6 +2,18 @@
 # Regenerated from research-material; entries with a summaries/<slug>/
 # folder but no research-material source are preserved as-is.
 
+- slug: "conjugate-pair-fft-vs-cooley-tukey-2026-07-14"
+  title: "The Conjugate-Pair FFT, and how it compares to Cooley-Tukey"
+  url: "/summaries/conjugate-pair-fft-vs-cooley-tukey-2026-07-14/"
+  date: "2026-07-14"
+  category: "Concepts & background"
+  pub: ""
+  publisher: "Research Tracker - background note"
+  meta_line: "Research Tracker - background note"
+  source_type: "Concept note (background knowledge)"
+  source_url: ""
+  pdf: ""
+  tags: ["concepts", "fhe-fpga", "tfhe"]
 - slug: "resource-estimation-cggi-ckks-fractlcore-2026-07-08"
   title: "Resource Estimation of CGGI and CKKS Scheme Workloads on FracTLcore® Computing Fabric"
   url: "/summaries/resource-estimation-cggi-ckks-fractlcore-2026-07-08/"
