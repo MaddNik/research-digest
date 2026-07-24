@@ -2,6 +2,18 @@
 # Regenerated from research-material; entries with a summaries/<slug>/
 # folder but no research-material source are preserved as-is.
 
+- slug: "whet-welding-homomorphic-encryption-to-accelerator-architectures-2026-07-24"
+  title: "WHET: Welding Homomorphic Encryption to Accelerator Architectures"
+  url: "/summaries/whet-welding-homomorphic-encryption-to-accelerator-architectures-2026-07-24/"
+  date: "2026-07-24"
+  category: "Fhe Accelerator Memory Centric"
+  pub: "June 2026"
+  publisher: "arXiv:2606.11541 [cs.CR]"
+  meta_line: "arXiv:2606.11541 [cs.CR] · June 2026"
+  source_type: "PDF (text-layer), arXiv preprint"
+  source_url: "https://arxiv.org/abs/2606.11541"
+  pdf: ""
+  tags: ["FHE", "CKKS", "bootstrapping", "hardware accelerator", "ASIC", "coefficient-to-slot", "key-switching", "plaintext compression", "ModRaise", "memory-centric", "NTT", "privacy-preserving ML"]
 - slug: "conjugate-pair-fft-vs-cooley-tukey-2026-07-14"
   title: "The Conjugate-Pair FFT, and how it compares to Cooley-Tukey"
   url: "/summaries/conjugate-pair-fft-vs-cooley-tukey-2026-07-14/"
