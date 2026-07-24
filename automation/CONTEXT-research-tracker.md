@@ -2,6 +2,11 @@
 
 > Compacted context from the long-running "research-tracker" Claude Code session
 > (cwd `/home/nik/research-material`, repo `MaddNik/research-digest`).
+>
+> **Status check 2026-07-24:** sections 1-6 below are the original compacted
+> history and are left as-is for context. Section 7 ("Most Recent Work &
+> Pending") described work that has since been completed — see the
+> **Update 2026-07-24** block appended after it for current state.
 
 ## 1. Primary Request and Intent
 
@@ -100,3 +105,36 @@ Last user prompt: information still cut off from pre-existing summaries, plus:
 **Remaining 15 slugs:** tfhe-fast-fhe-over-torus, gsw-he-from-lwe, fhew-bootstrapping-under-a-second, first-tfhe-faster-bootstrapping, wop-pbs-larger-precision, pbs-dnn-inference, lmkcdey-fhew-small-eval-keys, tfhe-parameter-optimization, heax-architecture-encrypted-data, fab-fpga-accelerator-bootstrappable-fhe, sok-fhe-accelerators, matcha-accelerator-fhe-over-torus, fpt-fixed-point-accelerator-torus-fhe, parameterizable-tfhe-processor, strix-tfhe-accelerator.
 
 **Outstanding:** rotate the exposed GitHub PAT.
+
+## 8. Update 2026-07-24 — Status Check
+
+All of section 7's pending work is done. Verified against the live repo:
+
+- **Working tree clean**, up to date with `origin/main`. No WIP left in
+  `publish-summaries.py` or `_layouts/summaries.html`.
+- **All 15 "remaining" slugs regenerated** and published (generous figure
+  crops, LaTeX equations, pseudocode in code blocks, publisher meta line).
+  `_data/summaries.yml` now has **27 entries** (up from 16), including new
+  concept primers not in the original plan: `transforms-and-polynomial-multiplication`,
+  `fhe-building-blocks-lwe-rlwe-glwe`, `bootstrapping-internals-pbs-blind-rotation`,
+  `hardware-patterns-for-fhe-acceleration`, `tfhe-deep-dive-part-4-programmable-bootstrapping`,
+  `conjugate-pair-fft-vs-cooley-tukey`.
+- **Concepts tag/section shipped** — 6 summaries carry a `concepts` tag,
+  satisfying item 3 from section 7.
+- **Latest deploy:** `Build and Deploy` succeeded for commit
+  "Add conjugate-pair FFT vs Cooley-Tukey concept primer" (2026-07-14).
+  No new publish commits since then as of 2026-07-24 — the daily "Sync
+  check" Action has run and passed every day in between, so this reads as
+  "no new material surfaced" rather than a broken pipeline, but worth
+  eyeballing if it stretches much longer.
+- **Automation grew beyond the two original cron jobs.** Current crontab:
+  - `0 12 * * 5 run-weekly.sh` — weekly papers (Fri noon), as before.
+  - `13 9 1 * * run-conferences.sh` — monthly conferences, as before.
+  - `poll-and-summarize.sh` — new deep-summary poller, usage-gated (skips
+    if API usage >=95%), running weekday 17:30-17:55 in 5-min slots, plus
+    every 30 min during evenings (18:00-23:30 daily) and all day on
+    weekends.
+- **Still outstanding / unverified:** whether the exposed GitHub PAT from
+  section 1 was ever rotated. Not confirmed in this check (reading
+  `~/.gh_pat` / `~/.git-credentials` is blocked by the sandbox's auto-mode
+  classifier) — needs a direct answer from the user or a manual check.

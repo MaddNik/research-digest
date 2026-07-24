@@ -17,5 +17,10 @@ git add summaries _data/summaries.yml 2>/dev/null
 if ! git diff --cached --quiet 2>/dev/null; then
   git pull --rebase --autostash -q origin main 2>/dev/null || true
   git commit -q -m "Publish summaries, $(date +%Y-%m-%d)"
-  git push -q origin main 2>/dev/null || true
+  # Retry on push rejection (another concurrent cron pushed in between).
+  for attempt in 1 2 3; do
+    if git push -q origin main 2>/dev/null; then break; fi
+    sleep "$attempt"
+    git pull --rebase --autostash -q origin main 2>/dev/null || true
+  done
 fi
