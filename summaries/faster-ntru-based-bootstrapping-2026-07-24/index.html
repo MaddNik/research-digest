@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faster NTRU-based Bootstrapping with Extended and Sorting-based Techniques</title>
+<style>
+:root{--bg:#F3F5F4;--surface:#FFFFFF;--ink:#161A1C;--muted:#5C6670;--line:#DBE0DE;--accent:#0C8C80}
+@media (prefers-color-scheme:dark){:root{--bg:#0B0F12;--surface:#111619;--ink:#E7EEEA;--muted:#95A2A1;--line:#1F282C;--accent:#2CD4BE}}
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;line-height:1.5;margin:1rem 0}
+pre code{background:none;border:0;padding:0;border-radius:0;display:block;white-space:pre;font-size:13px}
+code{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:var(--surface);border-bottom:1px solid var(--line);font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:var(--accent);text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+#rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
+#rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
+a.rt-figref,a.rt-eqref{color:var(--accent);text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+body{counter-reset:rt-eq}
+mjx-container[display="true"]{position:relative;padding-right:2.4em}
+mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Deep Summaries</a><a href="https://eprint.iacr.org/2026/1447" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
+<header><h1>Faster NTRU-based Bootstrapping with Extended and Sorting-based Techniques</h1><p class="meta">IACR Cryptology ePrint Archive 2026/1447 &middot; <a href="https://eprint.iacr.org/2026/1447" target="_blank" rel="noopener noreferrer">full view &#8599;</a></p></header>
+<section><h2>Overview and Contributions</h2>
+<p><b>NTRU-based bootstrapping</b> is a high-performance variant of FHEW/TFHE-style bootstrapping. Because an NTRU ciphertext is a single polynomial (versus two for RLWE), it is simpler and faster than its RLWE counterpart, yet it remains expensive in both time and memory. The dominant cost is <b>blind rotation</b>, which performs many operations over an $N$-dimensional polynomial ring $R_{Q,N} = \mathbb{Z}_Q[X]/(X^N+1)$.</p>
+
+<p>The central bottleneck the paper attacks is the constraint <b>$q \mid 2N$</b>, which ties the LWE ciphertext modulus $q$ to the NTRU ring dimension $N$. In applications such as homomorphic evaluation of Boolean functions, PPML, and PIR, $q$ can be as large as $2^{32}$; under $q \mid 2N$ a large $q$ forces a large $N$, and since blind rotation scales with $N$, efficiency degrades sharply. The paper's guiding question is:</p>
+<blockquote>Can we choose the NTRU dimension $N$ such that $2N < q$ when the ciphertext modulus $q$ becomes large?</blockquote>
+
+<p><b>Main contributions.</b></p>
+<ul>
+<li><b>Extended bootstrapping (EBS).</b> Using an <i>extended isomorphism</i> $\tau$ (from the EBS technique of Lee-Yoon [LY23] and the sorted-bootstrapping work [BORLT26]), the requirement $q \mid 2N$ is removed. One picks a large $N_{ext}$ with $q \mid 2N_{ext}$ and sets $N = N_{ext}/\eta$ (so that $\mathrm{NTRU}_{N,Q,\chi}$ stays hard), reducing every ring operation from dimension $N_{ext}$ to dimension $N$. Memory drops by a factor $\eta$.</li>
+<li><b>Sorting-based bootstrapping (SBS).</b> By reordering the external products so that only the two accumulators actually needed at the end are advanced, a large fraction of operations are eliminated, further cutting run time.</li>
+<li><b>Multi-key extension.</b> Both EBS and SBS are generalized to NTRU-based multi-key FHE (MK-FHE), where the dominant cost is the <i>hybrid product</i> rather than the external product.</li>
+</ul>
+
+<p><b>Headline results</b> (128-bit security, implemented with the CHIFHE and MKFHE libraries). With factor $\eta = 16$, single-key SBS is <b>$1.82\times$</b> faster than FINAL (ASIACRYPT 2021) and <b>$1.24\times$</b> faster than the LLWW key-unrolling method (CHES/TCHES 2024). With $\eta = 4$, multi-key SBS is <b>$1.70\times$</b> faster than the prior art XZW (ASIACRYPT 2024). Both single-key and multi-key key sizes shrink by roughly a factor of $\eta$.</p>
+</section>
+<section><h2>Preliminaries: Ciphertexts, Gadget Decomposition, and the External Product</h2>
+<p><b>Notation.</b> $R_N = \mathbb{Z}[X]/(X^N+1)$ with $N$ a power of two, and $R_{q,N} = R_N/qR_N$. For $a \in R_N$, $\phi(a) = (a_0,\dots,a_{N-1})$ is its coefficient vector; $[n] = \{0,1,\dots,n-1\}$. The error distribution $\chi$ is a discrete Gaussian over $\mathbb{Z}_q$ or $\mathbb{Z}_q^n$.</p>
+
+<p><b>Gadget decomposition.</b> With decomposition base $B$ and $d = \lceil \log_B Q \rceil$, the gadget vector is $g = (1, B, \dots, B^{d-1})$. The signed decomposition of $a \in R_{Q,N}$ is</p>
+<p>$$g^{-1}(a) = \left(\,[a]_B,\ \left[\left\lfloor \tfrac{a}{B} \right\rceil\right]_B,\ \dots,\ \left[\left\lfloor \tfrac{a}{B^{d-1}} \right\rceil\right]_B\,\right) = (a_0,\dots,a_{d-1}),$$</p>
+<p>with $\lVert a_i \rVert_\infty \le B/2$ and $\langle g^{-1}(a), g\rangle_Q = a$.</p>
+
+<p><b>Hard problems.</b> Security rests on the decisional $\mathrm{LWE}_{n,q,\chi}$ problem, the decisional $\mathrm{NTRU}_{N,Q,\chi}$ problem (distinguish $g_e \cdot f^{-1} \in R_{Q,N}$ from uniform, with $f$ invertible), and the decisional vectorized-NTRU problem $\mathrm{VNTRU}_{N,Q,\chi}$ (the same over $R_{Q,N}^d$). The multi-key construction additionally relies on the decisional <b>Hint-NTRU</b> assumption [EEN+24].</p>
+
+<p><b>Ciphertext types.</b> LWE ciphertexts are B/FV-like: $\mathrm{LWE}^n_{s,q}(m) = (a, b)$ with $b = [\langle a, s\rangle + \lfloor q/t\rfloor m + e]_q$. Secret keys are binary, $s \in \{0,1\}^n$. The NTRU secret-key distribution $\chi_f$ draws $f = \sum f_i X^i$ with $f_i \in \{-1,0,1\}$ and $f$ invertible in $R_{Q,N}$. The two NTRU ciphertext forms are</p>
+<p>$$\mathrm{NTRU}^N_{f,Q}(m) = \big[(g_e + m)\cdot f^{-1}\big]_Q, \qquad \mathrm{VNTRU}^N_{f,Q}(m) = \big[g_e \cdot f^{-1} + g\cdot m\big]_Q \in R_{Q,N}^d.$$</p>
+<p>Multi-key NTRU ciphertexts $\mathrm{M.NTRU}^N_{\{s_i\},Q}(m) = (c_1,\dots,c_k)$ satisfy $\sum_i [c_i s_i]_Q = g_e + m$.</p>
+
+<p><b>External product</b> (Lemma 1). For $c = \mathrm{NTRU}^N_{f,Q}(u)$ and $c' = \mathrm{VNTRU}^N_{f,Q}(v)$, define $c \odot_N c' = \langle g^{-1}(c), c'\rangle$. The result is $\mathrm{NTRU}^N_{f,Q}(u\cdot v)$ with noise growth</p>
+<p>$$\mathrm{Var}(\hat c) \le d\cdot N \cdot \frac{B^2}{12}\,\mathrm{Var}(c') + \lVert v\rVert_2^2\,\mathrm{Var}(c). \tag{1}$$</p>
+
+<p><b>Functional bootstrapping</b> evaluates a look-up table $h:\mathbb{Z}_t \to \mathbb{Z}_t$ in five steps: <i>initialization</i> (build the test polynomial $T(X)$ and an NTRU encryption of $T(X)\cdot X^{-\frac{2N}{q}b}$), <i>blind rotation</i> (homomorphically multiply by $X^{\frac{2N}{q}\sum a_i s_i}$ via external products), <i>sample extraction</i> (Lemma 2), <i>key switching</i> (Lemma 3, noise $+\,N\,d_{ks}\mathrm{Var}(ksk)$), and <i>modulus switching</i> (Lemma 4).</p>
+</section>
+<section><h2>Single-Key Extended Bootstrapping (EBS)</h2>
+<p><b>Extended isomorphism.</b> The key algebraic tool decomposes a large-ring polynomial into $\eta$ small-ring components. For $\eta \mid N$, the map $\iota: R_{q,N/\eta}\to R_{q,N}$, $\sum f_i X^i \mapsto \sum f_i X^{\eta i}$, is a ring homomorphism, making $R_{q,N}$ an $R_{q,N/\eta}$-module. The <b>extended isomorphism</b> (Lemma 6) is</p>
+<p>$$\tau: R_{q,N} \to R_{q,N/\eta}^{\eta},\qquad m(X) = \sum_{i=0}^{N-1} m_i X^i \ \mapsto\ (m_0(X),\dots,m_{\eta-1}(X)),$$</p>
+<p>where the $j$-th component collects every $\eta$-th coefficient, $m_j(X) = \sum_{i} m_{i\eta + j} X^i$. This is an $R_{q,N/\eta}$-module isomorphism (with explicit inverse $\hat\tau$), and $\tau_j$ denotes projection onto component $j$.</p>
+
+<p><b>Monomial rotation under $\tau$</b> (Lemma 7). The crucial identity that lets rotation be tracked component-wise is</p>
+<p>$$\tau_j\big(m(X)\cdot X^a\big) = m_{[(j-a)]_\eta}(X)\cdot X^{\left\lceil \frac{a-j}{\eta}\right\rceil}. \tag{2}$$</p>
+<p>Equivalently (Corollary 1), if $c \in \mathrm{NTRU}^N_{f,Q}(\tau_{[j-a]_\eta}(m))$ then $c\cdot X^{\lceil (a-j)/\eta\rceil} \in \mathrm{NTRU}^N_{f,Q}(\tau_j(m\cdot X^a))$; the same holds for multi-key ciphertexts.</p>
+
+<p><b>The EBS blind rotation.</b> One chooses $N_{ext}$ with $q \mid 2N_{ext}$ and $N \mid N_{ext}$, keeping $\mathrm{NTRU}_{N,Q,\chi}$ hard, and sets $\eta = N_{ext}/N$. The bootstrapping starts from $T(X)\cdot X^{-\hat b} \in R_{Q,N_{ext}}$, applies $\tau$ to obtain $\eta$ small-ring polynomials, and takes one external product each with an initial key $evk' = \mathrm{VNTRU}^N_{f,Q}(f^{-1})$ to get $\eta$ accumulators $\{ACC_{0,j}\}_{j\in[\eta]}$. Each of the $n-1$ blind-rotation iterations applies $\eta$ <b>CMux gates</b> (Lemma 8):</p>
+<p>$$ACC_{i+1,j} = ACC_{i,j} + \Big(ACC_{i,[j-\hat a_i]_\eta}\cdot X^{\left\lceil \frac{\hat a_i - j}{\eta}\right\rceil} - ACC_{i,j}\Big)\odot_N evk_i,\qquad evk_i = \mathrm{VNTRU}^N_{f,Q}(s_i). \tag{3}$$</p>
+<p>A final single CMux produces $ACC_{n,0} \in \mathrm{NTRU}^N_{f,Q}\!\big(\tau_0(T(X)\cdot X^{-\hat b + \sum_i \hat a_i s_i})\big)$, whose constant coefficient equals the value needed by sample extraction. Figure 1 of the paper depicts this flow: an initialization producing $\eta$ accumulators, $n-1$ rounds of $\eta$ external products each, and one closing external product.</p>
+
+<p><b>Cost and memory.</b> EBS performs $\eta\cdot n + 1$ external products of dimension $N$, versus $n+1$ external products of dimension $N\cdot\eta$ in prior work. Because the working dimension drops from $N_{ext}$ to $N = N_{ext}/\eta$, the bootstrapping keys ($(n+1)\,d\,N\log_2 Q$ bits) and key-switching keys ($2\,N\,B_{ks}\,d_{ks}\log_2 Q_{ks}$ bits) both shrink by a factor $\eta$.</p>
+
+<p><b>Correctness and noise</b> (Theorem 1). Algorithm 1 outputs $ct' \in \mathrm{LWE}^n_{s,q}(h(m))$ with</p>
+<p>$$\mathrm{Var}(ct') \le \frac{q^2}{Q_{ks}^2}\left(\frac{Q_{ks}^2}{Q^2}\,\sigma_{BR}^2 + \sigma_{MS1}^2 + \sigma_{KS}^2\right) + \sigma_{MS2}^2, \tag{4}$$</p>
+<p>where $\sigma_{BR}^2 = (n+1)\,d\,N\,\frac{B^2}{12}\,\sigma^2$, $\sigma_{MS1}^2 = \frac{N+1}{12}$, $\sigma_{KS}^2 = N\,d_{ks}\,\sigma_L^2$, and $\sigma_{MS2}^2 = \frac{n+1}{12}$; $\sigma^2$ is the NTRU evaluation-key noise variance and $\sigma_L^2$ the LWE key-switch-key variance. The proof tracks the per-component invariant $\max_j \mathrm{Var}(ACC_{i+1,j}) \le \max_j \mathrm{Var}(ACC_{i,j}) + d\,N\,\frac{B^2}{12}\sigma^2$.</p>
+</section>
+<section><h2>Sorting-Based Technique (SBS)</h2>
+<p>EBS lowers each external product from dimension $\eta N$ to $N$, but the <i>number</i> of products is still large ($\eta n + 1$). The sorting-based technique observes that the final accumulator $ACC_{n,0}$ depends on only a small subset of the intermediate accumulators, so most component updates are wasted work.</p>
+
+<p><b>The observation.</b> Suppose that from some iteration $i^\ast$ onward all remaining $\hat a_i$ share a factor $2^k$, i.e. $2^k \mid \hat a_i$ for $i^\ast \le i \le n-1$. Then in the recurrence (Equation 3) the index $[j - \hat a_i]_\eta$ preserves divisibility by $2^k$, so to compute the needed $\{ACC_{n-1,j}\}_{2^k \mid j}$ it suffices to keep only the $\eta/2^k$ accumulators with $2^k \mid j$. Each such iteration then needs only $\eta/2^k$ CMux gates instead of $\eta$.</p>
+
+<p><b>General reordering.</b> The $\hat a_i$ are bucketed by their 2-adic valuation,</p>
+<p>$$I_k = \big\{\, i \in [n]\ \big|\ \hat a_i \equiv 0 \pmod{2^k},\ \hat a_i \not\equiv 0 \pmod{2^{k+1}} \,\big\},\qquad 0 \le k \le \log \eta,$$</p>
+<p>and the sum is rewritten as $\sum_{i=0}^{n-1}\hat a_i s_i = \sum_{k=0}^{\log\eta}\sum_{i\in I_k}\hat a_i s_i$. Processing bucket $I_k$ requires only $\eta/2^k$ CMux gates per index. Because the monomials $X^{\hat a_i s_i}$ can be applied in any order, the buckets can be handled from least-divisible to most-divisible, progressively collapsing the number of live accumulators.</p>
+
+<p><b>Resulting cost.</b> On average, SBS (Algorithm 2) needs</p>
+<p>$$\frac{2\eta^2 + 1}{3\eta}\,n + \eta \quad\text{external products of dimension } N, \tag{5}$$</p>
+<p>compared with $\eta n + 1$ for EBS. The noise bound is identical to Equation 4 (Theorem 2), since the operations performed are a subset/reordering of the same external products.</p>
+
+<p><b>Security caveat.</b> Beyond LWE, NTRU, and VNTRU hardness, both schemes require a <b>circular-security</b> assumption because initialization publishes a VNTRU encryption of $f^{-1}$ under $f$. The paper also notes SBS's practical gains are bounded by the security constraints on the NTRU parameters (the achievable $\eta$).</p>
+</section>
+<section><h2>Multi-Key Bootstrapping (MK-EBS and MK-SBS)</h2>
+<p>Multi-key FHE (MK-FHE) allows homomorphic computation across ciphertexts encrypted under $k$ distinct secret keys. A multi-key LWE ciphertext is $\mathrm{M.LWE}^n_{\{z_i\},q}(m) = (b, a_1,\dots,a_k)$ with $b = [\sum_i \langle a_i, z_i\rangle + \lfloor q/t\rfloor m + e]_q$. Multi-key bootstrapping mirrors the single-key five-step pipeline (Figure 2 of the paper: M.Initialization $\to$ M.Blind Rotation $\to$ M.SampleExtract $\to$ M.ModSwitch + M.KeySwitch), but the dominant operation is the <b>hybrid product</b> instead of the external product.</p>
+
+<p><b>Hybrid product</b> (Lemma 12, full scheme in Appendix A). Given a multi-key ciphertext $c \in \mathrm{M.NTRU}^N_{\{s_i\},Q}(m)$, public keys $\{b_j\}$, and a uni-encryption $(d_i, f_i) \in \mathrm{UniEnc}(\mu, s_i)$, $\mathrm{HbProd}$ outputs $c' \in \mathrm{M.NTRU}^N_{\{s_i\},Q}(\mu\cdot m)$ with noise growth</p>
+<p>$$\mathrm{Var}(c') \le \mathrm{Var}(c) + (1 + 2k\cdot N)\,d\,N\,\frac{B^2}{12}\,\sigma^2.$$</p>
+<p>The multi-key building blocks (M.SampleExtract, M.KeySwitch with $+\,k\,N\,d_{ks}\mathrm{Var}(ksk)$ noise, and M.ModSwitch) follow [XZW+25, KMS24]; in the implementation the $N$ LWE ciphertexts are packed into one RLWE ciphertext as in [XZW+25].</p>
+
+<p><b>Extending EBS/SBS.</b> The multi-key CMux gate (Lemma 13) replaces $\odot_N$ with $\mathrm{HbProd}$:</p>
+<p>$$ACC_\ell \leftarrow ACC_\ell + \mathrm{HbProd}\!\Big(X^{\hat a_{i,j}}\!\cdot ACC_{[\ell - \hat a_{i,j}]_\eta} - ACC_\ell,\ \{pk_i\},\ evk_{i,j}\Big).$$</p>
+<p>MK-EBS (Algorithm 3) runs over $k$ parties and $n$ positions, applying this gate for all $(i,j)\ne(k,n-1)$ and closing with a final gate. MK-SBS (Algorithm 4) buckets the pairs $(i,j)$ by 2-adic valuation, $I_m = \{(i,j) : \hat a_{i,j}\equiv 0 \bmod 2^m,\ \hat a_{i,j}\not\equiv 0 \bmod 2^{m+1}\}$, and updates only the $\eta/2^m$ accumulators per bucket.</p>
+
+<p><b>Noise</b> (Theorems 3, 4). Both output $ct'\in\mathrm{M.LWE}^n_{\{z_i\},q}(m)$ with</p>
+<p>$$\mathrm{Var}(ct') \le \frac{q^2}{Q_{ks}^2}\!\left(\frac{Q_{ks}^2}{Q^2}\big(\sigma_{MBR}^2 + \sigma_{MMS1}^2 + \sigma_{MKS}^2\big) + \sigma_{MMS2}^2\right),$$</p>
+<p>where the multi-key blind-rotation noise is $\sigma_{MBR}^2 = \big(k\,n\,(1 + 2k\,N) + 1\big)\,d\,N\,\frac{B^2}{12}\,\sigma^2$, $\sigma_{MKS}^2 = k\,N\,d_{ks}\,\sigma_L^2$, and the modulus-switching terms are $\sigma_{MMS1}^2 = \frac{1 + Nk}{12}$, $\sigma_{MMS2}^2 = \frac{1 + nk}{12}$. Security additionally needs the decisional Hint-NTRU assumption (Appendix B), which underlies NTRU uni-encryption.</p>
+</section>
+<section><h2>Complexity, Parameters, and Experimental Results</h2>
+<p><b>Operation counts.</b> External products (single-key) and hybrid products (multi-key) are the bottleneck operations counted in Table 1.</p>
+<table border="1" cellpadding="6" cellspacing="0">
+<tr><th>Setting</th><th>Method</th><th>Bottleneck operations</th></tr>
+<tr><td rowspan="4">Single-key<br>(#external products)</td><td>FINAL [BIP+22]</td><td>$(n+1)$ over $R_{Q,N_{ext}}$</td></tr>
+<tr><td>LLWW [LLW+24]</td><td>$(\tfrac{n}{2}+1)$ over $R_{Q,N_{ext}}$</td></tr>
+<tr><td>Our EBS (Alg. 1)</td><td>$(\eta\,n + 1)$ over $R_{Q',N}$</td></tr>
+<tr><td>Our SBS (Alg. 2)</td><td>$\left(\tfrac{2\eta^2+1}{3\eta}\,n + \eta\right)$ over $R_{Q',N}$</td></tr>
+<tr><td rowspan="3">Multi-key<br>(#hybrid products)</td><td>XZW [XZW+25]</td><td>$k\,n$ over $R_{Q,N_{ext}}$</td></tr>
+<tr><td>Our MK-EBS (Alg. 3)</td><td>$(k\,\eta\,n - \eta + 1)$ over $R_{Q',N}$</td></tr>
+<tr><td>Our MK-SBS (Alg. 4)</td><td>$\left(\tfrac{2\eta^2+1}{3\eta}\,k\,n + \eta\right)$ over $R_{Q',N}$</td></tr>
+</table>
+<p>Because bootstrapping noise depends on $N$, matching the decryption-failure probability at the smaller dimension permits choosing $Q > Q'$, which further favors the extended/sorted schemes.</p>
+
+<p><b>Parameter selection.</b> LWE parameters use the lattice-estimator and NTRU parameters the NTRU-estimator, all targeting $\ge 128$-bit security. LWE uses a uniform binary secret and noise standard deviation $3.19$. To resist the Dense Sublattice Discovery (DSD) attack the modulus and dimension satisfy $Q < N^{2.484}$ (avoiding the fatigue point $Q = N^{2.484 + o(1)}$); the Secret-Key-Recovery cost is estimated with $T(d,\beta) = 2^{0.292\beta + 16.4 + \log_2(8d)}$ where $d = 2N$. Decryption-failure probability is $P_{fail} = 1 - \mathrm{erf}\!\left(\frac{q/2t}{\sqrt{2}\,\sigma'}\right)$: sets P128B and P128B_E achieve $P_{fail} < 2^{-35}$, while MP128B and MP128B_E achieve $P_{fail} < 2^{-25}$.</p>
+
+<p><b>Concrete parameter sets</b> (Table 2). All use $n = 790$, $\sigma_L = 3.19$, $B_{ks} = 2^5$, base $B = 2^7$, $\sigma = 1/\sqrt{2}$.</p>
+<table border="1" cellpadding="6" cellspacing="0">
+<tr><th>Set</th><th>$q$</th><th>$t$</th><th>$Q_{ks}$</th><th>$N$</th><th>$\eta$</th><th>$Q$</th><th>$k$</th></tr>
+<tr><td>P128B (baseline)</td><td>$2^{16}$</td><td>$32$</td><td>$2^{22}$</td><td>$2^{15}$</td><td>$1$</td><td>$\approx 2^{28}$</td><td>$1$</td></tr>
+<tr><td>P128B_E (ours)</td><td>$2^{16}$</td><td>$32$</td><td>$2^{21}$</td><td>$2^{11}$</td><td>$16$</td><td>$\approx 2^{26}$</td><td>$1$</td></tr>
+<tr><td>MP128B (baseline)</td><td>$2^{14}$</td><td>$8$</td><td>$2^{20}$</td><td>$2^{13}$</td><td>$1$</td><td>$\approx 2^{27}$</td><td>$2$</td></tr>
+<tr><td>MP128B_E (ours)</td><td>$2^{14}$</td><td>$8$</td><td>$2^{20}$</td><td>$2^{11}$</td><td>$4$</td><td>$\approx 2^{26}$</td><td>$2$</td></tr>
+</table>
+
+<p><b>Experimental results</b> (Table 3). Hardware: 12th-Gen Intel Core i7-12700 @ 2.10 GHz, 32 GB RAM, Ubuntu 24.04, Clang 18.1.3; timings averaged over 5000 single-thread runs.</p>
+<table border="1" cellpadding="6" cellspacing="0">
+<tr><th>Setting</th><th>Method</th><th>Key size (MB)</th><th>Time (s)</th></tr>
+<tr><td rowspan="4">Single-key</td><td>FINAL [BIP+22]</td><td>373.56</td><td>0.60</td></tr>
+<tr><td>LLWW [LLW+24]</td><td>546.38</td><td>0.41</td></tr>
+<tr><td>Our EBS (Alg. 1)</td><td>21.72</td><td>0.48</td></tr>
+<tr><td>Our SBS (Alg. 2)</td><td><b>21.72</b></td><td><b>0.33</b></td></tr>
+<tr><td rowspan="3">Multi-key</td><td>XZW [XZW+25]</td><td>336.20</td><td>0.97</td></tr>
+<tr><td>Our MK-EBS (Alg. 3)</td><td>82.84</td><td>0.81</td></tr>
+<tr><td>Our MK-SBS (Alg. 4)</td><td><b>82.84</b></td><td><b>0.57</b></td></tr>
+</table>
+<p>Thus SBS is $0.60/0.33 \approx 1.82\times$ faster than FINAL and $0.41/0.33 \approx 1.24\times$ faster than LLWW, and MK-SBS is $0.97/0.57 \approx 1.70\times$ faster than XZW. Key sizes fall to roughly $1/\eta$ of prior work: single-key evaluation keys are $(n+1)\,d\,N\log_2 Q$ bits (vs. $(\tfrac{3n}{2}+1)\,d\,N\log_2 Q$ in LLWW) plus $2\,N\,B_{ks}\,d_{ks}\log_2 Q_{ks}$ bits of switch keys; multi-key evaluation keys are $(k + 2 + 2kn)\,d\,N\log_2 Q$ bits plus $2k\,N\,B_{ks}\,d_{ks}\log_2 Q_{ks}$ bits.</p>
+</section>
+<section><h2>Conclusions</h2>
+<p>The paper eliminates the $q \mid 2N$ constraint in NTRU-based bootstrapping via an extended isomorphism, letting a large modulus $q$ be used with a small ring dimension $N$. This alone shrinks keys by a factor $\eta$ and speeds up external-product and key-switching work; the sorting-based reordering then removes redundant external/hybrid products for a further time reduction. The techniques carry over to multi-key NTRU bootstrapping. Measured gains at 128-bit security are $1.82\times$/$1.24\times$ (single-key SBS vs. FINAL/LLWW) and $1.70\times$ (multi-key SBS vs. XZW), with $\sim 1/\eta$ memory. The authors note the achievable $\eta$ is limited by NTRU security constraints and suggest parallel implementations or hard problems with more computation-friendly structure as future directions.</p>
+</section>
+<section><h2>Algorithms</h2>
+<p>The four bootstrapping algorithms and the hybrid-product scheme, transcribed from the paper.</p>
+
+<p><b>Algorithm 1 — NTRU-based Bootstrapping with Extended Techniques (EBS).</b></p>
+<pre><code>Input:  LWE sample ct = (b, a) in LWE_{s,q}^n(m)
+        evaluation keys {evk_i}, i in [n], evk_i in VNTRU_{f,Q}^N(s_i)
+        special evaluation key evk' = VNTRU_{f,Q}^N(f^{-1})
+        LWE key-switching key ksk_{phi(f)->s}
+Output: LWE sample ct' in LWE_{s,q}^n(h(m))
+
+1. Set T(X) = sum_{i=0}^{N_ext-1} (Q/t)*h(round((t/q)*i)) * X^i
+   Set (b_hat, a_hat) = round((2*N_ext/q) * ct)
+
+2. for j = 0 to eta-1:                       # initialization: eta accumulators
+       ACC_{0,j} <- ( tau_j(T(X) * X^{-b_hat}) ) (X)_N evk'
+
+3. for i = 0 to n-2:                          # n-1 rounds of eta CMux gates
+       for j = 0 to eta-1:
+           ACC_{i+1,j} <- ACC_{i,j}
+                        + ( ACC_{i,[j-a_hat_i]_eta} * X^{ceil((a_hat_i - j)/eta)}
+                            - ACC_{i,j} ) (X)_N evk_i
+
+4. ACC_{n,0} = ACC_{n-1,0}
+             + ( ACC_{n-1,[-a_hat_{n-1}]_eta} * X^{ceil(a_hat_{n-1}/eta)}
+                 - ACC_{n-1,0} ) (X)_N evk_{n-1}
+
+5. ct' <- SampleExtract(ACC_{n,0})
+6. ct' <- ModSwitch_{Q->Q_ks}(ct')
+7. ct' <- LWE.KeySwitch(ct')
+8. ct' <- ModSwitch_{Q_ks->q}(ct')
+   return ct'
+
+# (X)_N denotes the N-dimensional external product; total = eta*n + 1 products.
+</code></pre>
+
+<p><b>Algorithm 2 — NTRU-based Bootstrapping with Sorting-based Techniques (SBS).</b></p>
+<pre><code>Input / Output: same keys and I/O as Algorithm 1.
+
+1. Set T(X) = sum_{i=0}^{N_ext-1} (Q/t)*h(round((t/q)*i)) * X^i
+   Set ct_hat = (a_hat, b_hat) = round((2*N_ext/q) * ct)
+
+   for j = 0 to eta-1:                        # initialization
+       ACC_j <- ( tau_j(T(X) * X^{-b_hat}) ) (X)_N evk'
+
+2. # buckets I_k = { i in [n] : a_hat_i = 0 mod 2^k, a_hat_i != 0 mod 2^{k+1} }
+   for k = 0 to log(eta):
+       for i = 0 to |I_k| - 1:                # i ranges over indices in bucket I_k
+           for j = 0 to eta/2^k - 1:          # only eta/2^k live accumulators
+               ACC_{j*2^k} <- ACC_{j*2^k}
+                   + ( ACC_{[j*2^k - a_hat_i]_eta} * X^{ceil((a_hat_i - j*2^k)/eta)}
+                       - ACC_{j*2^k} ) (X)_N evk_i
+
+3. ct' <- SampleExtract(ACC_0)
+4. ct' <- ModSwitch_{Q->Q_ks}(ct')
+5. ct' <- LWE.KeySwitch(ct')
+6. ct' <- ModSwitch_{Q_ks->q}(ct')
+   return ct'
+
+# Average cost = ((2*eta^2 + 1)/(3*eta)) * n + eta external products.
+</code></pre>
+
+<p><b>Algorithm 3 — NTRU-based Multi-key Bootstrapping with Extended Techniques (MK-EBS).</b></p>
+<pre><code>Input:  multi-key LWE ciphertext ct = (b, a_1, ..., a_k) in Z_q^{kn+1}
+        public keys {pk_i}_{1<=i<=k}
+        evaluation keys {evk_{i,j} in UniEnc(z_{i,j}, s_i)}_{1<=i<=k, j in [n]}
+        special key evk' in VNTRU_{s_1,Q}^N(s_1^{-1})
+        key-switching keys ksk_{{phi(s_i)} -> {z_i}}
+        test polynomial T(X) in R_{Q,N_ext}
+Output: multi-key LWE ciphertext ct' in Z_q^{kn+1}
+
+1. ct_hat = (b_hat, a_hat_1, ..., a_hat_k) <- round((2*N_ext/q) * ct)
+
+2. for l = 0 to eta-1:                        # initialization
+       c_bar_l <- ( tau_l(T(X) * X^{-b_hat}) ) (X)_N evk'
+       ACC_l   <- (c_bar_l, 0) in R_{Q,N}^k
+
+3. for i = 1 to k:
+       for j = 0 to n-1:
+           for l = 0 to eta-1:
+               if (i,j) != (k, n-1):
+                   ACC_l <- ACC_l
+                       + HbProd( X^{ceil((a_hat_{i,j} - l)/eta)} * ACC_{[l - a_hat_{i,j}]_eta}
+                                 - ACC_l, {pk_i}, evk_{i,j} )
+
+4. ACC_0 <- ACC_0
+          + HbProd( X^{ceil(a_hat_{k,n-1}/eta)} * ACC_{[-a_hat_{k,n-1}]_eta}
+                    - ACC_0, {pk_i}, evk_{k,n-1} )
+
+5. ct' <- M.SampleExtract(ACC_0)
+6. ct' <- M.ModSwitch_{Q->Q_ks}(ct')
+7. ct' <- M.KeySwitch_{{phi(s_i)} -> {z_i}}(ct')
+8. ct' <- M.ModSwitch_{Q_ks->q}(ct')
+   return ct'
+
+# Cost = k*eta*n - eta + 1 hybrid products.
+</code></pre>
+
+<p><b>Algorithm 4 — NTRU-based Multi-key Bootstrapping with Sorting-based Techniques (MK-SBS).</b></p>
+<pre><code>Input / Output: same keys and I/O as Algorithm 3.
+
+1. ct_hat = (b_hat, a_hat_1, ..., a_hat_k) <- round((2*N_ext/q) * ct)
+
+2. for l = 0 to eta-1:                        # initialization
+       c_bar_l <- ( tau_l(T(X) * X^{-b_hat}) ) (X)_N evk'
+       ACC_l   <- (c_bar_l, 0) in R_{Q,N}^k
+
+3. # buckets I_m = { (i,j) in [1,k]x[n] : a_hat_{i,j} = 0 mod 2^m,
+   #                                      a_hat_{i,j} != 0 mod 2^{m+1} }
+   for m = 0 to log(eta):
+       for (i,j) in I_m:
+           for l = 0 to eta/2^m - 1:
+               ACC_{l*2^m} <- HbProd(
+                   X^{ceil((a_hat_{i,j} - l*2^m)/eta)} * ACC_{[l*2^m - a_hat_{i,j}]_eta}
+                   - ACC_{l*2^m}, {pk_i}, evk_{i,j} ) + ACC_{l*2^m}
+
+4. ct' <- M.SampleExtract(ACC_0)
+5. ct' <- M.ModSwitch_{Q->Q_ks}(ct')
+6. ct' <- M.KeySwitch_{{phi(s_i)} -> {z_i}}(ct')
+7. ct' <- M.ModSwitch_{Q_ks->q}(ct')
+   return ct'
+
+# Cost = ((2*eta^2 + 1)/(3*eta)) * k * n + eta hybrid products.
+</code></pre>
+
+<p><b>Appendix A — Hybrid Product scheme (uni-encryption based).</b></p>
+<pre><code>Setup(1^lambda):
+    choose NTRU degree N, modulus Q, gadget dimension d,
+    secret distribution chi_f, error distribution chi_e over R_N;
+    sample a <- R_{Q,N}^d;
+    return pp' = (N_ext, N, Q, d, a, chi_f, chi_e).
+
+KeyGen(pp'):
+    for i = 1..k: sample s_i <- chi_f (s_i invertible in R_{Q,N}), e_i <- chi_e^d;
+    output public keys { b_i = -a * s_i + e_i }_{1<=i<=k}.
+
+UniEnc(mu, s):                       # mu in Z, secret key s <- chi_f
+    sample r <- chi_s, noise e_1, e_2 <- chi_e^d;
+    output (d, f) = ( r*a + mu*g + e_1,   e_2*s^{-1} + r*g*s^{-1} )  in R_{Q,N}^d x R_{Q,N}^d.
+
+HbProd(c, {b_j}_{1<=j<=k}, (d_i, f_i)):     # c in M.NTRU_{{s_i}}^N(m), (d_i,f_i) in UniEnc(mu, s_i)
+    1. u_j = < g^{-1}(c_j), d_i >           for 1 <= j <= k
+       v   = sum_{j=1}^{k} < g^{-1}(c_j), b_j >
+    2. for 1 <= j <= k:
+           c'_j = u_i + < g^{-1}(v), f_i >   if j = i
+           c'_j = u_j                        otherwise
+    return c' = (c'_1, ..., c'_k)  in R_{Q,N}^k, with c' in M.NTRU_{{s_i}}^N(mu * m).
+</code></pre>
+
+<p><b>Supporting sub-routines</b> (used above, stated as lemmas in the paper):</p>
+<pre><code>SampleExtract(c):     # c in NTRU_{f,Q}^N(m), c = sum c_i X^i
+    return (0, c_0, -c_{N-1}, -c_{N-2}, ..., -c_1)  in LWE_{phi(f),Q}^N(m_0).
+
+KeySwitch_{phi(f)->s}(ct):    # ct=(b,a) in LWE_{phi(f),Q_ks}^N(m)
+    return (b,0) - sum_{i=0}^{N-1} sum_{j=0}^{d_ks-1} ksk_{i,j,a_{i,j}}   in LWE_{s,Q_ks}^n(m).
+
+ModSwitch_{Q->q}(ct):         # ct=(b,a) in LWE_{s,Q}^n(m)
+    return ( round((q/Q)*b), round((q/Q)*a) )   in LWE_{s,q}^n(m).
+</code></pre>
+</section>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/\bfig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+})();
+function rtSetupEquations(){
+  var prev=document.getElementById('rt-eqprev');
+  if(!prev){prev=document.createElement('div');prev.id='rt-eqprev';document.body.appendChild(prev);}
+  function showEq(html,e){prev.innerHTML=html;prev.style.display='block';var x=Math.min(e.clientX+20,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+20,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hideEq(){prev.style.display='none';}
+  var eqs=document.querySelectorAll('mjx-container[display="true"]'),htmlByNum={};
+  for(var i=0;i<eqs.length;i++){var n=i+1;eqs[i].id='eq'+n;htmlByNum[n]=eqs[i].outerHTML;}
+  if(!eqs.length)return;
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='script'||tg==='style')continue;
+    if(pn.closest&&pn.closest('mjx-container'))continue;
+    if(/\beq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!htmlByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#eq'+num;a.className='rt-eqref';a.textContent=m[0];
+      (function(h){a.addEventListener('mousemove',function(e){showEq(h,e);});a.addEventListener('mouseleave',hideEq);})(htmlByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+}
+window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],tags:'none'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},startup:{pageReady:function(){return MathJax.startup.defaultPageReady().then(function(){rtSetupEquations();});}}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>
