@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ciphertext- and Polynomial-Level Optimization for Fully Homomorphic Encryption (Recifhe)</title>
+<style>
+:root{--bg:#F3F5F4;--surface:#FFFFFF;--ink:#161A1C;--muted:#5C6670;--line:#DBE0DE;--accent:#0C8C80}
+@media (prefers-color-scheme:dark){:root{--bg:#0B0F12;--surface:#111619;--ink:#E7EEEA;--muted:#95A2A1;--line:#1F282C;--accent:#2CD4BE}}
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;line-height:1.5;margin:1rem 0}
+pre code{background:none;border:0;padding:0;border-radius:0;display:block;white-space:pre;font-size:13px}
+code{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:var(--surface);border-bottom:1px solid var(--line);font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:var(--accent);text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+#rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
+#rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
+a.rt-figref,a.rt-eqref{color:var(--accent);text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+body{counter-reset:rt-eq}
+mjx-container[display="true"]{position:relative;padding-right:2.4em}
+mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Deep Summaries</a><a href="https://arxiv.org/abs/2607.15750" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
+<header><h1>Ciphertext- and Polynomial-Level Optimization for Fully Homomorphic Encryption (Recifhe)</h1><p class="meta">arXiv:2607.15750v2 [cs.CR] · July 2026 &middot; <a href="https://arxiv.org/abs/2607.15750" target="_blank" rel="noopener noreferrer">full view &#8599;</a></p></header>
+<section><h2>Overview and Contribution</h2><p>This work (by Seongho Kim, Heelim Choi, Jaemin Kim, Seonyoung Cheon, Dongkwan Kim, Jaeho Lee, Hoyun Youm, Dongyoon Lee, Hanjun Kim, and Yongwoo Lee) presents <strong>Recifhe</strong>, a multi-level compiler for fully homomorphic encryption (FHE) under the RNS-CKKS scheme. The central observation is that existing FHE compilers operate at the coarse-grained <em>ciphertext level</em>, where a single ciphertext operation expands into a sequence of underlying <em>polynomial operations</em>. Optimizing only at the ciphertext level misses redundant polynomial computations that span multiple ciphertext operations.</p><p>Recifhe adds a second, finer optimization tier: after applying global ciphertext-level transformations, it <strong>lowers</strong> each ciphertext operation into its polynomial-operation sequence and optimizes across ciphertext boundaries. The three polynomial-level optimizations are (i) common subexpression elimination, (ii) performance-aware <code>ModDown</code> hoisting, and (iii) operation fusion, backed by liveness-driven scheduling to contain memory growth.</p><p>Headline results: Recifhe achieves a <strong>1.25x speedup</strong> over ciphertext-level-only optimization across 12 benchmarks, and a <strong>1.36x speedup with 0.93x the memory footprint</strong> versus the manually optimized polynomial sequences in the Cheddar GPU FHE library.</p></section>
+<section><h2>Background: RNS-CKKS and its Attributes</h2><p>RNS-CKKS is the residue-number-system variant of CKKS, well suited to machine learning because it supports fixed-point arithmetic on real numbers with SIMD vectorization. It encodes a vector of real numbers into a plaintext polynomial in $\mathbb{Z}[X]/(X^N+1)$, where $N$ is the polynomial modulus degree, providing $N/2$ fixed-point SIMD slots.</p><p>A plaintext is encrypted as a pair of ciphertext polynomials in $\mathbb{Z}_Q[X]/(X^N+1)$, where the coefficient modulus $Q$ bounds the coefficients. Each polynomial is represented by up to $L$ residue polynomials with per-limb moduli $q_i$, so that</p><p>$$Q = \prod_{i=1}^{L} q_i. \qquad \text{(Equation 1)}$$</p><p>The GPU library used in this work (Cheddar) adopts $N = 2^{16}$ and $L = 27$ with 32-bit moduli, so a plaintext occupies $4~\text{bytes} \times N \times L = 6.75~\text{MB}$, and a ciphertext twice as much.</p><p>Ciphertext-level compilers track two ciphertext <strong>attributes</strong>:</p><ul><li><strong>Level</strong> - the number of <code>Rescale</code> operations still applicable to the ciphertext, up to $L$.</li><li><strong>Scale</strong> - the fixed-point scaling factor multiplying the encoded message.</li></ul><p>A ciphertext multiplication enlarges the scale of the result, risking <em>scale overflow</em>. <code>Rescale</code> divides the scale by the last modulus and lowers the level by one, preventing overflow. <code>Bootstrap</code> restores a depleted level back to its maximum $L$. Compilers automatically place these two <em>ciphertext management operations</em>: scale-management compilers insert <code>Rescale</code>; bootstrapping-management compilers insert <code>Bootstrap</code> to support long multiplication chains while minimizing the <code>Bootstrap</code> count.</p></section>
+<section><h2>Polynomial Operations, Key Switching, and the RNS Basis</h2><p>Each ciphertext operation decomposes into a sequence of polynomial operations, and each polynomial carries a third attribute beyond level and scale: the <strong>RNS basis</strong>, the set of moduli over which the polynomial is represented. A polynomial operation requires its operands to share the same RNS basis. Table I gives the ciphertext-to-polynomial mapping (omitting <code>Rescale</code> and <code>Bootstrap</code>, which appear identically at both levels):</p><pre><code>Ciphertext Op.      Polynomial Op. sequence
+-----------------   ---------------------------------------
+AddCC, AddCP        pAdd
+MulCP               pMulCP
+MulCC               pMulCC -> ModUp -> KIP -> ModDown
+Rotate              ModUp -> KIP -> ModDown -> Automorphism
+</code></pre><p>Both <code>MulCC</code> (ciphertext-ciphertext multiply) and <code>Rotate</code> produce an intermediate result under a <em>different</em> key, so <strong>key switching</strong> restores it to the original key via <code>ModUp</code>, <code>KIP</code> (KeyInnerProduct), and <code>ModDown</code>. <code>KIP</code> computes the inner product of the <code>ModUp</code> result with the key-switching key, which amplifies key-switching error. To manage this, RNS-CKKS temporarily extends the working modulus from $Q$ to $PQ$ with an auxiliary modulus</p><p>$$P = \prod_j p_j. \qquad \text{(Equation 2)}$$</p><p><code>ModUp</code> lifts a polynomial from the $Q$ basis to the $PQ$ basis by adding the $p_j$ moduli to its basis; after <code>KIP</code>, <code>ModDown</code> divides the result by $P$ to reduce key-switching noise and returns it to the $Q$ basis. <code>Automorphism</code> rotates the slots via an index permutation.</p><p>Operations split by their <strong>RNS-basis sensitivity</strong> (Table II):</p><pre><code>Insensitive   pAdd, pMulCP, Automorphism
+Sensitive     ModUp, KIP, ModDown, pMulCC, Rescale, Bootstrap
+</code></pre><p>RNS-basis-insensitive operations apply identically on both the $Q$ and $PQ$ bases, processing each residue polynomial independently and preserving the factor $P$ introduced by key switching. The four sensitive operations that <em>change</em> the RNS basis - <code>ModUp</code>, <code>ModDown</code>, <code>Rescale</code>, and <code>Bootstrap</code> - internally use the number-theoretic transform (<code>NTT</code>) and its inverse (<code>iNTT</code>) for basis conversion. Fusing an adjacent pair of such operations can cancel their internal transforms.</p></section>
+<section><h2>Motivation: the Gap in Existing Compilers</h2><p>Most existing FHE compilers optimize only at the ciphertext level (e.g. Hecate, ELASM, EVA, DaCapo, HALO, Orion), applying global optimizations such as <em>Rescale hoisting</em> but never removing redundant polynomial computations across ciphertext operations. A few compilers (HEaaN.MLIR, ANT-ACE) do decompose ciphertext operations into polynomial sequences, but they do not track polynomial attributes (the RNS basis) <em>across</em> ciphertext operations, so their optimization is confined to a single ciphertext operation.</p><p>The Cheddar FHE library instead hand-codes cross-operation optimizations (such as removing repeated <code>ModDown</code> operations), but its optimization is a <strong>fixed algorithm tuned to one dataflow</strong>: it does not adapt to new programs, and it ignores the trade-off between removed <code>ModDown</code> operations and the extra operations that must then run on the heavier $PQ$ basis. It also extends polynomial lifetimes, incurring high memory overhead. These limitations motivate a compiler that applies <em>dataflow-adaptive</em> optimization at the polynomial level - Recifhe's design goal.</p></section>
+<section><h2>Recifhe Compiler Architecture</h2><p>Recifhe adopts a <strong>multi-level design</strong>: global optimizations run on a ciphertext-level intermediate representation (IR), and fine-grained cross-ciphertext optimizations run on a polynomial-level IR. Doing global work at the coarse ciphertext level keeps optimization complexity low compared with optimizing the whole program directly at the polynomial level (which contains far more operations).</p><p>The pipeline is:</p><ol><li><strong>Ciphertext-level IR</strong>: transform an input Python DSL program into an FHE program - place ciphertext management operations (<code>Bootstrap</code> placement and scale management via prior techniques) and apply global <em>Rescale hoisting</em>. After this pass the level and scale of every value are known.</li><li><strong>Lowering</strong>: decompose each ciphertext operation into its polynomial-operation sequence (per Table I), which exposes cross-ciphertext optimization opportunities.</li><li><strong>Polynomial-level IR</strong>: run candidate analysis, performance-aware <code>ModDown</code> hoisting, operation fusion, and liveness-driven polynomial scheduling.</li></ol><p>The paper's running example computes</p><p>$$y = p_0\cdot a + p_1\cdot \mathrm{rot}(b, r_1) + p_2\cdot \mathrm{rot}(c, r_2) + p_3\cdot \mathrm{rot}(d, r_3),$$</p><p>a rotate-multiply-accumulate pattern that recurs in FHE matrix-multiplication kernels. Each rotation lowers into <code>ModUp</code>, <code>KIP</code>, <code>ModDown</code>, and <code>Automorphism</code>. Because the results of the three <code>ModDown</code> operations flow only through RNS-basis-insensitive operations, hoisting them into a single <code>ModDown</code> reduces the <code>ModDown</code> count and enables fusing the surrounding operations. The input DSL for the example is:</p><pre><code>t0  = Mul(a, p0);
+t1  = Mul(Rot(b), p1);
+t2  = Mul(Rot(c), p2);
+t3  = Mul(Rot(d), p3);
+t4  = Add(RS(t1), RS(t2));
+t5  = Add(RS(t0), t4);
+out = Add(t5, RS(t3));
+</code></pre></section>
+<section><h2>Ciphertext-Level Optimization: Rescale Hoisting and Lowering</h2><p>Recifhe first places <code>Bootstrap</code> operations and manages the program's scale using existing ciphertext-level techniques, so that level and scale are fixed before lowering. It inherits <strong>Rescale hoisting</strong> and keeps it as a ciphertext-level transformation - performing it here rather than at the polynomial level, where the program has many more operations, keeps the pass tractable. Recifhe hoists a <code>Rescale</code> past any operation that preserves both level and scale, merging <code>Rescale</code> operations to reduce their count.</p><p>Recifhe then lowers each ciphertext operation into its polynomial sequence. Because lowering translates each ciphertext operation <em>independently</em>, the same input polynomial may be recomputed across separate lowered sequences; Recifhe removes these with <strong>common subexpression elimination</strong> on the polynomial-level IR.</p></section>
+<section><h2>Polynomial-Level: Candidate Analysis</h2><p>On the polynomial-level DAG of each function, Recifhe looks for regions where multiple <code>ModDown</code> operations can be hoisted and merged (Algorithm 1, lines 5-10). It visits each RNS-basis-sensitive operation $s$ other than <code>ModDown</code>, exploiting the fact that the earlier ciphertext-level passes already placed the ciphertext operations that lower into these sensitive operations. For each such $s$:</p><ul><li>The <strong>boundary set</strong> $B$ (line 5) is the set of preceding sensitive operations (other than <code>ModDown</code>) that can reach $s$ only through RNS-basis-insensitive and <code>ModDown</code> operations.</li><li>The <strong>optimizable region</strong> $R$ (line 6) is every intermediate operation on any path from a boundary operation to $s$.</li><li>The <strong>hoisting target set</strong> $M$ (line 7) is the <code>ModDown</code> operations within $R$; their results can flow toward $s$ only through insensitive operations, which compute identically on the $Q$ and $PQ$ bases, so a hoisted <code>ModDown</code> can cross them without changing the encoded values.</li></ul><p>A region becomes a candidate only when $M$ contains multiple <code>ModDown</code> operations ($|M| \ge 2$). Regions of different sensitive operations may be nested; Recifhe resolves this by iterative optimization, since hoisting in a nested region and in its enclosing region compose without conflict.</p></section>
+<section><h2>Polynomial-Level: Performance-Aware Hoisting</h2><p>Hoisting removes the <code>ModDown</code> operations in $M$ and places one hoisted <code>ModDown</code> before each operation in the <strong>sensitive frontier</strong> $F$ - the sensitive operations that the results of $M$ first reach via insensitive operations only (Algorithm 1, lines 11-19). The set $L$ collects the insensitive operations on the paths from $M$ to $F$; after hoisting, these now process $PQ$-basis polynomials. Because $PQ$ holds more moduli than $Q$, operations in $L$ become more expensive, and whether this added cost is worthwhile depends on the region's dataflow.</p><p>Recifhe therefore <strong>profiles offline</strong> the latency $E$ of every polynomial operation at each level and RNS basis (the basis written as a subscript). It accepts a hoist only when the benefit outweighs the overhead:</p><p>$$\text{benefit} = \sum_{m \in M} E(m) - \sum_{f \in F} E(\text{ModDown}_f), \qquad \text{(Equation 3)}$$</p><p>$$\text{overhead} = \sum_{op \in L} \big( E_{PQ}(op) - E_{Q}(op) \big), \qquad \text{(Equation 4)}$$</p><p>i.e. the latency of the removed <code>ModDown</code> operations minus the latency of the hoisted <code>ModDown</code> operations at $F$, versus the latency increase from raising $L$ to the $PQ$ basis. When $\text{benefit} > \text{overhead}$, Recifhe applies the hoist by reordering the accumulations in the region (function <code>reassociate</code>) to gather the results of $M$, removing $M$, and inserting a hoisted $\text{ModDown}_f$ before each $f \in F$. Reordering is safe because modular addition is associative and commutative, so the encoded result is preserved.</p></section>
+<section><h2>Polynomial-Level: Operation Fusion and Scheduling</h2><p><strong>Operation fusion.</strong> Recifhe fuses adjacent RNS-basis-sensitive operations - e.g. a <code>ModDown</code> and a <code>Rescale</code> - to remove an <code>iNTT</code>/<code>NTT</code> pair when nothing lies between them. When a fusible pair is <em>not</em> adjacent (in the running example an addition separates a <code>ModDown</code> from a <code>Rescale</code>), Recifhe raises the addition's other operand, still on the $Q$ basis, to the $PQ$ basis by inserting an <code>invModDown</code>. This lets the <code>ModDown</code> sink past the addition and become adjacent to the <code>Rescale</code>. <code>invModDown</code> is a lightweight lift that multiplies each residue polynomial in the $Q$ basis by $P$, satisfying</p><p>$$\mathrm{ModDown}(\mathrm{invModDown}(a)) = a. \qquad \text{(Equation 5)}$$</p><p><strong>Polynomial scheduling.</strong> Polynomial-level optimization inherently raises memory pressure: lowering places each ciphertext operation's polynomial operations consecutively (separating a value's producer from its consumers), and hoisting and fusion extend polynomial lifetimes across ciphertext boundaries. Recifhe applies <em>liveness-driven scheduling</em> - it moves each operation to immediately follow its most recently defined operand, shrinking that operand's live range when the operation is its last use, and then reuses the buffer of a dead value for a later same-size result. This reduces the number of polynomials live simultaneously.</p></section>
+<section><h2>Evaluation</h2><p><strong>Setup.</strong> Recifhe is built on the MLIR-based <em>Hecate</em> framework with a Python DSL frontend, targeting the <em>Cheddar</em> GPU library as backend; it is retargetable to other backends by re-profiling operation latencies. It is evaluated on 12 benchmarks (Polynomial Regression, Multivariate, SVM, Kmeans, MLP, LoLA, LeNet, AlexNet, VGG16, ResNet, SqueezeNet, MobileNet) against two baselines that share its frontend and backend:</p><ul><li><strong>Ciphertext-level-only</strong> baseline - prior ciphertext-level optimizations only.</li><li><strong>Cheddar</strong> baseline - the above plus Cheddar's manually optimized polynomial sequences.</li></ul><p>All three share the RNS-CKKS setting $N = 2^{16}$, default scale $2^{40}$, Cheddar's <code>Bootstrap</code> modulus configuration at 128-bit security, giving an effective multiplicative depth of 13 between <code>Bootstrap</code> operations. Benchmarks use pre-encoded plaintexts and follow prior suites for <code>Bootstrap</code> placement. Hardware: two Intel Xeon Gold 6326 CPUs, 512 GB RAM, and an NVIDIA RTX PRO 6000 Blackwell Max-Q GPU with 96 GB VRAM.</p><p><strong>Results (latency, normalized to ciphertext-level-only).</strong> The Cheddar baseline speeds up 6 of the 9 benchmarks it completes but slows down 3, because it raises operations into the heavier $PQ$ basis regardless of whether the hoist is actually profitable - the fixed-algorithm limitation. Its average is $0.92\times$ (i.e. a net slowdown). Recifhe, applying hoisting only when Algorithm 1 finds it profitable, reaches <strong>$1.25\times$ speedup</strong> over ciphertext-level-only across all 12 benchmarks, and <strong>$1.36\times$</strong> over Cheddar on the 9 it completes.</p><p><strong>Results (memory).</strong> The Cheddar baseline's unconditional lifting, with no scheduling pass to reclaim extended live ranges, keeps $PQ$-basis polynomials live longer than needed: $1.23\times$ the ciphertext-level-only footprint on average, running <em>out of memory on 3 of the 12</em> benchmarks. Recifhe's liveness-driven scheduling holds the footprint to $1.14\times$ the ciphertext-level-only baseline and $0.93\times$ the Cheddar baseline.</p><p><strong>Fidelity and compile time.</strong> On ResNet, Recifhe reproduces Cheddar's artifact result within 0.9% (0.714 s vs 0.720 s), confirming it faithfully reimplements the library optimization. The extra polynomial-level passes take 39.0% of Recifhe's compile time on average (performance-aware hoisting 1.31%, fusion 14.3%). Compile times range from 0.0182 s (Polynomial Regression) to 22.4 s (MobileNet), averaging 5.14 s - $2.92\times$ the ciphertext-level-only baseline in geometric mean.</p></section>
+<section><h2>Conclusion</h2><p>Recifhe is a multi-level FHE compiler that automatically generates RNS-CKKS FHE programs with global ciphertext-level optimizations and then removes redundant polynomial computations across ciphertext operations. Guided by measured per-operation latencies, it applies <code>ModDown</code> hoisting only when the estimated benefit exceeds the overhead, and it curbs the resulting memory growth with liveness-driven scheduling. Net result: a $1.25\times$ speedup over ciphertext-level-only optimization, and a $1.36\times$ speedup at $0.93\times$ the memory of the hand-optimized Cheddar library sequences.</p></section>
+<section><h2>Algorithms</h2><p>The source contains one formal algorithm, the performance-aware <code>ModDown</code> hoisting pass, reproduced below verbatim in structure. Symbols: $\Pi$ is the polynomial-level function DAG; $E$ is the offline latency profile (subscript denotes RNS basis); $S$ is the sensitive operations other than <code>ModDown</code>; $I$ the insensitive-or-<code>ModDown</code> operations; $B$ the boundary set; $R$ the optimizable region; $M$ the hoisting targets; $F$ the sensitive frontier; $L$ the insensitive path operations raised to the $PQ$ basis.</p><pre><code>Algorithm 1: Performance-Aware ModDown Hoisting
+Input : Polynomial-level function DAG Pi, Latency profile E
+Output: ModDown-hoisted DAG Pi
+
+ 1  function PerformanceAwareModDownHoisting(Pi, E):
+ 2      S = { op in Pi | isSensitive(op) and op != ModDown }
+ 3      I = { op in Pi | isInsensitive(op) or  op == ModDown }
+ 4      foreach s in S do
+ 5          B <- { b in S | exists pi in Path(b, s) : ops(pi) subset-of I }
+ 6          R <- union over b in B, pi in Path(b, s) of ops(pi)
+ 7          M <- { op in R | op == ModDown }
+ 8          if |M| < 2 then
+ 9              continue
+10          end
+11          F <- findNearestSensitiveSuccessors(Pi, M)
+12          L <- { op in Path(m, f) | m in M, f in F }
+13          benefit  <- sum_{m in M} E(m) - sum_{f in F} E(ModDown_f)
+14          overhead <- sum_{op in L} ( E_PQ(op) - E_Q(op) )
+15          if benefit > overhead then
+16              Pi <- reassociate(Pi, R, M)
+17              Pi <- removeModDown(Pi, M)
+18              Pi <- insertModDownBefore(Pi, F)
+19          end
+20      end
+21      return Pi
+22  end
+</code></pre><p>Supporting transformations invoked by the body but not given as separate numbered algorithms:</p><pre><code>Common Subexpression Elimination (post-lowering):
+  for each polynomial op produced by independent lowering:
+    if an identical op on the same input polynomial already exists:
+      reuse the existing result; drop the duplicate.
+
+Operation Fusion:
+  for each RNS-basis-sensitive pair (opA, opB) e.g. (ModDown, Rescale):
+    if opA and opB are adjacent (no op between them):
+      fuse -> cancel the internal iNTT/NTT pair.
+    else if separated only by an insensitive op (e.g. an Add):
+      insert invModDown on the other Q-basis operand   # lift to PQ basis
+      sink ModDown past the op until adjacent to Rescale
+      fuse.
+  # invariant: ModDown(invModDown(a)) = a
+
+Liveness-Driven Polynomial Scheduling:
+  for each op in program order:
+    move op to immediately follow its most-recently-defined operand
+    if op is that operand's last use:
+      mark the operand's buffer dead
+  reuse a dead buffer for a later result of the same size
+</code></pre></p></section>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/\bfig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+})();
+function rtSetupEquations(){
+  var prev=document.getElementById('rt-eqprev');
+  if(!prev){prev=document.createElement('div');prev.id='rt-eqprev';document.body.appendChild(prev);}
+  function showEq(html,e){prev.innerHTML=html;prev.style.display='block';var x=Math.min(e.clientX+20,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+20,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hideEq(){prev.style.display='none';}
+  var eqs=document.querySelectorAll('mjx-container[display="true"]'),htmlByNum={};
+  for(var i=0;i<eqs.length;i++){var n=i+1;eqs[i].id='eq'+n;htmlByNum[n]=eqs[i].outerHTML;}
+  if(!eqs.length)return;
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='script'||tg==='style')continue;
+    if(pn.closest&&pn.closest('mjx-container'))continue;
+    if(/\beq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!htmlByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#eq'+num;a.className='rt-eqref';a.textContent=m[0];
+      (function(h){a.addEventListener('mousemove',function(e){showEq(h,e);});a.addEventListener('mouseleave',hideEq);})(htmlByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+}
+window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],tags:'none'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},startup:{pageReady:function(){return MathJax.startup.defaultPageReady().then(function(){rtSetupEquations();});}}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>

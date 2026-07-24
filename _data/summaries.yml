@@ -2,6 +2,30 @@
 # Regenerated from research-material; entries with a summaries/<slug>/
 # folder but no research-material source are preserved as-is.
 
+- slug: "recifhe-multi-level-fhe-compiler-2026-07-24"
+  title: "Ciphertext- and Polynomial-Level Optimization for Fully Homomorphic Encryption (Recifhe)"
+  url: "/summaries/recifhe-multi-level-fhe-compiler-2026-07-24/"
+  date: "2026-07-24"
+  category: "Fhe Compilers"
+  pub: "July 2026"
+  publisher: "arXiv:2607.15750v2 [cs.CR]"
+  meta_line: "arXiv:2607.15750v2 [cs.CR] · July 2026"
+  source_type: "PDF (text-layer)"
+  source_url: "https://arxiv.org/abs/2607.15750"
+  pdf: ""
+  tags: ["FHE compiler", "RNS-CKKS", "polynomial-level optimization", "ciphertext management", "ModDown hoisting", "MLIR", "GPU FHE", "key switching", "NTT"]
+- slug: "faster-ntru-based-bootstrapping-2026-07-24"
+  title: "Faster NTRU-based Bootstrapping with Extended and Sorting-based Techniques"
+  url: "/summaries/faster-ntru-based-bootstrapping-2026-07-24/"
+  date: "2026-07-24"
+  category: "Ntru Fhe Bootstrapping"
+  pub: "2026"
+  publisher: "IACR Cryptology ePrint Archive 2026/1447"
+  meta_line: "IACR Cryptology ePrint Archive 2026/1447"
+  source_type: "PDF (text-layer)"
+  source_url: "https://eprint.iacr.org/2026/1447"
+  pdf: ""
+  tags: ["fully homomorphic encryption", "FHE", "bootstrapping", "NTRU", "FHEW", "TFHE", "extended bootstrapping", "sorting-based technique", "multi-key FHE", "blind rotation", "external product", "hybrid product", "lattice cryptography"]
 - slug: "whet-welding-homomorphic-encryption-to-accelerator-architectures-2026-07-24"
   title: "WHET: Welding Homomorphic Encryption to Accelerator Architectures"
   url: "/summaries/whet-welding-homomorphic-encryption-to-accelerator-architectures-2026-07-24/"
