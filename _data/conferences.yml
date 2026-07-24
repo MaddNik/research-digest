@@ -13,7 +13,6 @@
   start: 2026-07-26
   about: "Premier conference for the design and automation of electronic chips and systems, spanning EDA, hardware, embedded and AI design."
   url: "https://www.dac.com/"
-  earlybird: "June 26, 2026"
   late_deadline: "Onsite registration June 27 to July 29, 2026"
   speakers:
     - "John Martinis (Keynote, CTO and Co-Founder, Qolab; 2025 Nobel Laureate in Physics) - From Fundamental Science to Building a Superconducting Quantum Computer"
@@ -21,6 +20,15 @@
     - "Jan M. Rabaey (Keynote, Professor Emeritus, UC Berkeley) - Engineering Life, Where Biology and Technology Meet"
     - "Timothy Costa (SKYTalk, GM and VP of Computational Engineering, NVIDIA) - AI Supercomputing Meets EDA: Accelerating the Future of Chip and System Design"
     - "Huiming Bu (SKYTalk, VP Global Semiconductor, IBM Research) - From 7nm to 7A: A Retrospective Looking into the Future"
+
+- name: "IPR: Integrated Photonics Research, Silicon and Nanophotonics"
+  domain: Photonics
+  continent: North America
+  location: "Long Beach, USA"
+  dates: "July 26 to 30, 2026"
+  start: 2026-07-26
+  about: "Long-running Optica topical meeting on integrated and nano-photonics, covering materials and platforms for photonic integration and integrated nonlinear and quantum optics. Held as part of the Optica Advanced Photonics Congress."
+  url: "https://www.optica.org/events/congress/advanced_photonics_congress/program/integrated_photonics_research_silicon_and_nanophot/"
 
 - name: "Hot Chips: A Symposium on High-Performance Chips"
   domain: Semiconductor
@@ -30,7 +38,6 @@
   start: 2026-08-23
   about: "Leading industry symposium where companies present the latest high-performance processor, accelerator and chip architectures."
   url: "https://hotchips.org/"
-  submission: "April 8, 2026"
   earlybird: "July 31, 2026"
   speakers:
     - "Daniel Rosenband (Keynote, Waymo) - Compute in Motion: Challenges of Autonomous Driving"
@@ -46,9 +53,8 @@
   location: "Palma de Mallorca, Spain"
   dates: "September 7 to 10, 2026"
   start: 2026-09-07
-  about: "Europe's flagship event on solid-state devices and circuits, formed from the merger of ESSDERC and ESSCIRC, covering semiconductor processes and circuit design."
+  about: "Europe's flagship event on solid-state devices and circuits, formed from the merger of ESSDERC and ESSCIRC. The 2026 edition is themed 'Advancing Chips, Advancing Europe.'"
   url: "https://www.esserc2026.org/"
-  submission: "April 10, 2026"
   speakers:
     - "Roberto Emilio Luigi Bez (Keynote, Senior Director of Storage Strategic Technology, Micron) - Memory for a better world"
     - "Arya Behzad (Keynote, VP of R&D Engineering, Broadcom) - From Air to Copper to Fiber: When Abstraction Boundaries Fail in Modern Communication Systems"
@@ -62,9 +68,8 @@
   location: "Ghent, Belgium"
   dates: "September 7 to 11, 2026"
   start: 2026-09-07
-  about: "Premier European conference on FPGAs, reconfigurable computing and their applications."
+  about: "Premier European conference on FPGAs, reconfigurable computing and their applications. The 2026 edition is the 36th, with the main conference September 7 to 9 followed by workshops and tutorials."
   url: "https://2026.fpl.org/"
-  submission: "March 27, 2026"
 
 - name: "ECOC: European Conference on Optical Communication"
   domain: Photonics
@@ -74,8 +79,6 @@
   start: 2026-09-20
   about: "The largest and most prestigious European event on optical communication and photonic technologies."
   url: "https://www.ecoc2026.org/"
-  submission: "April 22, 2026"
-  earlybird: "Mid July 2026"
   speakers:
     - "Peter Winzer (Plenary, VP of Systems Architecture, Ciena) - AI Cluster Communications"
     - "Patrick Vandenameele (Plenary, CEO-elect, IMEC) - Integrated photonics at the heart of a scalable AI revolution"
@@ -91,7 +94,10 @@
   start: 2026-11-08
   about: "Premier forum for research and innovation in electronic design automation, from algorithms to design tools and methodologies."
   url: "https://www.iccad.com/"
-  submission: "April 14, 2026"
+  late_deadline: "Camera-ready and author registration August 24, 2026"
+  speakers:
+    - "Paul Cunningham (Keynote, General Manager, Cadence) - Systems Verification"
+    - "Vaughn Betz (Keynote, University of Toronto / Cerebras Systems)"
 
 - name: "IPC: IEEE Photonics Conference"
   domain: Photonics
@@ -101,12 +107,29 @@
   start: 2026-11-08
   about: "Annual flagship conference of the IEEE Photonics Society, covering photonic devices, integrated photonics and applications."
   url: "https://ieee-ipc.org/"
-  submission: "May 18, 2026"
+
+- name: "SEMICON Europa"
+  domain: Semiconductor
+  continent: Europe
+  location: "Munich, Germany"
+  dates: "November 10 to 13, 2026"
+  start: 2026-11-10
+  about: "Europe's largest semiconductor electronics trade event and conference, spanning the design-to-manufacturing supply chain, co-located with productronica and including an Advanced Packaging Conference and Fab Management Forum."
+  url: "https://www.semiconeuropa.org/"
+
+- name: "IEDM: IEEE International Electron Devices Meeting"
+  domain: Semiconductor
+  continent: North America
+  location: "San Francisco, USA"
+  dates: "December 12 to 16, 2026"
+  start: 2026-12-12
+  about: "The premier global venue for cutting-edge electron device technology and semiconductor process and device innovation. The 72nd edition is themed 'Devices at the Heart of the Intelligence Revolution.'"
+  url: "https://ieee-iedm.org/"
+  late_deadline: "Late-news paper submissions open August 3, 2026"
   speakers:
-    - "Laura Marcu (Plenary, Professor of Neurological Surgery and Biomedical Engineering, UC Davis)"
-    - "William John Munro (Plenary, Okinawa Institute of Science and Technology Graduate University)"
-    - "Siddharth Ramachandran (Plenary, High Dimensional Photonics Lab, Boston University)"
-    - "Eli Yablonovitch (Plenary, Electrical Engineering and Computer Sciences, UC Berkeley)"
+    - "Fabio Gualandris (Invited, President of Quality, Manufacturing and Technology, STMicroelectronics)"
+    - "Yunik Son (Invited, VP of Device Technology Solution, SK Hynix)"
+    - "Naga Chandrasekaran (Invited, EVP and CTO, Intel Foundry)"
 
 - name: "SPIE Photonics West"
   domain: Photonics
@@ -116,7 +139,6 @@
   start: 2027-01-30
   about: "The world's largest photonics technologies event, covering lasers, biomedical optics, optoelectronics and quantum technologies."
   url: "https://spie.org/conferences-and-exhibitions/photonics-west"
-  submission: "July 22, 2026"
 
 - name: "ISSCC: IEEE International Solid-State Circuits Conference"
   domain: Semiconductor
@@ -137,24 +159,24 @@
   about: "The largest global conference and exhibition for optical communications and networking, spanning components, systems and networks."
   url: "https://www.ofcconference.org/"
 
-- name: "ISFPGA: ACM/SIGDA International Symposium on Field-Programmable Gate Arrays"
-  domain: Semiconductor
-  continent: North America
-  location: "Monterey, USA"
-  dates: "March 14 to 16, 2027"
-  start: 2027-03-14
-  about: "The premier conference for research on FPGA technology, architecture, design tools and applications."
-  url: "https://www.isfpga.org/"
-
 - name: "DATE: Design, Automation and Test in Europe Conference"
   domain: Semiconductor
   continent: Europe
   location: "Dresden, Germany"
   dates: "March 22 to 24, 2027"
   start: 2027-03-22
-  about: "The main European event bringing together designers and design automation users, researchers and vendors in electronic systems design and test."
+  about: "The main European event bringing together designers and design automation users, researchers and vendors in electronic systems design and test. The 2027 edition is the 30th."
   url: "https://www.date-conference.com/"
   submission: "September 20, 2026"
+
+- name: "CICC: IEEE Custom Integrated Circuits Conference"
+  domain: Semiconductor
+  continent: North America
+  location: "San Diego, USA"
+  dates: "April 18 to 22, 2027"
+  start: 2027-04-18
+  about: "IEEE's premier conference on custom, analog and mixed-signal integrated circuit design, blending oral presentations, exhibits, panels and forums."
+  url: "https://www.ieee-cicc.org/"
 
 - name: "CLEO: Conference on Lasers and Electro-Optics"
   domain: Photonics
@@ -164,3 +186,8 @@
   start: 2027-05-02
   about: "The premier international forum uniting laser science, photonic technologies and their applications across research and industry."
   url: "https://cleoconference.org/"
+  speakers:
+    - "Brian W. Pogue (Plenary, Dartmouth College)"
+    - "John Dudley (Plenary, University of Franche-Comte)"
+    - "Farzana Khatri (Plenary, MIT)"
+    - "Andrew White (Plenary, University of Queensland)"
