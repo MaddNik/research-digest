@@ -11,7 +11,7 @@
 set -uo pipefail
 
 export HOME=/home/nik
-export PATH="/home/nik/.npm-global/bin:/usr/local/bin:/usr/bin:/bin"
+export PATH="/home/nik/.local/bin:/home/nik/.npm-global/bin:/usr/local/bin:/usr/bin:/bin"
 
 REPO="/home/nik/research-digest"
 OWNER="MaddNik"
