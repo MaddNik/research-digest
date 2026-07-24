@@ -146,7 +146,7 @@ PY
     BEFORE="$(find "$RM" -maxdepth 3 -name summary.html 2>/dev/null | sort -u)"
 
     PROMPT_TEXT="$(SRC="$SRC" LEVEL="$LEVEL" CAT="$CAT" envsubst '${SRC} ${LEVEL} ${CAT}' < "$PROMPT")"
-    OUT="$(claude -p "$PROMPT_TEXT" --model "$MODEL" --dangerously-skip-permissions --output-format text 2>&1)"
+    OUT="$(claude -p "$PROMPT_TEXT" --model "$MODEL" --dangerously-skip-permissions --output-format text < /dev/null 2>&1)"
     RC=$?
     printf '%s\n' "$OUT"
 
