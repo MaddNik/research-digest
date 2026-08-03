@@ -2,6 +2,18 @@
 # Regenerated from research-material; entries with a summaries/<slug>/
 # folder but no research-material source are preserved as-is.
 
+- slug: "distributed-point-functions-and-function-secret-sharing-2026-08-03"
+  title: "Distributed Point Functions and Function Secret Sharing"
+  url: "/summaries/distributed-point-functions-and-function-secret-sharing-2026-08-03/"
+  date: "2026-08-03"
+  category: "Crypto Distributed Point Functions"
+  pub: "July 2026"
+  publisher: "arXiv (cs.CR), preprint 2607.27696, submitted 30 July 2026"
+  meta_line: "arXiv (cs.CR), preprint 2607.27696, submitted 30 July 2026"
+  source_type: "PDF (text-layer), 24-page survey article"
+  source_url: "https://arxiv.org/abs/2607.27696"
+  pdf: ""
+  tags: ["distributed point functions", "function secret sharing", "DPF", "FSS", "homomorphic secret sharing", "pseudorandom correlation generators", "PIR", "private set intersection", "secure computation", "LPN", "survey", "concepts"]
 - slug: "recifhe-multi-level-fhe-compiler-2026-07-24"
   title: "Ciphertext- and Polynomial-Level Optimization for Fully Homomorphic Encryption (Recifhe)"
   url: "/summaries/recifhe-multi-level-fhe-compiler-2026-07-24/"
