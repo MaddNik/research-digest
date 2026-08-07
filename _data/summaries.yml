@@ -2,6 +2,18 @@
 # Regenerated from research-material; entries with a summaries/<slug>/
 # folder but no research-material source are preserved as-is.
 
+- slug: "correcting-modulus-switch-error-tfhe-bootstrapping-2026-08-07"
+  title: "Correcting the modulus switch error in TFHE bootstrapping for real-valued computation"
+  url: "/summaries/correcting-modulus-switch-error-tfhe-bootstrapping-2026-08-07/"
+  date: "2026-08-07"
+  category: "Tfhe Modulus Switch Correction"
+  pub: "2026"
+  publisher: "IACR ePrint 2026/1533"
+  meta_line: "IACR ePrint 2026/1533"
+  source_type: "PDF (text-layer)"
+  source_url: "https://eprint.iacr.org/2026/1533"
+  pdf: ""
+  tags: ["TFHE", "programmable bootstrapping", "modulus switching", "many-LUT", "Taylor expansion", "noise analysis", "numerical integration", "ODE", "real-valued FHE"]
 - slug: "distributed-point-functions-and-function-secret-sharing-2026-08-03"
   title: "Distributed Point Functions and Function Secret Sharing"
   url: "/summaries/distributed-point-functions-and-function-secret-sharing-2026-08-03/"
