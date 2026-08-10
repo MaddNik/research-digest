@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shuffling is Not Enough: Breaking Permutation-Based Model Confidentiality in Hybrid FHE Inference</title>
+<style>
+:root{--bg:#F3F5F4;--surface:#FFFFFF;--ink:#161A1C;--muted:#5C6670;--line:#DBE0DE;--accent:#0C8C80}
+@media (prefers-color-scheme:dark){:root{--bg:#0B0F12;--surface:#111619;--ink:#E7EEEA;--muted:#95A2A1;--line:#1F282C;--accent:#2CD4BE}}
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;line-height:1.5;margin:1rem 0}
+pre code{background:none;border:0;padding:0;border-radius:0;display:block;white-space:pre;font-size:13px}
+code{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:var(--surface);border-bottom:1px solid var(--line);font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:var(--accent);text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+#rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
+#rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
+a.rt-figref,a.rt-eqref{color:var(--accent);text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+body{counter-reset:rt-eq}
+mjx-container[display="true"]{position:relative;padding-right:2.4em}
+mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Deep Summaries</a><a href="https://github.com/JiseungKim90/permutation-confidentiality-experiments" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
+<header><h1>Shuffling is Not Enough: Breaking Permutation-Based Model Confidentiality in Hybrid FHE Inference</h1><p class="meta">IACR ePrint 2026/1527 (ESORICS 2026) &middot; <a href="https://github.com/JiseungKim90/permutation-confidentiality-experiments" target="_blank" rel="noopener noreferrer">full view &#8599;</a></p></header>
+<section><h2>Overview</h2>
+<p><strong>Hybrid FHE inference</strong> splits private inference between two parties: the server homomorphically
+evaluates each linear layer, the client decrypts the result, applies the nonlinearity in the clear, and
+re-encrypts for the next round. This avoids the cost of evaluating nonlinearities under FHE, but it hands the
+client a plaintext view of every intermediate layer output, which would let a curious client read the server's
+weights directly.</p>
+
+<p>To close that gap, a line of recent systems (<em>Safhire</em>, <em>STIP</em>, <em>Centaur</em>,
+<em>PermLLM</em>) uses <strong>permutation-based model confidentiality</strong>: the server permutes the output
+coordinates of each layer with a secret permutation before returning the ciphertext. Because ReLU commutes with
+coordinate permutation, the shuffled representation survives across rounds. The security intuition invoked is
+<strong>shuffle-model differential privacy</strong>: FHE decryption noise is treated as the local randomizer and
+the secret output permutation as the shuffler, so privacy should be amplified.</p>
+
+<p>Kim and Lee show this intuition is <strong>false in exactly the regime hybrid FHE inference requires</strong>.
+The paper's three contributions:</p>
+<ul>
+  <li><strong>An exact, query-tight recovery theorem.</strong> For a $d$-input linear layer on a known
+      quantization lattice of step $\gamma$, correctness forces the additive noise below $\gamma/2$; rounding
+      therefore removes <em>all</em> response-side randomness. With $d+1$ adaptive chosen queries the client
+      recovers a permutation-invariant layer summary exactly, and $d$ queries are necessary.</li>
+  <li><strong>The DP justification is doubly broken.</strong> Input DP and model confidentiality quantify
+      different objects (neighboring <em>inputs</em> under a fixed model vs. different <em>models</em> under
+      fixed queries), and the local-DP premise needed for shuffle amplification is <em>unattainable</em> under
+      correctness-bounded noise: it forces $\delta_0 \ge 1$.</li>
+  <li><strong>Concrete impact plus a sharp privacy/utility dilemma.</strong> All 21 linear layers of a
+      Safhire-style ResNet-20 are recovered with <strong>zero error</strong> from real TFHE transcripts using
+      5,712 queries; the same zero-error behavior holds on eight ImageNet-scale CNNs and on ViT-B/16. The leakage
+      supports fingerprinting, lineage attribution, and faster logit-based extraction, and any noise level large
+      enough to suppress it destroys inference accuracy.</li>
+</ul>
+
+<p><strong>Venue:</strong> ESORICS 2026 (IACR ePrint 2026/1527). <strong>Artifact:</strong>
+<code>https://github.com/JiseungKim90/permutation-confidentiality-experiments</code>.</p>
+</section>
+<section><h2>Background: the Safhire setting</h2>
+<p><strong>Plaintext lattice and correctness.</strong> Safhire follows the TFHE torus convention: plaintexts lie
+on $\mathbb{T}_p := \tfrac{1}{p}\mathbb{Z}/\mathbb{Z}$ with $p = 2^b$, typically $b \in \{8, 12, 16\}$. An RLWE
+ciphertext with additive noise $e$ decrypts correctly when</p>
+
+$$|e| < \frac{1}{2p}, \qquad \gamma := \frac{1}{p}, \qquad \Delta < \frac{\gamma}{2}. \tag{1}$$
+
+<p>Here $\gamma$ is the quantization step and $\Delta$ the correctness-bounded noise magnitude. Equation 1 is the
+single operational fact the whole attack rests on: decoded layer outputs are observed <em>on a known lattice</em>
+and perturbed by <em>less than half a lattice step</em>.</p>
+
+<p><strong>Batched protocol.</strong> Inference runs in $L$ rounds, one per linear layer. In round $r$ the server
+undoes the previous permutation with $\sigma_{r-1}^{-1}$, homomorphically evaluates $y = W_r x + b_r$, applies the
+round-$r$ output permutation $\sigma_r$, and returns the ciphertext. The client decrypts, applies coordinate-wise
+ReLU, and re-encrypts. Permutations are derived from a secret session seed, fixed within a session and
+re-randomized across sessions. The final layer is left <em>unshuffled</em> so the client can read the
+$\arg\max$ directly.</p>
+
+<p><strong>Threat model (adopted verbatim from Safhire).</strong> The server is honest-but-curious; the client may
+send arbitrary inputs and may try to reverse-engineer the model. There is no distributional restriction, no
+plaintext validation, and no zero-knowledge proof of well-formedness. Since the input encoding packs a flattened
+feature chunk into RLWE plaintext coefficients, the basis inputs $\{0, e_1, \dots, e_d\}$ used by the attack are
+admissible plaintext polynomials.</p>
+
+<p><strong>The shuffle-DP template.</strong> A mechanism $\mathcal{M}$ is $(\varepsilon, \delta)$-DP if
+$\Pr[\mathcal{M}(D) \in S] \le e^{\varepsilon}\Pr[\mathcal{M}(D') \in S] + \delta$ for all neighboring
+$D, D'$ and measurable $S$. In the shuffle model, $n$ local randomizers privatize their inputs and a trusted
+shuffler applies a uniform permutation; if each randomizer is $(\varepsilon_0, \delta_0)$-local DP and the
+parameters lie in the right regime, the shuffled mechanism enjoys amplified central DP improving roughly as
+$O(\varepsilon_0/\sqrt{n})$. Permutation-based defenses instantiate this by casting FHE decryption noise as the
+local randomizer and the secret output permutation as the shuffler.</p>
+</section>
+<section><h2>The scheme class: permutation-based protection</h2>
+<p><strong>Notation.</strong> For $v \in \mathbb{R}^m$, $\mathrm{sort}(v)$ arranges entries in non-decreasing
+order. For a linear layer $W \in \mathbb{R}^{m \times d}$, $b \in \mathbb{R}^m$, the <em>sorted column
+spectrum</em> and the <em>ordered family</em> are</p>
+
+$$s_i(W, b) := \mathrm{sort}(W_{:,i} + b), \qquad
+\mathcal{L}(W, b) := \bigl(s_1(W,b), \dots, s_d(W,b)\bigr). \tag{2}$$
+
+<p>$\mathcal{L}(W,b)$ is precisely the information preserved under an output-channel permutation.</p>
+
+<p><strong>Definition 1 (Permutation-Based Protection).</strong> Let $\mathcal{X} \subseteq \mathbb{R}^d$ be a
+query space containing $\{0, e_1, \dots, e_d\}$. A scheme is a pair $\Pi = (\mathsf{Query}, \mathsf{Respond})$
+where $\mathsf{Query}(x)$ produces a well-formed query object $q$, and $\mathsf{Respond}(W, b, q)$ determines an
+effective input $x^\star \in \mathbb{R}^d$ and returns a response from which the client obtains</p>
+
+$$\tilde{y} = \pi\bigl(W x^\star + b\bigr) + \eta,
+\qquad \pi \in S_m \ \text{secret}, \qquad \lVert \eta \rVert_\infty < \Delta. \tag{3}$$
+
+<p>If the scheme uses a hidden input permutation then $x^\star = \rho(x)$ for a secret $\rho \in S_d$; otherwise
+$x^\star = x$. The scheme has quantization step $\gamma$ if for every $x \in \{0, e_1, \dots, e_d\}$ the vector
+$W x^\star + b$ lies on a lattice of minimum spacing $\gamma$.</p>
+
+<p><strong>Remark 1 (how the definition binds).</strong></p>
+<ul>
+  <li>Definition 1 subsumes the Safhire round-$r$ interface via $x^\star = \sigma_{r-1}^{-1}(x)$ and
+      $\pi = \sigma_r$, with $\sigma_0 = \mathrm{id}$ in the first round; $x^\star = x$ recovers the
+      output-shuffling-only interface.</li>
+  <li>The client issues adaptive chosen queries $x^{(1)}, x^{(2)}, \dots \in \mathcal{X}$ and observes the
+      decoded responses $\tilde{y}^{(t)}$.</li>
+  <li>The <em>zero query</em> guarantees $b$ lies on the same lattice as the basis responses; if the relevant
+      values lie in $\tfrac{1}{p}\mathbb{Z}$ one may take $\gamma = 1/p$.</li>
+  <li>In FHE instantiations $\mathsf{Query}$ is client-side encryption and $\mathsf{Respond}$ returns a ciphertext
+      whose decryption yields $\tilde{y}$.</li>
+</ul>
+
+<p>Three hypotheses are isolated for later reuse: <strong>(P)</strong> the client observes shuffled, noisy outputs
+of $Wx + b$; <strong>(N)</strong> the noise satisfies the correctness bound on a known quantization lattice;
+<strong>(C)</strong> the client may issue chosen-input queries. A scheme that augments queries with zero-knowledge
+well-formedness proofs would violate (C) and fall outside the definition; none of the schemes studied does so.</p>
+</section>
+<section><h2>Main result: exact sorted-spectrum recovery</h2>
+<p><strong>Theorem 1 (Exact Sorted-Spectrum Recovery).</strong> Let $\Pi$ satisfy Definition 1 with noise bound
+$\Delta$ and quantization step $\gamma \ge 2\Delta$. Conditioned on $\lVert \eta \rVert_\infty < \Delta$, there is
+an efficient adversary $\mathcal{A}$ that, using $d+1$ adaptive queries, recovers $\mathrm{sort}(b)$ from the zero
+query and the sorted-spectrum multiset $\{\!\{\mathrm{sort}(W_{:,j} + b)\}\!\}_{j=1}^{d}$ from the $d$ basis
+queries $e_1, \dots, e_d$. Recovery is <em>exact on every noise realization</em> satisfying the bound.</p>
+
+<p><strong>Proof mechanism.</strong> Let $Q_\gamma$ denote rounding to the nearest $\gamma$-lattice point and
+define the <em>round-then-sort</em> operator</p>
+
+$$\mathrm{RTS}(\tilde{y}) := \mathrm{sort}\bigl(Q_\gamma(\tilde{y})\bigr). \tag{4}$$
+
+<p><em>Bias recovery:</em> for $x = 0$ the response is $\tilde{y} = \pi(b) + \eta$; since $b$ lies on the
+$\gamma$-lattice and $|\eta_j| < \Delta \le \gamma/2$, rounding recovers $\pi(b)$ exactly and sorting yields
+$\mathrm{sort}(b)$. <em>Spectrum recovery:</em> for $x = e_i$ the effective input is $x^\star = \rho(e_i) =
+e_{\rho(i)}$, so the server computes $W_{:,\rho(i)} + b$ and the same round-then-sort argument recovers
+$\mathrm{sort}(W_{:,\rho(i)} + b)$ exactly. As $i$ ranges over $[d]$ and $\rho$ is a bijection, the adversary
+obtains the full multiset.</p>
+
+<p><strong>Why this is distribution-agnostic.</strong> All response-side randomness is eliminated by rounding, so
+the recovered output is a deterministic function of $W$ and $b$. The guarantee depends only on
+$\lVert \eta \rVert_\infty < \Delta$ and is therefore independent of the output-permutation strategy, the noise
+law, and any DP parameter attached to the scheme. A DP parameter $\varepsilon$ constrains the ratio of output
+distributions across neighboring inputs <em>for a fixed model</em>, and thus touches no quantity the attack uses.</p>
+
+<p><strong>When $\rho = \mathrm{id}$ the leak is stronger.</strong> In Safhire's first round no hidden input
+permutation is applied, so the recovered spectra are labeled by the queried column indices: the adversary obtains
+the full ordered family $\mathcal{L}(W, b)$, not merely its underlying multiset.</p>
+
+<p><strong>Proposition 1 (Query Complexity Tightness).</strong> With $b = 0$, any adaptive adversary that recovers
+$\{\!\{\mathrm{sort}(W_{:,j})\}\!\}_{j=1}^{d}$ on every instance needs at least $d$ queries. Proof: with
+$k \le d-1$ queries the span $V = \mathrm{span}\{x^{(1)}, \dots, x^{(k)}\}$ has dimension $< d$, so there is a
+unit $v \perp x^{(t)}$ for all $t$. Setting $W' := W + u v^{\mathsf{T}}$ for nonzero $u$ gives
+$W' x^{(t)} = W x^{(t)} + u\,(v^{\mathsf{T}} x^{(t)}) = W x^{(t)}$, so the two models are view-identical under any
+permutation strategy and noise realization, yet for generic $W, u$ their sorted-spectrum multisets differ.
+Combined with Theorem 1 this pins the <strong>exact minimax query complexity: $d$ for bias-free layers,
+$d+1$ when $\mathrm{sort}(b)$ must also be recovered.</strong></p>
+
+<p><strong>Corollary 1 (Safhire's first round).</strong> At precision $p$, $\gamma = 1/p$ and
+$\Delta = 1/(2p)$, so $\gamma = 2\Delta$ and the condition $\lVert \eta \rVert_\infty < \gamma/2$
+<em>is exactly the FHE correctness condition</em>. Under standard lattice-based parameters it fails only with
+negligible probability, typically below $2^{-128}$. Hence over at most $\mathrm{poly}(\lambda)$ queries exact
+recovery holds with probability $1 - \mathrm{negl}(\lambda)$.</p>
+
+<p><strong>Tightness of the noise bound (Proposition 6, Appendix B).</strong> If $\Delta > \gamma/2$, no
+deterministic lattice-valued algorithm can guarantee exact recovery. Fix
+$\eta^\star \in (\gamma/2, \min(\gamma, \Delta))$; instance A with true value $k\gamma$ and noise $\eta^\star$
+and instance B with true value $(k{+}1)\gamma$ and noise $\eta^\star - \gamma$ (where
+$|\eta^\star - \gamma| = \gamma - \eta^\star < \gamma/2 < \Delta$) produce the identical observation
+$o = k\gamma + \eta^\star$, forcing any deterministic algorithm to err on one of them. So $\gamma \ge 2\Delta$ is
+exactly the right hypothesis.</p>
+</section>
+<section><h2>Why the differential-privacy justification collapses</h2>
+<p>The paper attacks the DP argument on two independent fronts: it is aimed at the wrong object, and its premise
+cannot be met.</p>
+
+<h3>Front 1: input DP is orthogonal to model confidentiality</h3>
+
+<p>For a fixed model $W$, input DP bounds the ratio of output distributions induced by two neighboring inputs
+$x, x'$. Model confidentiality concerns the distinguishability of two <em>different models</em> under a fixed
+input. The two quantifications are logically independent.</p>
+
+<p><strong>Definition 2 (Model confidentiality game).</strong> $\mathcal{A}$ selects challenge models
+$(W_0, b_0), (W_1, b_1)$ whose sorted-spectrum multisets differ,
+$\{\!\{s_i(W_0, b_0)\}\!\} \neq \{\!\{s_i(W_1, b_1)\}\!\}$, the challenger samples
+$\beta \xleftarrow{\$} \{0,1\}$ and grants oracle access to $\Pi.\mathsf{Respond}(W_\beta, b_\beta, \cdot)$;
+$\mathcal{A}$ issues adaptive queries and outputs $\hat{\beta}$. The advantage is</p>
+
+$$\mathrm{Adv}^{\mathrm{mc}}_{\Pi, \mathcal{A}} := \bigl|\,2\Pr[\hat{\beta} = \beta] - 1\,\bigr|. \tag{5}$$
+
+<p><strong>Proposition 2.</strong> For $\gamma \ge 2\Delta$ there is an adversary issuing $d$ chosen queries with
+$\mathrm{Adv}^{\mathrm{mc}}_{\Pi, \mathcal{A}} = 1$, <em>regardless of any input DP guarantee</em> satisfied by
+$\Pi.\mathsf{Respond}$. The $d$ basis queries reveal $M_\beta := \{\!\{\mathrm{sort}(W_{\beta,:,j} +
+b_\beta)\}\!\}_{j=1}^d$ by Theorem 1 (independently of the hidden $\rho$, since $\rho$ is a bijection on $[d]$),
+and $M_0 \neq M_1$ by construction, so the adversary outputs the unique matching bit.</p>
+
+<h3>Front 2: the local-DP premise is unattainable</h3>
+
+<p><strong>Proposition 3.</strong> Let $\mathcal{M}_k(x) = (Wx + b)_k + \eta_k$ be the per-coordinate output, with
+each noise coefficient almost surely in $(-B, B)$ where $B < \gamma/2$ (the correctness-conditioned bounded-noise
+regime). Suppose for some coordinate $k$ the DP sensitivity satisfies</p>
+
+$$\Delta f := \bigl|(Wx + b)_k - (Wx' + b)_k\bigr| \ \ge\ \gamma. \tag{6}$$
+
+<p>Then any $(\varepsilon_0, \delta_0)$-DP guarantee for $\mathcal{M}_k$ on the pair $(x, x')$ with finite
+$\varepsilon_0$ necessarily satisfies $\delta_0 \ge 1$; equivalently, $\mathcal{M}_k$ cannot be
+$(\varepsilon_0, \delta_0)$-DP for any $\delta_0 < 1$. (Note $\Delta f$ is DP sensitivity, unrelated to the noise
+bound $\Delta$.)</p>
+
+<p><em>Proof sketch.</em> With $c_x := (Wx+b)_k$, supports satisfy $I_x \subseteq [c_x - B, c_x + B]$ and
+$I_{x'} \subseteq [c_{x'} - B, c_{x'} + B]$. Take $S := I_x \setminus I_{x'}$. The DP condition on $S$ gives
+$\Pr[\mathcal{M}_k(x) \in S] \le e^{\varepsilon_0}\Pr[\mathcal{M}_k(x') \in S] + \delta_0$, and
+$S \cap I_{x'} = \emptyset$ makes the middle term zero, so $\Pr[\mathcal{M}_k(x) \in S] \le \delta_0$. Since
+$B < \gamma/2$, a gap $\Delta f \ge \gamma$ implies $\Delta f > 2B$, so the two intervals are disjoint,
+$S = I_x$, and $\Pr[\mathcal{M}_k(x) \in S] = 1$. Hence $\delta_0 \ge 1$.</p>
+
+<p>The proof uses only the almost-sure support bound, needing no density or absolute continuity, so it applies
+equally to discretely supported RLWE noise and to almost-surely bounded continuous surrogates.</p>
+
+<p><strong>Remark 2 (beyond $(\varepsilon_0, \delta_0)$-DP).</strong> An unbounded Gaussian falls outside the
+hypothesis since then $I_x = \mathbb{R}$ and the disjoint-support argument fails; but any Gaussian wide enough to
+overlap adjacent lattice points already violates $|\eta| < \gamma/2$ with non-negligible probability. Within the
+bounded-noise regime, disjoint supports give total variation
+$\mathrm{TV}(\mathcal{M}_k(x), \mathcal{M}_k(x')) = 1$, so <em>any</em> divergence-based privacy notion that
+upper-bounds total variation becomes infinite or vacuous on such neighbors. The obstruction extends to group
+privacy, since a single lattice-step gap already gives $\Delta f > 2B$.</p>
+
+<p><strong>The gap is unavoidable in Safhire.</strong> For the basis queries of Theorem 1, moving from $x = 0$ to
+$x = e_i$ changes the $k$-th output coordinate by an entry of $W_{:,i}$, which lies on the lattice of spacing
+$\gamma$. So any scheme with at least one nonzero weight entry admits neighbors to which Proposition 3 applies,
+and $\delta_0 \ge 1$ means <em>no</em> choice of shuffle size $n$, target $\delta$, or Gaussian-surrogate noise
+restores the guarantee. Restricting the amplification analysis to neighbors with $\Delta f < \gamma$ is
+unavailable: Safhire's threat model places no bound on $\lVert x \rVert$. Even an artificially
+sensitivity-restricted variant would recover only an <em>input-privacy</em> guarantee, which Proposition 2 shows
+is orthogonal to model confidentiality.</p>
+</section>
+<section><h2>Noise/utility tradeoff: a distribution-free lower bound</h2>
+<p>The natural remedy is to relax the correctness bound and inject larger noise, trading decryption accuracy for
+defense. The paper establishes a distribution-free lower bound on how much noise that would take.</p>
+
+<p><strong>Proposition 4 (Rounding error under relaxed noise).</strong> With relaxed bound $B > 0$ (not
+necessarily $B \le \gamma/2$) and $\tilde{s}_i := \mathrm{sort}(Q_\gamma(\pi(W_{:,i} + b) + \eta))$, for every
+column $i$ and every realization with $\lVert \eta \rVert_\infty < B$,</p>
+
+$$\lVert \tilde{s}_i - s_i(W, b) \rVert_\infty \ \le\ \tilde{B} := \gamma \left\lfloor \frac{B}{\gamma} +
+\frac{1}{2} \right\rfloor \ \le\ B + \frac{\gamma}{2}. \tag{7}$$
+
+<p>The proof writes $v := \pi(W_{:,i} + b) \in \gamma\mathbb{Z}^m$, bounds
+$|Q_\gamma(v_j + \eta_j) - v_j| \le \tilde{B}$ coordinatewise, and uses the facts that $\mathrm{sort}$ is
+invariant under $\pi$ and that order statistics are non-expansive in $\ell_\infty$.</p>
+
+<p><strong>Theorem 2 (Noise/Utility Tradeoff).</strong> Let $\mathcal{F}$ be a finite model family and
+$\phi: \mathcal{L} \mapsto \phi(\mathcal{L}) \in (\mathbb{R}^k, \lVert \cdot \rVert_q)$ a fingerprint map
+satisfying the Lipschitz condition</p>
+
+$$\lVert \phi(\mathcal{L}) - \phi(\mathcal{L}') \rVert_q \ \le\ L_\phi \cdot \max_i \lVert s_i - s_i'
+\rVert_\infty \quad \text{for some } L_\phi > 0. \tag{8}$$
+
+<p>Define the intrinsic separation
+$\Delta^{\phi}_{\mathcal{F}} := \min_{M \neq M' \in \mathcal{F}} \lVert \phi(\mathcal{L}(M)) -
+\phi(\mathcal{L}(M')) \rVert_q$, and let $\mathcal{A}_\phi$ be the round-then-sort nearest-neighbor classifier
+under $\phi$ given the $d+1$ queries $x = 0, e_1, \dots, e_d$. Then, independently of the noise distribution:</p>
+
+$$\text{(i)}\quad L_\phi \tilde{B} < \frac{\Delta^{\phi}_{\mathcal{F}}}{2}
+\ \Longrightarrow\ \mathcal{A}_\phi \text{ identifies every } M \in \mathcal{F} \text{ on every realization};
+\qquad
+\text{(ii)}\quad \text{defeating } \mathcal{A}_\phi \text{ requires }
+B \ \ge\ \max\left\{0,\ \frac{\Delta^{\phi}_{\mathcal{F}}}{2 L_\phi} - \frac{\gamma}{2}\right\}. \tag{9}$$
+
+<p>Part (i) follows from the reverse triangle inequality: $\lVert \phi(\tilde{\mathcal{L}}) -
+\phi(\mathcal{L}(M')) \rVert_q \ge \Delta^{\phi}_{\mathcal{F}} - L_\phi \tilde{B} > L_\phi \tilde{B} \ge
+\lVert \phi(\tilde{\mathcal{L}}) - \phi(\mathcal{L}) \rVert_q$. Part (ii) is the contrapositive combined with
+Equation 7.</p>
+
+<p><strong>Remark 3 (the concrete fingerprint).</strong> Section 5 uses the column-norm fingerprint</p>
+
+$$\phi(\mathcal{L}) := \mathrm{sort}\bigl(\lVert s_1 \rVert_2, \dots, \lVert s_d \rVert_2\bigr)
+\qquad \text{with } \ell_2 \text{ nearest neighbor}, \tag{10}$$
+
+<p>which satisfies Equation 8 with $L_\phi = \sqrt{md}$: if $\max_i \lVert \tilde{s}_i - s_i \rVert_\infty \le e$
+then $|\lVert \tilde{s}_i \rVert_2 - \lVert s_i \rVert_2| \le \sqrt{m}\,e$ per column (via
+$\lVert \cdot \rVert_2 \le \sqrt{m} \lVert \cdot \rVert_\infty$), and non-expansiveness of $\mathrm{sort}$
+together with $\lVert \cdot \rVert_2 \le \sqrt{d} \lVert \cdot \rVert_\infty$ on $\mathbb{R}^d$ gives
+$\lVert \phi(\tilde{\mathcal{L}}) - \phi(\mathcal{L}) \rVert_2 \le \sqrt{md}\,e$. For ResNet-20 <code>conv1</code>
+with $m = 16$, $d = 27$ at 8-bit precision and $\Delta^{\phi}_{\mathcal{F}} \approx 0.298$, Theorem 2 yields
+$B \ge 2.7\,(\gamma/2)$.</p>
+
+<p>The authors are explicit that this bound <em>certifies attack success below the threshold, not defender safety
+above it</em>. The certified $2.7\,(\gamma/2)$ sits two to three orders of magnitude below the empirical
+transition at $10^2$–$10^3\,(\gamma/2)$, because the worst-case $L_\phi = \sqrt{md}$ assumes adversarial alignment
+across all $m$ coordinates whereas symmetric noise gives a tighter $\sqrt{m}$ scaling. Taken together:
+Theorem 1 covers $B < \gamma/2$, $\delta_0 \ge 1$ rules out the shuffle route, and Theorem 2 ties brute-force
+noise to intrinsic fingerprint separation.</p>
+</section>
+<section><h2>The chosen-input attack on multi-round Safhire</h2>
+<p><strong>Multi-round layers.</strong> In round $r$ the server applies $\sigma_{r-1}^{-1}$ before evaluating
+layer $r$ and $\sigma_r$ afterward, so a basis query $e_i$ in round $r$ probes column $\sigma_{r-1}^{-1}(i)$ of
+$W_r$. Because $\sigma_{r-1}$ is fixed within a session, the $d$ basis queries in round $r$ collectively probe
+every column of $W_r$ exactly once, keeping the budget at $d+1$ per layer.</p>
+
+<p><strong>Proposition 5 (fresh permutation per request).</strong> If $\sigma_{r-1}$ is resampled independently for
+each inference request, all distinct sorted spectra of $W_r$ can still be recovered with $O(d \log d)$ queries.
+Precisely, recovery succeeds with probability at least $1 - e^{-c}$ whenever the query count $T$ satisfies</p>
+
+$$T \ \ge\ d\,(\ln d^{*} + c), \qquad d^{*} \le d \ \text{the number of distinct spectra}. \tag{11}$$
+
+<p>This is a coupon-collector argument: each query probes a uniformly random column, a distinct spectrum $s$ of
+multiplicity $m_s$ is hit with probability $m_s/d \ge 1/d$, so $T$ independent queries all miss $s$ with
+probability at most $(1 - 1/d)^T \le e^{-T/d}$; a union bound over $d^{*}$ spectra gives
+$d^{*} e^{-T/d} \le e^{-c}$. Duplicate recoveries are removed by equality testing on the sorted vectors.</p>
+
+<p>On trained ResNet-20 the authors observe $d^{*} = d$ in every layer (no duplicate spectra), so Equation 11
+gives roughly 5,400 queries for the widest layer ($d = 576$, $c = 3$). In simulation the
+independently-resampled-permutation attack converges with $T_{\mathrm{emp}}/T_{\mathrm{theory}} \in [0.58, 0.87]$
+over 5 trials per layer.</p>
+
+<p><strong>What exactly is recovered.</strong> Per layer the adversary obtains $\mathcal{L}(W, b)$ and hence
+<em>every permutation-invariant statistic derived from it</em>: the affine column norms
+$\lVert W_{:,i} + b \rVert_2$ and the empirical value distribution of each column. For bias-free layers, where
+$b = 0$ as is standard under batch normalization, this reduces to the exact weight multisets
+$\mathrm{sort}(W_{:,i})$, their column norms, and the Frobenius norm $\lVert W \rVert_F$. Because $\mathrm{sort}$
+does not commute with subtraction, the bias cannot be disentangled from the weights in general, but this residual
+ambiguity affects none of the downstream applications.</p>
+
+<p>Safhire treats leakage of only the weight histogram as benign residual leakage bounded by a shuffle-model DP
+guarantee. Proposition 2 shows that guarantee is formulated in the wrong direction and Proposition 3 shows its
+local-DP premise fails under the correctness bound, so the residual-leakage defense has no formal backing.</p>
+
+<p><strong>Comparison with prior extraction.</strong> Classical extraction attacks need many queries because
+nonlinearities such as softmax obscure the linear layers: the cryptanalytic attack of Carlini et al. uses
+$2^{18.5}$–$2^{21.5}$ queries on 4K–100K-parameter MLPs. SEEK extracts approximate weights from an
+11.7M-parameter ResNet-18 over HE/MPC using fewer than 50 queries per parameter (about $5 \times 10^{8}$ total)
+with relative error about $3 \times 10^{-4}$; its leverage is arbitrary intermediate-feature shifts, not a
+permuted linear snapshot, so it does not target Definition 1. This attack needs only $d+1$ queries per layer,
+totaling 5,712 on a 0.27M-parameter ResNet-20, because permutation-based protection directly exposes a sorted
+linear-layer snapshot.</p>
+</section>
+<section><h2>Experimental validation</h2>
+<p>Validation runs at two levels of concreteness: a deployment-faithful TFHE transcript replay, and simulated
+per-layer queries on ImageNet-pretrained architectures.</p>
+
+<h3>TFHE transcript replay (Table 1)</h3>
+
+<p>To rule out simulation artifacts, the attack is replayed end-to-end through <strong>Concrete v2.11</strong>,
+the TFHE backend of Safhire, at $p = 256$. Target: ResNet-20 on CIFAR-10 with 21 bias-free convolutional layers
+after BN folding, 0.27M parameters, mean test accuracy 82.8%, per-model budget
+$\sum_{l=1}^{21}(d_l + 1) = 5{,}712$. Total 11,424 encrypted queries (5,712 per regime), run under both a fixed
+permutation and a fresh-per-query permutation. <strong>Maximum recovery error is 0 for every layer in both
+regimes.</strong></p>
+
+<table>
+<thead><tr><th>Layer shape ($m \times d$)</th><th># layers</th><th>$d+1$</th><th>Total queries</th></tr></thead>
+<tbody>
+<tr><td>$16 \times 27$</td><td>1</td><td>28</td><td>28</td></tr>
+<tr><td>$16 \times 144$</td><td>6</td><td>145</td><td>870</td></tr>
+<tr><td>$32 \times 16$</td><td>1</td><td>17</td><td>17</td></tr>
+<tr><td>$32 \times 144$</td><td>1</td><td>145</td><td>145</td></tr>
+<tr><td>$32 \times 288$</td><td>5</td><td>289</td><td>1,445</td></tr>
+<tr><td>$64 \times 32$</td><td>1</td><td>33</td><td>33</td></tr>
+<tr><td>$64 \times 288$</td><td>1</td><td>289</td><td>289</td></tr>
+<tr><td>$64 \times 576$</td><td>5</td><td>577</td><td>2,885</td></tr>
+<tr><td><strong>Total (21 layers)</strong></td><td>21</td><td>-</td><td><strong>5,712</strong></td></tr>
+<tr><td><strong>Max error (all layers)</strong></td><td>-</td><td>-</td><td><strong>0</strong></td></tr>
+</tbody>
+</table>
+
+<h3>Architecture-agnostic ImageNet validation (Table 2)</h3>
+
+<p>Eight torchvision ImageNet-pretrained models, 600 convolutional layers in total, up to 58M parameters, largest
+layer of shape $2048 \times 4608$. <strong>Every layer exhibits zero recovery error at all three precision levels
+(4-, 8-, 12-bit) and under all six bounded noise distributions.</strong></p>
+
+<table>
+<thead><tr><th>Architecture</th><th>Layers</th><th>Parameters</th></tr></thead>
+<tbody>
+<tr><td>ResNet-50</td><td>53</td><td>23,454,912</td></tr>
+<tr><td>ResNet-101</td><td>104</td><td>42,382,016</td></tr>
+<tr><td>ResNet-152</td><td>155</td><td>57,992,384</td></tr>
+<tr><td>VGG-16</td><td>13</td><td>14,710,464</td></tr>
+<tr><td>DenseNet-121</td><td>120</td><td>6,870,208</td></tr>
+<tr><td>MobileNet-V2</td><td>52</td><td>2,189,760</td></tr>
+<tr><td>EfficientNet-B0</td><td>81</td><td>3,956,192</td></tr>
+<tr><td>ConvNeXt-Tiny</td><td>22</td><td>1,877,472</td></tr>
+</tbody>
+</table>
+
+<p><strong>Transformers.</strong> The same pipeline applied to the 37 linear layers of torchvision ViT-B/16 with
+<code>IMAGENET1K_V1</code> weights (86M parameters) likewise yields max error $= 0$ at $p = 256$. Those 37 layers
+are exactly the attention query/key/value and output projections plus the MLP layers of the transformer blocks.
+Because the same linear primitives underlie language transformers, including the model targeted by PermLLM, the
+recovery applies without modification.</p>
+
+<p><strong>Additional checks (Appendix C).</strong> Zero-error recovery is also confirmed for randomly initialized
+models, for six bounded noise distributions, and for MLPs with nonzero bias. The bias case is validated on a
+two-layer MNIST MLP (97.7% test accuracy, <code>fc1</code> $128 \times 784$, <code>fc2</code> $64 \times 128$,
+8-bit): for every column $\mathrm{sort}(W_{:,i} + b) \neq \mathrm{sort}(W_{:,i}) + \mathrm{sort}(b)$, confirming
+the bias cannot be separated from the recovered multiset, while round-then-sort still recovers
+$\mathrm{sort}(W_{:,i} + b)$ exactly on all columns of both layers.</p>
+
+<p><strong>Training setup (Appendix A).</strong> The 20 ResNet-20 checkpoints use SGD with learning rate 0.1,
+momentum 0.9, weight decay $10^{-4}$, <code>MultiStepLR</code> milestones at epochs 5 and 8, batch size 128,
+10 epochs, seeds $0, \dots, 19$, giving mean test accuracy 82.8%. Theorem 1 is deterministic under the correctness
+bound, so zero-error recovery does not depend on teacher accuracy; longer training affects only the
+fingerprint-separation constant $\Delta^{\phi}_{\mathcal{F}}$. All 21 convolution modules use
+<code>bias=False</code>, so before BN folding $b = 0$ and the raw convolution reduces to the exact weight
+multiset. BN layers are folded into the preceding convolution by the standard deployment transform</p>
+
+<pre><code>W  ->  gamma_BN * W / sigma_BN
+b  ->  gamma_BN * (mu_conv - mu_BN) / sigma_BN + beta_BN
+</code></pre>
+
+<p>(the paper reuses the symbol $\gamma$ for the BN scale here; it is distinct from the quantization step
+$\gamma = 1/p$). The recovered object is therefore the folded affine pair $(W', b')$ that the client actually sees
+as the layer output. Residual branches $y = F(x) + x$ are probed branchwise, consistent with Safhire's per-layer
+ciphertext reply pattern. Per-layer input dimensions $d_l$ range from 16 (<code>layer2.0.shortcut</code>) to 576
+(<code>layer3.2.conv2</code>).</p>
+</section>
+<section><h2>Practical impact of sorted-spectrum leakage</h2>
+<p>The defender's residual claim is that losing column labels renders the recovered multisets benign, since the
+weight matrix cannot be reconstructed even up to row and column permutations. The paper argues this substantially
+understates the leakage: many security-relevant quantities are permutation-invariant and hence fully determined by
+$\mathcal{L}(W, b)$ - column norms, the per-column empirical distributions $s_i(W, b)$, and the weight-value
+histogram. Three concrete consequences follow.</p>
+
+<h3>Fingerprinting</h3>
+
+<p>Independently trained models with the same architecture converge to different local minima under different
+seeds, so their sorted column spectra are deterministically distinct. Using the 20 ResNet-20 checkpoints and the
+<code>conv1</code> column-norm fingerprint of Equation 10, the within-model distance is <strong>zero across all
+noise realizations</strong> (recovery is exact), while the minimum between-model distance is
+$\Delta^{\phi}_{\mathcal{F}} = 0.298$. All $\binom{20}{2} = 190$ pairs are perfectly separable. On CIFAR-100 the
+same fingerprint gives $\Delta^{\phi}_{\mathcal{F}} = 0.565$ after 200 epochs, again separating all 190 pairs.
+Each pair instantiates Definition 2 empirically: the round-then-sort adversary of Proposition 2 achieves
+$\mathrm{Adv}^{\mathrm{mc}} = 1$ on all 190 challenge pairs using $d$ basis queries, or a <em>single</em> query in
+the first-round setting where $\rho = \mathrm{id}$. Because $\phi$ is column-permutation invariant, the
+multiset-level recovery of Theorem 1 suffices; the stronger labeled recovery is unnecessary.</p>
+
+<h3>Lineage detection</h3>
+
+<p>Fine-tuning perturbs weights incrementally, so a child's sorted column spectrum stays closer to its parent's
+than to an independently trained checkpoint's. Taking 5 of the 20 checkpoints as bases, fine-tuning three children
+per base (mild, moderate, aggressive regimes), and classifying each child against all 20 bases by $\ell_2$
+nearest-neighbor search on sorted column norms concatenated across three convolutional layers gives separation
+ratios (minimum between-base distance over maximum within-base distance) of <strong>26.7, 6.0, and 1.59</strong>.
+All exceed 1, yielding 15/15 correct attributions and zero false positives over 285 non-lineage pairs.</p>
+
+<p>At ImageNet scale, the same fingerprint on torchvision ResNet-50 V1 and V2 plus a lineage variant
+$V_1^{\mathrm{ft}}$ (V1 fine-tuned for two epochs on Imagenette) gives
+$\lVert \phi(V_1) - \phi(V_2) \rVert_2 = 1106.43$ versus
+$\lVert \phi(V_1) - \phi(V_1^{\mathrm{ft}}) \rVert_2 = 1.38$, an approximate <strong>800:1 lineage-to-non-lineage
+distance ratio</strong> on a 25.5M-parameter backbone. Since $V_1^{\mathrm{ft}}$ stays in $V_1$'s fine-tuning
+neighborhood, $\lVert \phi(V_2) - \phi(V_1^{\mathrm{ft}}) \rVert_2$ agrees with
+$\lVert \phi(V_1) - \phi(V_2) \rVert_2$ to four significant digits.</p>
+
+<h3>Accelerated distillation (Table 4)</h3>
+
+<p>Adding the recovered spectral prior to standard logit distillation raises student accuracy by up to
+<strong>3.1 percentage points</strong> over the logit-only baseline. Four variants differ only in the prior drawn
+from $\mathcal{L}(W, b)$: <em>Baseline</em> (logits only), <em>First</em> ($\mathrm{sort}(W_{:,i})$ from
+<code>conv1</code>), <em>Col-norms</em> (column norms across all 21 conv layers), and <em>Full</em> (column norms
+plus per-layer weight-value remapping). Teacher accuracies: 82.92% (ResNet-20), 82.47% (ResNet-56); mean $\pm$ std
+over 10 seeds.</p>
+
+<table>
+<thead><tr><th>Architecture</th><th>$q$</th><th>Baseline</th><th>First</th><th>Col-norms</th><th>Full</th></tr></thead>
+<tbody>
+<tr><td rowspan="3">ResNet-20</td><td>1,000</td><td>47.21 &plusmn; 1.21</td><td>48.60 &plusmn; 1.51</td><td>50.09 &plusmn; 0.94</td><td>51.11 &plusmn; 1.06</td></tr>
+<tr><td>2,000</td><td>56.16 &plusmn; 1.60</td><td>58.84 &plusmn; 1.20</td><td>59.87 &plusmn; 0.91</td><td>60.07 &plusmn; 0.82</td></tr>
+<tr><td>5,000</td><td>71.58 &plusmn; 1.67</td><td>72.71 &plusmn; 2.14</td><td>74.66 &plusmn; 0.50</td><td>74.12 &plusmn; 0.97</td></tr>
+<tr><td rowspan="2">ResNet-56</td><td>2,000</td><td>53.28 &plusmn; 1.68</td><td>53.60 &plusmn; 1.10</td><td>55.38 &plusmn; 1.37</td><td>54.53 &plusmn; 1.64</td></tr>
+<tr><td>5,000</td><td>70.99 &plusmn; 1.45</td><td>72.46 &plusmn; 2.07</td><td>73.50 &plusmn; 0.92</td><td>72.53 &plusmn; 1.10</td></tr>
+</tbody>
+</table>
+
+<p>On ResNet-20, <em>Full</em> is strictly best at $q \le 2{,}000$ and <em>Col-norms</em> becomes competitive at
+$q = 5{,}000$; on ResNet-56 <em>Col-norms</em> already matches or exceeds <em>Full</em> at both budgets. A
+<em>Scrambled</em> control that replaces teacher column norms with those of an independently trained model reaches
+$74.02 \pm 1.10$ at $q = 5{,}000$, within one standard deviation of <em>Col-norms</em>, indicating the gain is
+largely structural rather than teacher-specific. Students are trained from scratch with SGD (LR 0.05, momentum
+0.9, weight decay $10^{-4}$, cosine annealing, 100 epochs, batch 128), KL on softmax logits at $T = 4$, and
+column-norm regularizer weight $\lambda = 5$ for <em>Col-norms</em>/<em>Full</em>; query budgets are drawn from a
+fixed 5,000-image random subset, evaluated on the 10,000-image test set.</p>
+</section>
+<section><h2>The privacy/utility dilemma</h2>
+<p>Safhire suggests increasing the output noise level as a possible countermeasure. Since its shuffle-DP argument
+treats each round's convolution output as a local randomizer, the natural reading is to increase noise at every
+layer. Table 3 sweeps this under two defender models: <em>Per-layer</em> injects clipped-Gaussian noise at the
+output of every convolutional layer, while <em>Proxy</em>, retained only as a reference point, injects noise
+solely at the final classifier output and therefore upper-bounds attainable utility.</p>
+
+<table>
+<thead>
+<tr><th rowspan="2">Noise mult.</th><th colspan="4">ResNet-20</th><th colspan="3">ResNet-56</th></tr>
+<tr><th>Atk err ($\ell_\infty$)</th><th>FP top-1</th><th>Pred. agr.</th><th>Acc</th><th>Atk err</th><th>Pred. agr.</th><th>Acc</th></tr>
+</thead>
+<tbody>
+<tr><td>$1\times$</td><td>0</td><td>20/20</td><td>100.0%</td><td>82.2</td><td>0</td><td>100.0%</td><td>82.2</td></tr>
+<tr><td>$10\times$</td><td>$1.4 \times 10^{-2}$</td><td>20/20</td><td>99.8%</td><td>82.2</td><td>$1.3 \times 10^{-2}$</td><td>99.8%</td><td>82.2</td></tr>
+<tr><td>$100\times$</td><td>$1.1 \times 10^{-1}$</td><td>20/20</td><td>98.3%</td><td>82.2</td><td>$1.1 \times 10^{-1}$</td><td>98.2%</td><td>82.2</td></tr>
+<tr><td>$1{,}000\times$</td><td>1.02</td><td>1/20</td><td>63.7%</td><td>59.0</td><td>1.01</td><td>51.8%</td><td>48.9</td></tr>
+<tr><td>$5{,}000\times$</td><td>6.34</td><td>1/20</td><td>10.6%</td><td>10.1</td><td>6.34</td><td>9.6%</td><td>10.0</td></tr>
+</tbody>
+</table>
+
+<p><em>Atk err</em> is the mean per-column $\ell_\infty$ error; <em>FP</em> is fingerprint top-1 among 20
+checkpoints (ResNet-20 only); <em>Pred. agr.</em> is prediction agreement; <em>Acc</em> is per-layer test accuracy
+under clipped-Gaussian noise ($N = 200$ for ResNet-20, $N = 300$ for ResNet-56), CIFAR-10 at 8-bit.</p>
+
+<p><strong>Reading the sweep.</strong> Fingerprinting remains fully effective up to a $100\times$ multiplier with
+essentially no utility loss: all 20 ResNet-20 models are still identified and per-layer agreement is 98.3%. It
+breaks down only at $\ge 1{,}000\times$, where accuracy has already fallen to 59.0% (ResNet-20) and 48.9%
+(ResNet-56). For ImageNet-scale ResNet-50 on Imagenette ($N = 20$), utility collapses between $30\times$ and
+$70\times$, about an order of magnitude earlier than on CIFAR because noise compounds across 53 layers.</p>
+
+<p>Figure 1 plots the phase transition directly: the ResNet-56 CIFAR-10 curve uses $N = 100$ over nine noise
+levels and the ResNet-50 Imagenette curve $N = 20$, both clipped-Gaussian at $p = 256$, with attack error on the
+right axis and $\gamma/2 = 1/512$ marked for reference. The shaded band is the region where the attack would be
+broken while utility stays intact - <strong>neither curve ever enters it</strong>.</p>
+
+<p>The ImageNet-scale protocol behind that curve uses a fixed 500-image Imagenette-val subset (50 per class,
+<code>random.seed(0)</code>) scored top-1 against real ImageNet-1K labels via the WNID-to-index map; the lineage
+variant $V_1^{\mathrm{ft}}$ is $V_1$ after two epochs of SGD on the same subset at learning rate $10^{-3}$,
+batch 32.</p>
+
+<p><strong>No distribution rescues the defender.</strong> Across all six bounded noise distributions tested (zero,
+Gaussian, triangular, Laplace, uniform, and the worst-case deterministic envelope $\eta_k \in \{+B, -B\}$) no
+distribution reverses the ordering; a smoother noise law can at best delay the collapse by a constant factor.
+Appendix C figures at multiplier $m = 1{,}000$ (ResNet-20 / ResNet-56): Gaussian 59.0% / 48.9%, triangular
+41.3% / 29.8%, Laplace 21.6% / 13.6%, uniform 18.7% / 12.5%; the worst-case envelope is the most damaging, at
+76.8% / 75.6% for $m = 100$ and 10.0% for both at $m = 1{,}000$. Under zero noise the two models retain 82.3% and
+82.2% at both $m = 100$ and $m = 1{,}000$.</p>
+
+<p><strong>Repetition beats noise.</strong> Repeating each column query $k$ times and averaging reduces recovery
+error by a factor $1/\sqrt{k}$: at $1{,}000\times$ noise, $k = 5$ lowers the mean error from 0.92 to 0.38. So
+increasing noise raises the adversary's query cost <em>quadratically</em> rather than preventing recovery.</p>
+<figure><img src="data:image/png;base64,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" alt=""></figure></section>
+<section><h2>Discussion: coverage across the scheme class and what a real defense needs</h2>
+<p><strong>Which schemes are actually broken.</strong> Theorem 1 rests on hypotheses (P) shuffled noisy outputs of
+$Wx + b$ are observed, (N) noise satisfies the correctness bound on a known quantization lattice, and (C) the
+client may issue chosen inputs. Related schemes satisfy different subsets:</p>
+
+<table>
+<thead><tr><th>Scheme</th><th>(P)</th><th>(N)</th><th>(C)</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>Safhire</td><td>yes</td><td>yes</td><td>yes</td><td>Primary target; all three hold at every layer under its stated threat model</td></tr>
+<tr><td>STIP</td><td>-</td><td>no</td><td>no</td><td>Exact floating-point computation, activations stay encrypted/secret-shared, only final output revealed</td></tr>
+<tr><td>Centaur</td><td>-</td><td>no</td><td>no</td><td>Same reason as STIP; Theorem 1 yields no meaningful client-side attack</td></tr>
+<tr><td>Fission</td><td>no</td><td>-</td><td>-</td><td>MPC protocol; never reveals a permuted layer output to the client (included only for hypothesis-level comparison)</td></tr>
+<tr><td>PermLLM</td><td>-</td><td>-</td><td>-</td><td>Outside Definition 1: its permutation acts on the sequence axis, not the output-channel axis $\pi \in S_m$</td></tr>
+</tbody>
+</table>
+
+<p><strong>Compound leakage.</strong> The attack recovers $s_i(W, b)$ rather than the full weight matrix, but in
+Safhire the final layer is left unshuffled to enable client-side $\arg\max$. The recovered spectra therefore
+combine with exact logit access into a compound channel exposing both the model's functionality and its
+identity.</p>
+
+<p><strong>Necessary conditions for a defense.</strong> Any viable defense must invalidate at least one hypothesis
+of Theorem 1. Three broad escape routes exist:</p>
+<ul>
+  <li><strong>Secret linear transforms</strong> that mask $Wx + b$ so it is computationally indistinguishable from
+      random without the key - violates (P).</li>
+  <li><strong>Function secret sharing across non-colluding servers</strong>, so no single party observes the
+      permuted output - violates both (P) and (C). GAZELLE, DELPHI, and CrypTFlow2 instantiate variants of this
+      route, at the bandwidth cost that permutation-based schemes were meant to avoid.</li>
+  <li><strong>Fully server-side FHE</strong>, withholding intermediate decryptions from the client - violates
+      (C).</li>
+</ul>
+
+<p><strong>Per-query permutations do not help.</strong> Because the recovered quantity is a permutation-invariant
+summary, Theorem 1 holds for <em>any</em> permutation strategy, including drawing a fresh permutation for every
+query. Table 1 confirms this empirically: the fresh-per-query regime leaves maximum recovery error at zero across
+all 21 layers.</p>
+
+<p>The source states only that STIP and Centaur violate (N) and (C); the table leaves (P) unmarked for them
+accordingly.</p>
+
+<p><strong>Relation to prior work.</strong> Conditional impossibility results are known for black-box
+observational defenses of polynomial-size decision trees under subexponential LPN, and for learnability-preserving
+data encoding. This result is incomparable: it gives an <em>unconditional</em> guarantee of exact sorted-spectrum
+recovery on the narrower channel of Definition 1. ArrowMatch empirically shows that TEE-shielded weight
+obfuscation alone fails against adaptive clients. The sorted-leakage channel exploited here is a known-severe one:
+inference attacks on property-preserving encrypted databases established the same pattern. The link between
+extraction and fingerprinting, together with membership inference, supports treating identification-level leakage
+as a model-confidentiality threat in the first place. On the input side, prior work uses sequential-token markers
+to recover client input <em>tokens</em> in PermLLM, STIP, and Centaur, which is disjoint from this chosen-input
+attack on model <em>parameters</em>; other work attacks pure-FHE and split-model FHE LLM inference outside the
+permutation class. Finally, the authors note that the closest prior noise-based defense study injects Gaussian
+noise into input embeddings against input-privacy attacks on transformers, differing in both attack target and
+injection point, and that to their knowledge no prior work quantifies per-layer noise as a defense against
+model-confidentiality attacks in this scheme class.</p>
+</section>
+<section><h2>Algorithms</h2>
+<p>Complete at-a-glance pseudocode for every procedure the paper defines or references.</p>
+
+<h3>Algorithm 1: Safhire round-$r$ interface (the target protocol)</h3>
+<pre><code>Input:  client activation x_{r-1} (encrypted), server layer (W_r, b_r),
+        secret session permutations sigma_0 = id, sigma_1, ..., sigma_L,
+        precision p, quantization step gamma = 1/p
+Output: client-side plaintext activation x_r
+
+Server:
+  1. receive ciphertext Enc(x_{r-1})            # x_{r-1} is sigma_{r-1}-shuffled
+  2. z  <- sigma_{r-1}^{-1}(x_{r-1})            # undo previous round permutation
+  3. y  <- W_r * z + b_r                        # homomorphic linear evaluation
+  4. y' <- sigma_r(y)                           # apply round-r output permutation
+  5. send Enc(y')                               # decryption noise eta, |eta|_inf < gamma/2
+
+Client:
+  6. y~ <- Dec(Enc(y')) = sigma_r(W_r z + b_r) + eta
+  7. x_r <- ReLU(y~)                            # ReLU commutes with coordinate permutation
+  8. re-encrypt x_r for round r+1
+Note: the final layer L is left unshuffled so the client can read argmax directly.
+</code></pre>
+
+<h3>Algorithm 2: Round-then-sort recovery (Theorem 1) - the main attack</h3>
+<pre><code>Input:  oracle access to Pi.Respond(W, b, .) for a d-input, m-output linear layer;
+        quantization step gamma; noise bound Delta with gamma >= 2*Delta
+Output: sort(b) and the multiset {{ sort(W[:,j] + b) : j in [d] }}
+Queries: d + 1
+
+  define Q_gamma(v)   := coordinatewise rounding of v to the nearest gamma-lattice point
+  define RTS(y~)      := sort(Q_gamma(y~))
+
+  1. y~_0 <- Respond(Query(0))                  # zero query;  y~_0 = pi(b) + eta
+  2. s_b  <- RTS(y~_0)                          # = sort(b), exact since |eta| < gamma/2
+  3. M    <- empty multiset
+  4. for i = 1 to d:
+  5.     y~_i <- Respond(Query(e_i))            # = pi(W[:,rho(i)] + b) + eta
+  6.     s_i  <- RTS(y~_i)                      # = sort(W[:,rho(i)] + b), exact
+  7.     insert s_i into M
+  8. return (s_b, M)
+
+Guarantees:
+  - exact on EVERY noise realization with |eta|_inf < Delta (no distributional assumption)
+  - independent of the permutation strategy pi, of the noise law, and of any DP parameter
+  - if rho = id (Safhire round 1), the s_i are labeled by column index, so the
+    ORDERED family L(W,b) = (s_1, ..., s_d) is recovered, not merely the multiset
+  - d queries are necessary (Proposition 1); d+1 is optimal when sort(b) is also needed
+  - if Delta > gamma/2 no deterministic lattice-valued algorithm succeeds (Proposition 6)
+</code></pre>
+
+<h3>Algorithm 3: Model-confidentiality distinguisher (Proposition 2)</h3>
+<pre><code>Input:  challenge models (W_0, b_0), (W_1, b_1) with distinct sorted-spectrum multisets;
+        oracle Pi.Respond(W_beta, b_beta, .) for a hidden bit beta
+Output: bit beta_hat  with advantage |2*Pr[beta_hat = beta] - 1| = 1
+Queries: d  (or 1 in the first-round setting where rho = id)
+
+  1. for i = 1 to d:  y~_i <- Respond(Query(e_i))
+  2. M_obs <- {{ RTS(y~_i) : i in [d] }}         # Algorithm 2, spectrum part only
+  3. M_0   <- {{ sort(W_0[:,j] + b_0) : j in [d] }}
+  4. M_1   <- {{ sort(W_1[:,j] + b_1) : j in [d] }}
+  5. return the unique beta_hat in {0,1} with M_{beta_hat} == M_obs
+Correctness: M_0 != M_1 by the game definition; M_obs is recovered exactly by
+Algorithm 2 regardless of the hidden input permutation rho, since rho is a bijection.
+</code></pre>
+
+<h3>Algorithm 4: Recovery under fresh-per-request permutations (Proposition 5)</h3>
+<pre><code>Input:  oracle for layer W_r whose sigma_{r-1} is resampled independently per request;
+        confidence parameter c;  d* = number of distinct sorted spectra (d* <= d)
+Output: the set of all distinct sorted spectra of W_r
+Queries: T >= d * (ln d* + c)     =>  failure probability <= e^{-c}
+
+  1. S <- empty set
+  2. T <- ceil( d * (ln d* + c) )                # coupon-collector bound
+  3. for t = 1 to T:
+  4.     pick any basis vector e_i               # probes a uniformly random column
+  5.     y~ <- Respond(Query(e_i))
+  6.     s  <- RTS(y~)                            # exact by Theorem 1
+  7.     if s not equal to any element of S:      # equality test on sorted vectors
+  8.         insert s into S
+  9. return S
+
+Empirically: on trained ResNet-20, d* = d in every layer (no duplicate spectra), so the
+bound gives about 5,400 queries for the widest layer (d = 576, c = 3), and the observed
+ratio T_emp / T_theory lies in [0.58, 0.87] over 5 trials per layer.
+</code></pre>
+
+<h3>Algorithm 5: Fingerprinting and lineage attribution (Section 5.1)</h3>
+<pre><code>Input:  recovered family L~ = (s~_1, ..., s~_d) for the probed layer(s);
+        reference set F of candidate models with known spectra
+Output: identity (or parent) of the served model
+
+  1. phi(L) := sort( ||s_1||_2, ||s_2||_2, ..., ||s_d||_2 )     # column-norm fingerprint
+       # satisfies the Lipschitz condition of Theorem 2 with L_phi = sqrt(m*d)
+  2. f_obs <- phi(L~)                                            # from Algorithm 2 output
+  3. for each M in F:  dist[M] <- || f_obs - phi(L(M)) ||_2
+  4. return argmin_M dist[M]                                     # nearest neighbour
+
+Fingerprinting: within-model distance = 0 (recovery is exact), min between-model
+distance Delta_F^phi = 0.298 on 20 ResNet-20 checkpoints => all 190 pairs separable
+(CIFAR-100, 200 epochs: 0.565, again all 190 separable).
+
+Lineage: concatenate sorted column norms across three convolutional layers and run the
+same nearest-neighbour search against the base checkpoints. Separation ratio
+  (min between-base distance) / (max within-base distance)
+was 26.7 / 6.0 / 1.59 for mild / moderate / aggressive fine-tuning; all > 1,
+giving 15/15 correct attributions and 0 false positives over 285 non-lineage pairs.
+
+Certified regime (Theorem 2): if L_phi * B~ < Delta_F^phi / 2, where
+B~ = gamma * floor(B/gamma + 1/2) <= B + gamma/2, then this classifier is correct on
+every noise realization; defeating it requires B >= max{0, Delta_F^phi/(2*L_phi) - gamma/2}.
+</code></pre>
+
+<h3>Algorithm 6: Averaging to defeat relaxed (larger-than-correctness) noise</h3>
+<pre><code>Input:  oracle with relaxed noise bound B possibly exceeding gamma/2; repetition count k
+Output: sorted spectra with recovery error reduced by a factor 1/sqrt(k)
+
+  1. for i = 1 to d:
+  2.     for j = 1 to k:  y~_{i,j} <- Respond(Query(e_i))
+  3.     ybar_i <- (1/k) * sum_j y~_{i,j}       # noise averages down as 1/sqrt(k)
+  4.     s~_i   <- sort(Q_gamma(ybar_i))
+  5. return {{ s~_i }}
+Measured: at a 1,000x noise multiplier, k = 5 lowers the mean recovery error from
+0.92 to 0.38. Raising the noise therefore raises the adversary's query cost
+QUADRATICALLY rather than preventing recovery.
+</code></pre>
+
+<h3>Algorithm 7: Per-layer noise-injection defense that is being evaluated</h3>
+<pre><code>Input:  network layers 1..L, clipped-Gaussian noise scale multiplier mult,
+        base scale gamma/2 = 1/(2p)
+Output: noised inference output (defender side)
+
+  1. for r = 1 to L:
+  2.     y   <- W_r * z_{r-1} + b_r
+  3.     eta <- clipped_Gaussian(scale = mult * gamma/2, clip = B)
+  4.     y'  <- sigma_r(y) + eta                # noise injected at EVERY layer output
+  5.     z_r <- ReLU( Dec(y') )
+  6. return z_L
+Result (Table 3 / Figure 1): fingerprinting survives to mult = 100x with 98.3%
+prediction agreement and unchanged 82.2% accuracy; it breaks only at mult >= 1,000x,
+where accuracy has already dropped to 59.0% (ResNet-20) / 48.9% (ResNet-56).
+On ImageNet-scale ResNet-50 utility collapses between 30x and 70x. No noise scale,
+architecture, or bounded noise distribution defeats the attack while keeping usable
+accuracy: the defense family admits no viable operating point.
+</code></pre>
+</section>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/\bfig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+})();
+function rtSetupEquations(){
+  var prev=document.getElementById('rt-eqprev');
+  if(!prev){prev=document.createElement('div');prev.id='rt-eqprev';document.body.appendChild(prev);}
+  function showEq(html,e){prev.innerHTML=html;prev.style.display='block';var x=Math.min(e.clientX+20,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+20,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hideEq(){prev.style.display='none';}
+  var eqs=document.querySelectorAll('mjx-container[display="true"]'),htmlByNum={};
+  for(var i=0;i<eqs.length;i++){var n=i+1;eqs[i].id='eq'+n;htmlByNum[n]=eqs[i].outerHTML;}
+  if(!eqs.length)return;
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='script'||tg==='style')continue;
+    if(pn.closest&&pn.closest('mjx-container'))continue;
+    if(/\beq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!htmlByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#eq'+num;a.className='rt-eqref';a.textContent=m[0];
+      (function(h){a.addEventListener('mousemove',function(e){showEq(h,e);});a.addEventListener('mouseleave',hideEq);})(htmlByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+}
+window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],tags:'none'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},startup:{pageReady:function(){return MathJax.startup.defaultPageReady().then(function(){rtSetupEquations();});}}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>

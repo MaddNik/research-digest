@@ -2,6 +2,18 @@
 # Regenerated from research-material; entries with a summaries/<slug>/
 # folder but no research-material source are preserved as-is.
 
+- slug: "shuffling-is-not-enough-permutation-model-confidentiality-2026-08-10"
+  title: "Shuffling is Not Enough: Breaking Permutation-Based Model Confidentiality in Hybrid FHE Inference"
+  url: "/summaries/shuffling-is-not-enough-permutation-model-confidentiality-2026-08-10/"
+  date: "2026-08-10"
+  category: "Fhe Private Inference Attacks"
+  pub: ""
+  publisher: "IACR ePrint 2026/1527 (ESORICS 2026)"
+  meta_line: "IACR ePrint 2026/1527 (ESORICS 2026)"
+  source_type: "PDF (text-layer), 20 pages"
+  source_url: "https://github.com/JiseungKim90/permutation-confidentiality-experiments"
+  pdf: ""
+  tags: ["FHE", "hybrid FHE inference", "private inference", "model confidentiality", "model extraction", "structural cryptanalysis", "differential privacy", "shuffle model", "TFHE", "Safhire", "permutation defense", "fingerprinting"]
 - slug: "correcting-modulus-switch-error-tfhe-bootstrapping-2026-08-07"
   title: "Correcting the modulus switch error in TFHE bootstrapping for real-valued computation"
   url: "/summaries/correcting-modulus-switch-error-tfhe-bootstrapping-2026-08-07/"
