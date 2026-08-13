@@ -2,6 +2,18 @@
 # Regenerated from research-material; entries with a summaries/<slug>/
 # folder but no research-material source are preserved as-is.
 
+- slug: "efficient-large-integer-arithmetic-for-fhe-2026-08-13"
+  title: "Efficient Large-Integer Arithmetic for FHE"
+  url: "/summaries/efficient-large-integer-arithmetic-for-fhe-2026-08-13/"
+  date: "2026-08-13"
+  category: "Fhe Rns Large Integer Arithmetic"
+  pub: "2026"
+  publisher: "IACR ePrint 2026/1608 (preprint)"
+  meta_line: "IACR ePrint 2026/1608 (preprint)"
+  source_type: "PDF (text-layer), 27 pages"
+  source_url: "https://eprint.iacr.org/2026/1608"
+  pdf: ""
+  tags: ["FHE", "Residue Number System", "RNS", "CKKS", "BGV", "BFV", "large-integer arithmetic", "basis extension", "BEHZ", "HPS", "key switching", "rescaling", "OpenFHE", "GPU acceleration", "survey"]
 - slug: "sub-cubic-homomorphic-matrix-multiplication-self-dual-normal-bases-2026-08-13"
   title: "Sub-Cubic Homomorphic Matrix Multiplication via Self-Dual Normal Bases"
   url: "/summaries/sub-cubic-homomorphic-matrix-multiplication-self-dual-normal-bases-2026-08-13/"
