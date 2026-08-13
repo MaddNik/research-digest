@@ -2,6 +2,18 @@
 # Regenerated from research-material; entries with a summaries/<slug>/
 # folder but no research-material source are preserved as-is.
 
+- slug: "sub-cubic-homomorphic-matrix-multiplication-self-dual-normal-bases-2026-08-13"
+  title: "Sub-Cubic Homomorphic Matrix Multiplication via Self-Dual Normal Bases"
+  url: "/summaries/sub-cubic-homomorphic-matrix-multiplication-self-dual-normal-bases-2026-08-13/"
+  date: "2026-08-13"
+  category: "Fhe Homomorphic Matrix Multiplication"
+  pub: ""
+  publisher: "IACR ePrint 2026/1592"
+  meta_line: "IACR ePrint 2026/1592"
+  source_type: "PDF (text-layer)"
+  source_url: "https://github.com/ephemer4l/NBMM"
+  pdf: ""
+  tags: ["homomorphic encryption", "BGV", "matrix multiplication", "normal bases", "self-dual normal basis", "optimal normal basis", "cyclotomic fields", "Galois rings", "bilinear forms", "triple product property", "Strassen algorithm", "Cohn-Umans", "tensor rank", "RLWE", "HElib"]
 - slug: "shuffling-is-not-enough-permutation-model-confidentiality-2026-08-10"
   title: "Shuffling is Not Enough: Breaking Permutation-Based Model Confidentiality in Hybrid FHE Inference"
   url: "/summaries/shuffling-is-not-enough-permutation-model-confidentiality-2026-08-10/"
