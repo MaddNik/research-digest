@@ -22,7 +22,7 @@
   location: "Ghent, Belgium"
   dates: "September 7 to 11, 2026"
   start: 2026-09-07
-  about: "The first and largest international conference dedicated to field-programmable logic and reconfigurable computing, hosted by Ghent University."
+  about: "The 36th edition of the first and largest international conference dedicated to field-programmable logic and reconfigurable computing, hosted by Ghent University."
   url: "https://2026.fpl.org/"
 
 - name: "ESSERC 2026: European Solid-State Electronics Research Conference"
@@ -45,7 +45,7 @@
   location: "Malaga, Spain"
   dates: "September 20 to 24, 2026"
   start: 2026-09-20
-  about: "The 52nd edition of the largest and most prestigious optical communications event in Europe, covering optical networks, AI, IoT and quantum photonics."
+  about: "The largest and most prestigious optical communications event in Europe and the second largest worldwide, covering optical networks, AI, IoT and quantum photonics."
   url: "https://www.ecoc2026.org/"
   panel: "General and Technical Programme Chairs are Inigo Molina-Fernandez and Robert Halir (University of Malaga) and Jose Capmany and Ivana Gasulla (Technical University of Valencia)."
 
@@ -67,7 +67,7 @@
   location: "Denver, USA"
   dates: "November 8 to 12, 2026"
   start: 2026-11-08
-  about: "The 39th annual flagship conference of the IEEE Photonics Society, covering a broad scope of photonics technical areas via plenaries, invited talks and special symposia."
+  about: "The annual flagship conference of the IEEE Photonics Society, covering a broad scope of photonics technical areas via plenaries, invited talks and special symposia."
   url: "https://ieee-ipc.org/"
   speakers:
     - "Laura Marcu (Plenary Speaker, UC Davis)"
