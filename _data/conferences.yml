@@ -5,6 +5,17 @@
 # (string). These render as a deadlines line and a collapsible "Panel & speakers" sub-menu;
 # include them only when verified and relevant.
 
+- name: "Hot Chips 2026: A Symposium on High Performance Chips (HC38)"
+  domain: Semiconductor
+  continent: North America
+  location: "Stanford (Palo Alto), USA"
+  dates: "August 23 to 25, 2026"
+  start: 2026-08-23
+  about: "Hybrid in-person and virtual symposium featuring technical presentations from industry on cutting-edge CPUs, GPUs, memory, networking and AI accelerator chips."
+  url: "https://www.hotchips.org/"
+  speakers:
+    - "Daniel Rosenband (Keynote, Waymo) - Compute in Motion: Challenges of Autonomous Driving"
+
 - name: "FPL 2026: International Conference on Field-Programmable Logic and Applications"
   domain: Semiconductor
   continent: Europe
@@ -22,6 +33,11 @@
   start: 2026-09-07
   about: "The 52nd edition of Europe's flagship solid-state electronics conference, formed from the merger of ESSCIRC and ESSDERC, themed Advancing Chips, Advancing Europe."
   url: "https://www.esserc2026.org/"
+  late_deadline: "Late registration deadline: August 28, 2026"
+  speakers:
+    - "Arya Behzad (Keynote, Broadcom) - From Air to Copper to Fiber: When Abstraction Boundaries Fail in Modern Communication Systems"
+    - "Roberto Emilio Luigi Bez (Keynote, Micron) - Memory for a Better World"
+    - "Regina Dittmann (Keynote, Forschungszentrum Julich) - Embracing Ion Dynamics: CMOS-integrated Memristors for Neuro-Inspired Circuits"
 
 - name: "ECOC 2026: European Conference on Optical Communication"
   domain: Photonics
@@ -32,17 +48,6 @@
   about: "The 52nd edition of the largest and most prestigious optical communications event in Europe, covering optical networks, AI, IoT and quantum photonics."
   url: "https://www.ecoc2026.org/"
   panel: "General and Technical Programme Chairs are Inigo Molina-Fernandez and Robert Halir (University of Malaga) and Jose Capmany and Ivana Gasulla (Technical University of Valencia)."
-
-- name: "Hot Chips 2026: A Symposium on High Performance Chips (HC38)"
-  domain: Semiconductor
-  continent: North America
-  location: "Stanford (Palo Alto), USA"
-  dates: "August 23 to 25, 2026"
-  start: 2026-08-23
-  about: "Hybrid in-person and virtual symposium featuring technical presentations from industry on cutting-edge CPUs, GPUs, memory, networking and AI accelerator chips."
-  url: "https://www.hotchips.org/"
-  speakers:
-    - "Daniel Rosenband (Invited Speaker, Waymo) - Compute in Motion: Challenges of Autonomous Driving"
 
 - name: "ICCAD 2026: IEEE/ACM International Conference on Computer-Aided Design"
   domain: Semiconductor
@@ -78,7 +83,7 @@
   start: 2026-12-12
   about: "Premier forum for presenting breakthroughs in semiconductor devices and emerging technologies, themed Devices at the Heart of the Intelligence Revolution."
   url: "https://ieee-iedm.org/"
-  submission: "Late News submissions due August 3, 2026"
+  submission: "Late News submissions open August 3, 2026"
   speakers:
     - "Fabio Gualandris (Keynote, President, Quality, Manufacturing and Technology, STMicroelectronics)"
     - "Yunik Son (Keynote, VP, Device Technology Solution, SK Hynix)"
@@ -136,6 +141,15 @@
   about: "The 30th DATE conference, the main European event for electronic system design, design automation and test, bringing together designers, researchers and vendors."
   url: "https://www.date-conference.com/date-2027-call-papers"
   submission: "September 20, 2026 (Anywhere on Earth)"
+
+- name: "CICC 2027: IEEE Custom Integrated Circuits Conference"
+  domain: Semiconductor
+  continent: North America
+  location: "San Diego, USA"
+  dates: "April 18 to 21, 2027"
+  start: 2027-04-18
+  about: "A premier conference devoted to custom and analog/mixed-signal IC development, blending oral presentations, exhibits, panels and forums, co-located with the CHISIC workshop on biomedical circuits and systems."
+  url: "https://www.ieee-cicc.org/"
 
 - name: "CLEO 2027: Conference on Lasers and Electro-Optics"
   domain: Photonics
