@@ -41,7 +41,8 @@ fi
 
   python3 "$REPO/automation/openrouter_agent.py" \
     --prompt-file "$REPO/automation/conferences-prompt.md" \
-    --model "${OPENROUTER_MODEL:-anthropic/claude-sonnet-5}"
+    --model "${OPENROUTER_MODEL:-anthropic/claude-sonnet-5}" \
+    --max-cost-usd "${OPENROUTER_MAX_COST_CONFERENCES:-8}"
   # Rollback fallback (kept for one cycle, then delete): the previous
   # subscription-based invocation via Claude Code's CLI.
   # claude -p "$(cat "$REPO/automation/conferences-prompt.md")" \

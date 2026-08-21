@@ -4,7 +4,7 @@ for headless automation, billed via an OpenRouter API key instead of the
 Claude subscription's usage window. Stdlib-only, no new pip dependency.
 
 Exit codes: 0 success, 1 API/config error, 2 hit --max-iterations without a
-natural stop.
+natural stop, 3 hit --max-cost-usd without a natural stop.
 """
 import argparse
 import html as html_mod
@@ -22,6 +22,12 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "anthropic/claude-sonnet-5"
 MAX_ITERATIONS = 40
+# Hard cost ceiling per invocation (main loop + VERIFY step combined), in USD,
+# read from OpenRouter's real per-response usage.cost - not an estimate. A
+# stuck retry loop (e.g. chasing bot-blocked sites) can otherwise burn far
+# more than a normal run before hitting --max-iterations, since each
+# iteration resends the whole growing conversation history.
+MAX_COST_USD = 5.0
 BASH_TIMEOUT = 180
 FETCH_TIMEOUT = 60
 API_TIMEOUT = 180
@@ -259,7 +265,25 @@ TOOL_DISPATCH = {
 }
 
 
-def call_openrouter(messages, model, tools=None, tool_choice=None, response_format=None, max_retries=5):
+class CostTracker:
+    """Accumulates real per-response USD cost (OpenRouter's usage.cost field,
+    always present - not an estimate) across every call in a run, main loop
+    and VERIFY step combined, and enforces a hard ceiling."""
+
+    def __init__(self, limit_usd):
+        self.limit_usd = limit_usd
+        self.total_usd = 0.0
+
+    def add(self, resp):
+        cost = (resp.get("usage") or {}).get("cost")
+        if isinstance(cost, (int, float)):
+            self.total_usd += cost
+
+    def exceeded(self):
+        return self.total_usd > self.limit_usd
+
+
+def call_openrouter(messages, model, tools=None, tool_choice=None, response_format=None, max_retries=5, cost_tracker=None):
     api_key = load_api_key()
     body = {"model": model, "messages": messages}
     if tools:
@@ -285,7 +309,17 @@ def call_openrouter(messages, model, tools=None, tool_choice=None, response_form
         )
         try:
             with urllib.request.urlopen(req, timeout=API_TIMEOUT) as resp:
-                return json.loads(resp.read())
+                result = json.loads(resp.read())
+                if cost_tracker is not None:
+                    cost_tracker.add(result)
+                    if cost_tracker.exceeded():
+                        print(
+                            f"FATAL: hit --max-cost-usd (spent ${cost_tracker.total_usd:.4f} of "
+                            f"${cost_tracker.limit_usd:.2f}); aborting rather than continuing",
+                            file=sys.stderr,
+                        )
+                        sys.exit(3)
+                return result
         except urllib.error.HTTPError as e:
             err_body = e.read().decode("utf-8", errors="replace")
             if (e.code == 429 or e.code >= 500) and attempt < max_retries - 1:
@@ -305,7 +339,7 @@ def call_openrouter(messages, model, tools=None, tool_choice=None, response_form
     sys.exit(1)
 
 
-def run_agent_loop(system_prompt, user_prompt, model, max_iterations=MAX_ITERATIONS, debug_log=None):
+def run_agent_loop(system_prompt, user_prompt, model, max_iterations=MAX_ITERATIONS, debug_log=None, cost_tracker=None):
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
@@ -317,7 +351,7 @@ def run_agent_loop(system_prompt, user_prompt, model, max_iterations=MAX_ITERATI
                 f.write(json.dumps(entry) + "\n")
 
     for _ in range(max_iterations):
-        resp = call_openrouter(messages, model, tools=TOOLS_SCHEMA, tool_choice="auto")
+        resp = call_openrouter(messages, model, tools=TOOLS_SCHEMA, tool_choice="auto", cost_tracker=cost_tracker)
         msg = resp["choices"][0]["message"]
         messages.append(msg)
         log({"role": "assistant", "content": msg.get("content"), "tool_calls": msg.get("tool_calls")})
@@ -351,7 +385,7 @@ def run_agent_loop(system_prompt, user_prompt, model, max_iterations=MAX_ITERATI
     sys.exit(2)
 
 
-def verify_summary(source_text, draft_json_text, model):
+def verify_summary(source_text, draft_json_text, model, cost_tracker=None):
     """Deep-summary adversarial check, replacing SKILL.md's Agent-tool subagent call."""
     system = (
         "You are an adversarial summary verifier with zero tolerance for unsupported "
@@ -369,6 +403,7 @@ def verify_summary(source_text, draft_json_text, model):
         [{"role": "system", "content": system}, {"role": "user", "content": user}],
         model,
         response_format={"type": "json_object"},
+        cost_tracker=cost_tracker,
     )
     text = resp["choices"][0]["message"].get("content") or ""
     try:
@@ -384,7 +419,7 @@ def verify_summary(source_text, draft_json_text, model):
         return {"hallucinations": [], "omissions": [], "ok": False}
 
 
-def run_verify_if_deep(result_text, var_map, model):
+def run_verify_if_deep(result_text, var_map, model, cost_tracker=None):
     """If --var LEVEL=deep was passed, look for a `JOB_DIR: <path>` line in the
     final report, and if the job directory has both content.json and
     raw_source.txt, run the adversarial VERIFY step and update content.json's
@@ -407,7 +442,7 @@ def run_verify_if_deep(result_text, var_map, model):
     try:
         content = json.loads(content_path.read_text())
         source_text = source_path.read_text()
-        verdict = verify_summary(source_text, json.dumps(content), model)
+        verdict = verify_summary(source_text, json.dumps(content), model, cost_tracker=cost_tracker)
         content["verified"] = bool(verdict.get("ok"))
         content_path.write_text(json.dumps(content, indent=2))
         return result_text + (
@@ -426,6 +461,10 @@ def main():
     parser.add_argument("--model", default=os.environ.get("OPENROUTER_MODEL", DEFAULT_MODEL))
     parser.add_argument("--var", action="append", default=[], metavar="KEY=VALUE")
     parser.add_argument("--max-iterations", type=int, default=MAX_ITERATIONS)
+    parser.add_argument(
+        "--max-cost-usd", type=float, default=MAX_COST_USD,
+        help="Hard ceiling on real spend (OpenRouter's usage.cost) for this invocation, main loop + VERIFY combined",
+    )
     parser.add_argument("--debug-log", help="Append a JSONL trace of every assistant/tool turn to this file")
     args = parser.parse_args()
 
@@ -451,9 +490,14 @@ def main():
     )
     system_prompt = system_prompt_path.read_text()
 
-    result = run_agent_loop(system_prompt, prompt_text, args.model, args.max_iterations, debug_log=args.debug_log)
-    result = run_verify_if_deep(result, var_map, args.model)
+    cost_tracker = CostTracker(args.max_cost_usd)
+    result = run_agent_loop(
+        system_prompt, prompt_text, args.model, args.max_iterations,
+        debug_log=args.debug_log, cost_tracker=cost_tracker,
+    )
+    result = run_verify_if_deep(result, var_map, args.model, cost_tracker=cost_tracker)
     print(result)
+    print(f"HARNESS: spent ${cost_tracker.total_usd:.4f} of ${cost_tracker.limit_usd:.2f} limit", file=sys.stderr)
 
 
 if __name__ == "__main__":

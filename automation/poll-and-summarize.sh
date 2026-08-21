@@ -131,14 +131,15 @@ PY
     # PROMPT_TEXT="$(SRC="$SRC" LEVEL="$LEVEL" CAT="$CAT" envsubst '${SRC} ${LEVEL} ${CAT}' < "$PROMPT")"
     # OUT="$(claude -p "$PROMPT_TEXT" --model opus --dangerously-skip-permissions --output-format text < /dev/null 2>&1)"
     OUT="$(python3 "$HARNESS" --prompt-file "$PROMPT" --model "$MODEL" \
+      --max-cost-usd "${OPENROUTER_MAX_COST_POLL:-5}" \
       --var "SRC=$SRC" --var "LEVEL=$LEVEL" --var "CAT=$CAT" < /dev/null 2>&1)"
     RC=$?
     printf '%s\n' "$OUT"
 
     git pull --rebase --autostash 2>&1 || true   # Stop hook published during the run
 
-    if [ "$RC" -eq 2 ]; then
-      echo "#$NUM hit the harness's iteration cap; requeueing for next slot"
+    if [ "$RC" -eq 2 ] || [ "$RC" -eq 3 ]; then
+      echo "#$NUM hit the harness's iteration cap or cost ceiling; requeueing for next slot"
       remove_label "$NUM" summarizing
       continue
     fi
