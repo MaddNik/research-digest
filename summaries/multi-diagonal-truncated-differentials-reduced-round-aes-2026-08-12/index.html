@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-Diagonal Truncated Differentials and Ciphertext-Only Attacks on Reduced-Round AES</title>
+<style>
+:root{--bg:#F3F5F4;--surface:#FFFFFF;--ink:#161A1C;--muted:#5C6670;--line:#DBE0DE;--accent:#0C8C80}
+@media (prefers-color-scheme:dark){:root{--bg:#0B0F12;--surface:#111619;--ink:#E7EEEA;--muted:#95A2A1;--line:#1F282C;--accent:#2CD4BE}}
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;line-height:1.5;margin:1rem 0}
+pre code{background:none;border:0;padding:0;border-radius:0;display:block;white-space:pre;font-size:13px}
+code{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:var(--surface);border-bottom:1px solid var(--line);font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:var(--accent);text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+#rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
+#rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
+a.rt-figref,a.rt-eqref{color:var(--accent);text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+body{counter-reset:rt-eq}
+mjx-container[display="true"]{position:relative;padding-right:2.4em}
+mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Deep Summaries</a><a href="https://eprint.iacr.org/2026/1637" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
+<header><h1>Multi-Diagonal Truncated Differentials and Ciphertext-Only Attacks on Reduced-Round AES</h1><p class="meta">IACR ePrint Archive, Paper 2026/1637 &middot; <a href="https://eprint.iacr.org/2026/1637" target="_blank" rel="noopener noreferrer">full view &#8599;</a></p></header>
+<section><h2>Overview and Contributions</h2>
+<p>This paper (IACR ePrint 2026/1637, by Orhun Kara and Can Bal&#305;k&#231;&#305;, &#304;zmir Institute of Technology) develops a general analytical framework for computing <em>truncated differential probabilities</em> of 5-round AES, and uses it to build the first ciphertext-only distinguisher for 5-round AES and the first ciphertext-only key-recovery attack on 6-round AES (for all three key sizes) under natural-language and uniform ASCII plaintext models in ECB mode.</p>
+<p>Truncated differential cryptanalysis abstracts away exact byte values and tracks only whether a byte is "active" (differing between the two texts of a pair) or "passive" (identical). Prior works (Grassi and Rechberger; Bao, Guo and List; Chang, Wang, Sun and Wang; R&oslash;njom) each solved narrow special cases of this problem, generally restricted to a single active diagonal in the plaintext and a single passive inverse diagonal in the ciphertext. The paper's central technical contribution is a systematic method that:</p>
+<ul>
+<li>Computes exact MixColumns transition probabilities (rather than heuristic approximations) for an arbitrary number of active input words and specified passive output words.</li>
+<li>Exhaustively enumerates and partitions truncated differential characteristics into equivalence classes sharing identical propagation probabilities, so contributions can be aggregated exactly rather than approximated.</li>
+<li>Extends this machinery from a single active plaintext diagonal to configurations with an arbitrary number of active diagonals, using an encryption/decryption symmetry argument.</li>
+</ul>
+<p>Concretely, the paper: (1) re-derives all previously known special cases inside a single unified proposition; (2) computes, for the single-active-diagonal case, all 48 combinations of the three probability notions <span>&chi;(m&rarr;i+)</span>, <span>Pr[m&rarr;i]</span>, and <span>Pr[m&rarr;i+]</span> for <span>m &isin; {1,2,3,4}</span> active bytes and <span>i &isin; {0,1,2,3}</span> passive inverse diagonals -- 13 of the <span>&chi;</span> cases and all 16 <span>Pr[m&rarr;i]</span> cases are new, and 14 <span>Pr[m&rarr;i+]</span> cases are refined; (3) derives 72 new truncated differentials for multi-diagonal plaintext configurations; and (4) builds ciphertext-only attacks exploiting the dominant contribution from plaintext pairs with exactly one passive diagonal, combined with the statistical redundancy of ASCII-encoded natural language or uniformly distributed ASCII bytes.</p>
+<p>All computations are carried out under the standard (heuristic) round-independence assumption used throughout the truncated-differential literature; the authors argue, citing prior mini-AES experiments and independent DDT-based computations, that this assumption introduces only negligible error for the cases considered.</p>
+</section>
+<section><h2>AES Definition and Notation</h2>
+<p>AES (FIPS 197) operates on a 128-bit state arranged as a <span>4&times;4</span> byte matrix, with key sizes of 128, 192, or 256 bits corresponding to 10, 12, or 14 rounds respectively. Each round (except the omission of MixColumns in the last round) consists of:</p>
+<ul>
+<li><b>SubBytes (SB):</b> a nonlinear 8-bit-to-8-bit S-box applied to every byte.</li>
+<li><b>ShiftRows (SR):</b> row <span>i</span> is cyclically rotated left by <span>i</span> positions, for <span>i=0,1,2,3</span>.</li>
+<li><b>MixColumns (MC):</b> each column is multiplied by a fixed <span>4&times;4</span> MDS matrix over <span>GF(2^8)</span>.</li>
+<li><b>AddRoundKey (AK):</b> XOR with the round subkey.</li>
+</ul>
+<p>The plaintext is first XORed with a whitening key <span>RK_0</span>. Round subkey columns <span>KW\{k\}</span> are generated from the key schedule recursion</p>
+<p>$$KW\{k\} = \begin{cases} KW\{k-N\} \oplus f(KW\{k-1\}) \oplus r\{k \operatorname{div} N\}, & k \bmod N = 0,\\ KW\{k-N\} \oplus g(KW\{k-1\}), & k \bmod N = 4,\ N=8,\\ KW\{k-N\} \oplus KW\{k-1\}, & \text{otherwise}, \end{cases}$$</p>
+<p>where <span>N=4,6,8</span> for AES-128/192/256, <span>f</span> and <span>g</span> are fixed nonlinear column permutations, and <span>r\{k\}</span> are round constants.</p>
+<p><b>Notation used throughout the paper.</b> "<span>r</span>-round AES-<span>k</span>" denotes <span>r</span>-round AES with a <span>k</span>-bit key (no MixColumns in the last round). <span>P, C, K</span> denote plaintext, ciphertext, and key; <span>AK_i, SB_i, SR_i, MC_i</span> denote the state after the corresponding operation in round <span>i</span>; <span>\Delta</span> denotes the difference of a pair of values under the same operation (e.g. <span>\Delta P</span>, <span>\Delta MC_i</span>). Bytes are indexed <span>0,\dots,15</span> column-major (bytes 0-3 in column 0, 4-7 in column 1, etc.).</p>
+<p>A byte in a pair is <em>active</em> if the two values differ and <em>passive</em> if they are equal. A vector (column, row, diagonal, or inverse diagonal) is active if it contains at least one active byte, fully active if all bytes are active, and passive if all bytes are passive. A <em>diagonal</em> is the image of a column under <span>SR^{-1}</span>; an <em>inverse diagonal</em> is the image of a column under <span>SR</span>. A key structural fact (Lemma 2, below) is that a passive diagonal in the plaintext difference propagates, after one round, to a passive column, and hence to a passive inverse diagonal.</p>
+</section>
+<section><h2>Probability Notation for Truncated Differentials</h2>
+<p>The paper defines several probability quantities that are used throughout (all implicitly for 5-round AES unless stated otherwise):</p>
+<ul>
+<li><span>P_{i,j}</span>: probability that <span>i</span> active input words to one MixColumns column produce exactly <span>j</span> passive words at specified output positions (and the other <span>4-j</span> words active).</li>
+<li><span>P_{i,j+}</span>: probability that <span>i</span> active input words produce passive output words at <span>j</span> specified positions, with the remaining positions unconstrained (may be active or passive). By definition <span>P_{i,0+}=1</span>.</li>
+<li><span>\mathrm{Pr}[m \to i]</span>: given a plaintext pair with exactly <span>m</span> active bytes confined to one diagonal (the rest of the plaintext passive), the probability that the 5-round ciphertext pair has <em>exactly</em> <span>i</span> passive inverse diagonals (positions unspecified), for <span>0 \le i \le 3</span>.</li>
+<li><span>\mathrm{Pr}[m \to i^+]</span>: as above but "<em>at least</em> <span>i</span>" passive inverse diagonals.</li>
+<li><span>\chi(m \to i^+)</span>: as above but with <em>specific, given</em> <span>i</span> inverse diagonals required to be passive (the remaining <span>4-i</span> diagonals unconstrained); by definition <span>\chi(m\to 0^+):=1</span>.</li>
+<li><span>\mathrm{Pr}[i \Rightarrow m]</span>: given a plaintext pair active exactly on <span>i</span> specified diagonals (and passive elsewhere), the probability that the ciphertext pair has three specified passive inverse diagonals and one active inverse diagonal containing exactly <span>m</span> passive bytes.</li>
+<li><span>SB^{in}_{out}(\alpha[i_1,\dots,i_j],\beta)</span>: the set of value-pairs at SubBytes positions <span>i_1,\dots,i_j</span> consistent with input difference <span>\alpha</span> and output difference <span>\beta</span> at those positions; it factors as a tensor product over positions, and for a fixed position the corresponding single-position set is empty or has 2 or 4 elements (from the AES S-box DDT).</li>
+</ul>
+<p>The function <span>\delta_m = 1</span> if <span>m&gt;0</span> and <span>0</span> if <span>m \le 0</span> is used throughout to enforce validity ranges (e.g. that the number of active input words to an MDS transition must exceed the number of forced passive output words).</p>
+</section>
+<section><h2>Modeling Assumptions</h2>
+<p>All probability computations in the paper are carried out inside the standard heuristic framework used in AES/SPN truncated differential analysis:</p>
+<ul>
+<li><b>Single S-box hypothesis:</b> for a fixed nonzero input difference <span>\Delta X</span>, the solutions of <span>SB(X)\oplus SB(X\oplus \Delta X) = \Delta Y</span> (Eq. 1) are modeled by the per-S-box transition probabilities read off the AES differential distribution table (DDT).</li>
+<li><b>Cross-S-box independence:</b> difference outcomes at distinct S-boxes are treated as approximately independent, which neglects linear-layer-induced dependencies but makes round-to-round aggregation of probabilities tractable.</li>
+<li><b>Round independence:</b> round-wise transition probabilities are combined multiplicatively across rounds.</li>
+</ul>
+<p>Unlike prior work, the paper computes MixColumns transition probabilities <em>exactly</em> (Lemma 1) rather than approximately, and explicitly enumerates all truncated differential characteristics contributing to a given event, applying inclusion-exclusion when a condition requires "exactly" or "at least" <span>i</span> passive inverse diagonals.</p>
+<p>The authors explicitly note these assumptions are heuristic and do not hold exactly for AES, but are standard in the literature. As a sanity check, they compare their independence-assumption value <span>\chi(1\to1^+) \approx 2^{-32}+2^{-53.983}</span> against the value <span>2^{-32}+2^{-53.815}</span> computed by Chang et al. without any independence assumption (via exact super-S-box DDTs), finding the two nearly identical, which the authors take as evidence that the independence assumption introduces only minor inaccuracy for this framework. They also cite Liu, Tessaro and Vaikuntanathan's result that AES-like SPNs exhibit approximate pairwise independence after sufficiently many rounds as partial theoretical support.</p>
+</section>
+<section><h2>Lemma 1: Exact MixColumns Transition Probabilities</h2>
+<p>Let the MixColumns matrix be a <span>4\times4</span> MDS matrix over <span>GF(2^n)</span> (for AES, <span>n=8</span>), and consider an input pair of two distinct columns with <span>i</span> active words before MC. Lemma 1 gives exact, closed-form probabilities (not just heuristic estimates):</p>
+<p><b>Part 1 (at least <span>j</span> passive outputs at specified positions):</b></p>
+<p>$$P_{i,j^+} = \frac{\delta_{i-j}}{(2^n-1)^j} - j\left(\frac{\delta_{i-j-1}}{(2^n-1)^{j+1}} - \frac{\delta_{i-j-2}}{(2^n-1)^{j+2}}\right).$$</p>
+<p><b>Part 2 (exactly <span>j</span> passive outputs at specified positions, remaining outputs active):</b></p>
+<p>$$P_{i,j} = \frac{\delta_{i-j}}{(2^n-1)^j} - \frac{4\,\delta_{i-j-1}}{(2^n-1)^{j+1}} + \frac{10\,\delta_{i-j-2}}{(2^n-1)^{j+2}} - \frac{20\,\delta_{i-j-3}}{(2^n-1)^{j+3}}.$$</p>
+<p>The proof solves, for each value of <span>j</span> (with <span>i=4</span> as the base case), the linear system obtained from the MC matrix equations with <span>i</span> nonzero inputs and <span>j</span> forced-zero outputs, counting solutions and dividing by <span>(2^n-1)^i</span>. For example, for <span>i=4, j=3</span> the homogeneous system in four unknowns has a one-parameter family of solutions, giving <span>(2^n-1)</span> solutions out of <span>(2^n-1)^4</span> total inputs, i.e. <span>P_{4,3^+} = 1/(2^n-1)^3</span>; the <span>j=2</span> and <span>j=1</span> cases are solved similarly by direct counting. Concretely, for AES (<span>n=8</span>):</p>
+<p>$$P_{4,1^+} = \frac{1}{2^8-1} - \frac{1}{(2^8-1)^2} + \frac{1}{(2^8-1)^3} = 2^{-8} + 2^{-31.983}\ (\text{approx.}).$$</p>
+<p>Values of <span>P_{i,0^+}=1</span> trivially, and <span>P_{i,0}=1-4P_{i,1}-6P_{i,2}-4P_{i,3}</span>. The paper verifies these closed forms by direct computer enumeration for <span>n=8</span>, and notes that Part 2 for <span>n=8</span> coincides with a recursive formula previously given by Dolgov and Ruzhentsev.</p>
+</section>
+<section><h2>Lemma 2: Diagonal Propagation Structure</h2>
+<p>Lemma 2 records two standard structural facts about AES diffusion that underlie the whole framework (proofs included for completeness):</p>
+<p><b>Part 1.</b> If a plaintext pair has only one active diagonal containing <span>i</span> active bytes, then after <span>SR_1</span> those bytes are collected into a single active column feeding <span>MC_1</span>; by the branch-number (MDS) property, the output of <span>MC_2</span> then consists of <span>i</span> fully active columns, each of which presents <span>i</span> active bytes to <span>MC_3</span>.</p>
+<p><b>Part 2.</b> For <span>j \in \{1,2,3,4\}</span>: a plaintext pair has <span>j</span> passive diagonals <span>\iff</span> there are <span>j</span> passive columns at the output of <span>MC_1</span> <span>\iff</span> the input of <span>MC_2</span> has <span>j</span> passive inverse diagonals. This is the key fact motivating the whole study: a passive plaintext diagonal deterministically becomes a passive inverse diagonal two rounds later, which is exploited by impossible-differential, truncated-differential, mixture, exchange, and subspace-invariant attacks in prior literature.</p>
+</section>
+<section><h2>Lemma 3: Relating Exactly-&lt;i&gt;i&lt;/i&gt; and At-Least-&lt;i&gt;i&lt;/i&gt; Probabilities</h2>
+<p>Lemma 3 gives an inclusion-exclusion relation between <span>\chi(m\to i^+)</span> (specific <span>i</span> diagonals passive) and <span>\mathrm{Pr}[m\to i]</span> (exactly <span>i</span> diagonals passive, unspecified positions), for a plaintext pair with <span>m</span> active bytes confined to one diagonal, <span>0 \le i \le 3</span>:</p>
+<p>$$\mathrm{Pr}[m\to i] = \binom{4}{i}\Big[\chi(m\to i^+) - \delta_{3-i}\binom{4-i}{3-i}\chi(m\to(i+1)^+) + \delta_{2-i}\binom{4-i}{2-i}\chi(m\to(i+2)^+) - \delta_{1-i}\binom{4-i}{1-i}\chi(m\to(i+3)^+)\Big].$$</p>
+<p>Intuitively, <span>\chi(m\to i^+)</span> only pins down that a specific set of <span>i</span> inverse diagonals is passive, but says nothing about the remaining <span>4-i</span>; hence contributions where more than <span>i</span> diagonals happen to be passive must be subtracted out (with the appropriate binomial multiplicities for choosing which specific diagonals are the "extra" passive ones), and the overall count is multiplied by <span>\binom{4}{i}</span> to enumerate over the choice of which <span>i</span> (unspecified) positions are passive in <span>\mathrm{Pr}[m\to i]</span>. This relation is later used as a consistency check on Theorem 1.</p>
+</section>
+<section><h2>Rederiving Known Special Cases (Proposition 1)</h2>
+<p>Before generalizing, the paper shows that all previously known 5-round truncated differential probabilities (Bao-Guo-List; Grassi-Rechberger; Chang-Wang-Sun-Wang) are special cases of one proposition:</p>
+<p>$$\chi(1\to1^+) = P_{4,1^+}^{4}, \qquad \chi(1\to2^+) = P_{4,2^+}^{4}, \qquad \chi(4\to1^+) = \sum_{\ell=0}^{2}\binom{4}{\ell}P_{4,\ell}\,P_{4-\ell,1^+}^{4}.$$</p>
+<p>The reasoning: a single active byte in the plaintext diagonal becomes fully active in every column by the end of round 2 (Lemma 2, part 1 with <span>i=1</span>), so the probability that a given diagonal is passive at the end of round 3 (hence a given inverse diagonal passive at the end of round 5) is simply the fourth power of the single-column probability <span>P_{4,1^+}</span> (one factor per column). For <span>\chi(4\to1^+)</span>, four active bytes in one diagonal produce <span>\ell \in \{0,1,2\}</span> passive bytes after round 1 with probability <span>\binom{4}{\ell}P_{4,\ell}</span> (the case <span>\ell\ge3</span> is excluded since MC is MDS and active inputs must strictly exceed passive outputs), leaving <span>4-\ell</span> fully active columns which must each reach a passive diagonal with probability <span>P_{4-\ell,1^+}</span>.</p>
+<p>Numerically, <span>\chi(1\to1^+) = \left(2^{-8}+2^{-31.983}\right)^4 \approx 2^{-32}+2^{-53.983}</span>, matching Bao et al.'s integral-distinguisher-derived value and closely matching (but not identical to, due to the independence assumption) Chang et al.'s DDT-based value <span>2^{-32}+2^{-53.815}</span> (obtained without an independence assumption, from a super-S-box DDT computed directly for 4-round AES, giving average passive-byte probability <span>2^{-8}+2^{-31.816}</span> versus the paper's <span>P_{4,1^+}=2^{-8}+2^{-31.983}</span>).</p>
+</section>
+<section><h2>Theorem 1: General Single-Diagonal Truncated Differential Probabilities</h2>
+<p>Theorem 1 is the paper's core single-active-diagonal result, generalizing Proposition 1 to arbitrary <span>m \in \{1,2,3,4\}</span> active bytes in the plaintext diagonal and arbitrary <span>0\le i \le 3</span> passive inverse diagonals in the ciphertext, for all three probability notions:</p>
+<p><b>Part 1.</b></p>
+<p>$$\chi(m\to i^+) = \sum_{\ell=0}^{\min\{m,4-i\}-1}\binom{4}{\ell}P_{m,\ell}\,P_{4-\ell,i^+}^{4}.$$</p>
+<p><b>Part 2.</b></p>
+<p>$$\mathrm{Pr}[m\to i] = \sum_{\ell=0}^{\min\{m,4-i\}-1}\binom{4}{\ell}\binom{4}{i}P_{m,\ell}\left[\sum_{j=0}^{3-\ell-i}\binom{4-i}{j}(-1)^j P_{4-\ell,(i+j)^+}^{4}\right].$$</p>
+<p><b>Part 3.</b></p>
+<p>$$\mathrm{Pr}[m\to i^+] = \sum_{j=i}^{3}\mathrm{Pr}[m\to j].$$</p>
+<p>The proof follows the same logic as Proposition 1 but is not restricted to a single active byte: <span>\ell</span> passive bytes appear in the active column after round 1 with probability <span>\binom{4}{\ell}P_{m,\ell}</span> (requiring <span>m &gt; \ell</span>), giving <span>4-\ell</span> active bytes per column entering round 3; each of the four columns must independently reach <span>i</span> specified passive positions with probability <span>P_{4-\ell,i^+}</span>, giving the fourth power. Part 2 additionally requires that the positions of the passive diagonals are unspecified (contributing the <span>\binom{4}{i}</span> factor) and that exactly (not at least) <span>i</span> are passive, requiring an inclusion-exclusion sum over <span>j</span> extra passive diagonals. Part 3 is a direct sum of the exactly-<span>i</span> probabilities for <span>i,\dots,3</span>.</p>
+<p>This gives <span>48</span> distinct numeric results (over <span>m \in\{1,2,3,4\}, i \in\{0,1,2,3\}</span>, for the three probability families), of which the paper reports that only 3 special cases (<span>\chi(4\to1^+)</span>, <span>\chi(1\to1^+)</span>, <span>\chi(1\to2^+)</span>) were previously known, and none of the <span>\mathrm{Pr}[m\to i]</span> or general <span>\mathrm{Pr}[m\to i^+]</span> cases had been derived at all. Sample numerics quoted in the text: for <span>m=4, i=2</span>, the values of <span>\chi(4\to2^+)</span>, <span>\mathrm{Pr}[4\to2]</span>, and <span>\mathrm{Pr}[4\to2^+]</span> are <span>0.0002179705383556</span>, <span>0.000217970523646</span>, and <span>0.0002179705285492</span> respectively -- numerically very close but formally distinct quantities, since the dominant contribution in all three is the "exactly <span>i</span> passive" term.</p>
+</section>
+<section><h2>Remark 1: Correcting Prior Estimates for Pr[m &amp;rarr; i+]</h2>
+<p>The paper shows that prior heuristic estimates of "at least one passive inverse diagonal" probabilities in Bao et al. and Grassi-Rechberger were not fully correct, because they implicitly treated the four inverse diagonals as independent, which they are not (once several diagonals in an active column are forced passive, the remaining diagonal's passiveness is constrained by the MDS branch-number property).</p>
+<p>Bao et al. compute <span>1-(1-P_{4,1^+}^4)^4 \approx 2^{-30}+2^{-51.985}</span> for <span>\mathrm{Pr}[1\to1^+]</span>, implicitly assuming inverse-diagonal independence. The paper shows this is inconsistent (e.g., it would imply that "all inverse diagonals passive" has probability <span>P_{4,1^+}^{16}</span>, which is impossible for two distinct plaintexts, and that "exactly three inverse diagonals passive" has probability <span>P_{4,1^+}^{12}</span>, when in fact MDS forces the fourth byte in a fully-passive-except-one column configuration to be active, giving the exact value <span>P_{4,3}^4</span>). The correct expression, derivable from Theorem 1, is</p>
+<p>$$\mathrm{Pr}[1\to1^+] = 4P_{4,1^+}^{4} - 6P_{4,2^+}^{4} + 4P_{4,3^+}^{4},$$</p>
+<p>with the actual-to-approximate ratio being <span>1+2^{-43.81}</span>.</p>
+<p>Similarly, Grassi and Rechberger's estimate for <span>\mathrm{Pr}[4\to1^+]</span>, namely <span>2^{-30}+2^{-50.98}</span> (four times <span>\chi(4\to1^+)</span>), ignores joint events where two or more inverse diagonals are simultaneously passive, giving a deviation of <span>2^{-57.75}</span> from the accurate value, i.e. a relative difference of <span>1-2^{-27.75}</span>.</p>
+</section>
+<section><h2>Verification of Theorem 1</h2>
+<p>Section 4.3 of the paper cross-checks Theorem 1 in several independent ways:</p>
+<ul>
+<li>Computing <span>\mathrm{Pr}[m\to0]</span> two different ways (once via Part 2 with <span>i=0</span>, once as <span>1-\mathrm{Pr}[m\to1^+]</span> via Part 3) and confirming they agree, since <span>\sum_{i=0}^{3}\mathrm{Pr}[m\to i]=1</span>.</li>
+<li>Substituting the Theorem 1 formulas for <span>\chi</span> and <span>\mathrm{Pr}[m\to j]</span> into the general relation of Lemma 3 and checking the identity holds algebraically (worked explicitly for <span>m=2,i=2</span>, showing <span>\mathrm{Pr}[2\to2] = 6(\chi(2\to2^+)-2\chi(2\to3^+))</span> reduces correctly on both sides).</li>
+<li>Confirming that setting <span>i=0</span> in Part 1 recovers <span>\chi(m\to0^+)=1</span> trivially, since <span>\sum_{\ell=0}^{m-1}\binom{4}{\ell}P_{m,\ell}=1</span> and <span>P_{4-\ell,0^+}=1</span>.</li>
+<li>Reproducing Bao et al.'s <span>\chi(1\to1^+)</span> value exactly (Proposition 1) and Grassi-Rechberger's expected count of <span>2{,}147{,}484{,}685.6</span> plaintext pairs (out of <span>2^{32}</span> plaintexts on one active diagonal) with a given inverse diagonal passive, reproduced as <span>2{,}147{,}484{,}685.59</span> by taking the weighted average of <span>\chi(m\to1^+)</span> for <span>m=1,2,3,4</span> over the corresponding pair counts <span>4\cdot2^{31}(2^8-1)</span>, <span>6\cdot2^{31}(2^8-1)^2</span>, <span>4\cdot2^{31}(2^8-1)^3</span>, and <span>2^{31}(2^8-1)^4</span>.</li>
+<li>A separate computer implementation independently recomputes all values in Figure 6 (bias plots for <span>\chi</span>, <span>\mathrm{Pr}[m\to i]</span>, and <span>\mathrm{Pr}[m\to i^+]</span> across all <span>(m,i)</span> pairs) to confirm the analytical formulas.</li>
+</ul>
+</section>
+<section><h2>Multiple Active Diagonals: Theorem 2</h2>
+<p>Section 5 extends the analysis beyond a single active plaintext diagonal, a setting the authors say was not systematically studied before. Theorem 2 considers a plaintext pair with <span>i</span> active diagonals, each containing exactly <em>one</em> active byte, and computes the probability that the ciphertext pair has three passive inverse diagonals and one active inverse diagonal, with the passive bytes of that active inverse diagonal confined to <span>j</span> given columns:</p>
+<p>$$\sum_{\ell=0}^{\min\{i,4-j\}-1} 4\binom{4}{\ell}P_{i,\ell}^{4}\,P_{4,3}^{4-\ell}\,P_{4-\ell,j}.$$</p>
+<p>The proof partitions characteristics by the number <span>\ell \in \{0,1,2,3\}</span> of passive columns immediately before <span>MC_3</span>: with <span>i</span> active diagonals each holding one active byte, round 1 leaves <span>i</span> active columns each with <span>i</span> active bytes; <span>\ell</span> of the resulting four columns become passive after <span>MC_2</span> with probability <span>\binom{4}{\ell}P_{i,\ell}^4</span> (applying Lemma 1 independently per column), and the remaining <span>4-\ell</span> fully active columns must collapse to a single active diagonal by <span>MC_3</span> (probability <span>4P_{4,3}^{4-\ell}</span>), whose <span>4-\ell</span> active bytes then produce <span>j</span> passive bytes at <span>MC_4</span> (probability <span>P_{4-\ell,j}</span>). For <span>i=4,j=0</span> this yields four partitions with <span>4, 16, 24, 16</span> characteristics respectively (illustrated in the paper's Figure 7).</p>
+<p>Numerically, the paper reports (Figure 8) that the largest bias relative to the random-permutation baseline occurs at <span>i=1</span> for all <span>j</span>, since for only one inverse diagonal to remain active after 5 rounds when <span>i=1</span>, the relevant MC3 input column is fully active with certainty, producing a stronger deviation than for larger <span>i</span>. For a uniform random permutation, the corresponding baseline probability (three passive inverse diagonals, one active with <span>j</span> passive bytes among the <span>4-j</span> active positions) is</p>
+<p>$$\frac{2^{-8j-94}(1-2^{-8})^{4-j}}{1-2^{-128}}.$$</p>
+</section>
+<section><h2>Theorem 3: Encryption/Decryption Symmetry and Arbitrary Input Differences</h2>
+<p>Theorem 3 removes the restriction of Theorem 2 that each active diagonal contains exactly one active byte and instead allows an <em>arbitrary</em> number of active diagonals with arbitrary structure, by exploiting the structural symmetry between AES encryption and decryption: because MixColumns is omitted in the last round and the S-box/ShiftRows layers preserve the relevant properties, Lemma 1 and Lemma 2 apply equally in the decryption direction. This lets the authors reinterpret Theorem 1 "backwards" (i.e., condition on ciphertext structure and derive plaintext-side probabilities), then invoke Bayes' theorem to flip the conditioning back to the encryption direction.</p>
+<p>Given that <span>i</span> specified diagonals of the plaintext pair are active (others passive), the probability that the 5-round ciphertext pair has three specified passive inverse diagonals and one active inverse diagonal with exactly <span>m</span> passive bytes is:</p>
+<p>$$\mathrm{Pr}[i\Rightarrow m] = \frac{\binom{4}{m}\sum_{\ell=0}^{\min\{4-m,i\}-1}\binom{4}{\ell}P_{4-m,\ell}\left(\sum_{j=0}^{i-\ell-1}\binom{i}{j}(-1)^jP_{4-\ell,(4-i+j)^+}^{4}\right)}{2^{32i+8m-32}(1-2^{-8})^{m-4}(1-2^{-32})^{i}}.$$</p>
+<p>The derivation route: (a) from Theorem 1, Part 2, the probability that the ciphertext contains exactly <span>i</span> active (and <span>4-i</span> passive) inverse diagonals given <span>4-m</span> active bytes in a fixed diagonal (decryption direction) is derived; (b) dividing by <span>\binom{4}{4-i}</span> fixes the positions of the passive diagonals; (c) Bayes' theorem is applied,</p>
+<p>$$\mathrm{Pr}[m \Leftarrow i] = \frac{\mathrm{Pr}[(4-m)\to(4-i)]\cdot \mathrm{Pr}[m\text{ passive bytes in a fixed diagonal}]}{\binom{4}{4-i}\cdot\mathrm{Pr}[i\text{ active inverse diagonals at fixed positions}]},$$</p>
+<p>where <span>\mathrm{Pr}[m\text{ passive bytes in a fixed diagonal}] = \binom{4}{m}(1-2^{-8})^{4-m}2^{-8(12+m)}</span> and <span>\mathrm{Pr}[i\text{ active inverse diagonals at fixed positions}] = (1-2^{-32})^i 2^{-32(4-i)}</span>; (d) finally <span>\mathrm{Pr}[i\Rightarrow m]=\mathrm{Pr}[m\Leftarrow i]</span> by the encryption/decryption symmetry. Table 2 in the paper lists the ratio of these probabilities to the corresponding random-permutation baseline for <span>i\in\{1,2,3,4\}</span> and <span>m\in\{0,1,2,3\}</span>, with biases ranging from about <span>2^{-52}</span> (for <span>i=4</span>) up to about <span>3.2\%</span> (for <span>i=1</span>). Theorem 3 is the result that is directly used to build the ciphertext-only attacks in Section 6, since it permits arbitrary (multi-diagonal) input differences rather than requiring chosen plaintexts with a single controlled active diagonal.</p>
+</section>
+<section><h2>Theorem 4: Two Diagonals with (m1, m2) Active Bytes</h2>
+<p>Theorem 4 addresses plaintext pairs with exactly two active diagonals, containing <span>m_1</span> and <span>m_2</span> active bytes respectively (<span>1\le m_1,m_2\le4</span>), and computes the probability that the ciphertext has three passive inverse diagonals and one active inverse diagonal with passive bytes confined to <span>j</span> given columns:</p>
+<p>$$\sum_{i_1=0}^{\alpha}\sum_{i_2=0}^{\beta}\sum_{t=0}^{\gamma} 4\binom{4}{t}\binom{4}{i_1}\binom{4-i_1}{i_2}\delta(t,i_1,i_2)\,P_{m_1,i_1}\,P_{m_2,i_2}\,P_{2,t}^{4-(i_1+i_2)}\,P_{4,3}^{4-t}\,P_{4-t,j},$$</p>
+<p>where <span>\alpha=\min\{3,m_1-1\}</span>, <span>\beta=\min\{4-i_1,m_2-1,3\}</span>, <span>\gamma=\min\{2,4-j\}-1</span>, and <span>\delta(t,i_1,i_2) = \delta_{1-t}\,\delta_{i_1+i_2} + \delta_{1-(i_1+i_2)}</span>.</p>
+<p>Sketch of the proof: after round 1, two active columns hold <span>m_1</span> and <span>m_2</span> active bytes respectively; let <span>i_1, i_2</span> be the number of passive bytes their MC1 outputs produce, and let <span>t</span> be the number of passive diagonals at the MC2 output. Because at most two active columns feed MC2 (so each column there has at most two active bytes), the branch-number property forces <span>t\in\{0,1\}</span>, and <span>t=1</span> is only possible when <span>i_1=i_2=0</span> (both columns fully active, giving two fully active inverse diagonals feeding one MC2 column) &mdash; this constraint is exactly what <span>\delta(t,i_1,i_2)</span> encodes. The remaining structure (collapsing to one active diagonal by MC3, then <span>j</span> passive bytes at MC4) mirrors the argument in Theorem 2. Table 3 in the paper tabulates the probability ratios (relative to random permutation) for all <span>(m_1,m_2)</span> pairs with <span>m_1\le m_2</span> (by symmetry of MC transition probabilities under swapping <span>m_1,m_2</span>) and <span>j=0,1,2,3</span>; values cluster tightly around a bias of roughly <span>2\times10^{-4}</span> for most <span>(m_1,m_2)</span>, with slightly larger bias (about <span>3\times10^{-4}</span>) when <span>m_1=m_2=1</span>. This theorem contributes 72 new truncated differentials for previously unexplored two-active-diagonal configurations.</p>
+</section>
+<section><h2>Cross-Theorem Consistency Checks</h2>
+<p>Section 5.1 verifies three pairs of overlapping results algebraically and by an independent computer implementation:</p>
+<p><b>Theorem 1 vs. Theorem 3.</b> Taking the weighted average over <span>m=1,\dots,4</span> of <span>\mathrm{Pr}[m\to3]</span> from Theorem 1 (weighted by the pair count <span>D(m)=\binom{4}{m}2^{31}(2^8-1)^m</span> for each <span>m</span>), combined with the MC4 transition probability <span>P_{4,j}</span>, reproduces exactly the value of <span>\mathrm{Pr}[1\Rightarrow j]</span> from Theorem 3, i.e.</p>
+<p>$$\sum_{m=1}^{4}\frac{D(m)\cdot\mathrm{Pr}[m\to3]\cdot\binom{4}{j}P_{4,j}}{4\cdot2^{31}\cdot(2^{32}-1)} = \frac{\binom{4}{j}P_{4-j,0}\,P_{4,3}^{4}}{(2^8-1)^j(1-2^{-8})^{-4}(1-2^{-32})}.$$</p>
+<p><b>Theorem 2 vs. Theorem 4.</b> The common case where a plaintext has two active diagonals with exactly one active byte each (<span>i=2</span> in Theorem 2, <span>m_1=m_2=1</span> in Theorem 4) is shown to give identical probability expressions for each <span>j</span> after substitution.</p>
+<p><b>Theorem 3 vs. Theorem 4.</b> For <span>i=2</span> in Theorem 3, dividing the resulting probability (over <span>m</span>) by <span>\binom{4}{m}</span> is shown to equal, up to a factor of 4, the appropriately weighted average of Theorem 4's <span>\mathrm{Pr}(m_1,m_2,j)</span> over all <span>(m_1,m_2)</span> and <span>j</span> combinations consistent with the target <span>m</span>.</p>
+</section>
+<section><h2>Plaintext Redundancy Models and Diagonal-Activity Probabilities</h2>
+<p>To mount a <em>ciphertext-only</em> attack, the paper needs a model of how likely a plaintext pair is to exhibit few active diagonals, exploiting the statistical redundancy of realistic plaintexts. Two plaintext models are used, both in ECB mode:</p>
+<ul>
+<li><b>English-ASCII:</b> natural English text encoded as ASCII. Byte-collision probability (probability that two independently drawn plaintext bytes are equal) is estimated from the index of coincidence at the conservative lower bound of <span>6\% \approx 2^{-4.06}</span> (a typical IoC range for English is <span>6\%\text{--}8\%</span>).</li>
+<li><b>Uniform-ASCII:</b> plaintext bytes drawn uniformly from the 95 printable ASCII characters, giving byte-collision probability <span>\sum_{c=1}^{95}(1/95)^2 = 1/95 \approx 2^{-6.57}</span>.</li>
+</ul>
+<p>Table 4 in the paper gives the probability that a plaintext pair has exactly <span>i</span> active diagonals (and <span>4-i</span> passive) under each model, e.g. under English-ASCII:</p>
+<p>$$\Pr[\text{exactly }i\text{ active diagonals}] = \frac{\binom{4}{i}(1-2^{-16.24})^{i}(2^{-4.06})^{4(4-i)}}{1-2^{-64.9}}, \quad i=1,\ldots,4,$$</p>
+<p>giving approximate values <span>2^{-46.7}, 2^{-29.9}, 2^{-14.2}</span>, and <span>1-2^{-14.2}</span> for <span>i=1,2,3,4</span> respectively (here <span>2^{-16.24}</span> and <span>2^{-64.9}</span> derive from the per-diagonal and per-plaintext collision probabilities of four consecutive bytes under the <span>2^{-4.06}</span> per-byte model). Under the uniform-ASCII model, the analogous values are <span>2^{-76.8}, 2^{-50.0}, 2^{-24.3}</span>, and <span>1-2^{-24.3}</span>. In both models the case <span>i=3</span> (i.e. exactly one passive diagonal) has the largest probability short of the trivial all-active case, and it is this configuration &mdash; the "dominant contribution" case &mdash; that the attacks below primarily exploit, since the structural redundancy of the plaintext and the truncated-differential bias reinforce each other most strongly there.</p>
+</section>
+<section><h2>Ciphertext-Only Distinguisher on 5-Round AES (Section 6.1)</h2>
+<p>Using Theorem 3's <span>\mathrm{Pr}[i\Rightarrow m]</span> results with <span>m=0</span> (four active bytes concentrated in one fixed inverse diagonal), and averaging over the plaintext-side active-diagonal count <span>i</span> weighted by the English-ASCII probabilities of Table 4, the paper obtains:</p>
+<p>$$P_A = \frac{\sum_{i=1}^{4}\binom{4}{i}\mathrm{Pr}[i\Rightarrow0]\cdot(1-2^{-16.24})^{i}(2^{-4.06})^{4(4-i)}}{1-2^{-64.9}} \approx 2^{-96.0226}. \tag{10}$$</p>
+<p>For a random permutation, the same event has baseline probability</p>
+<p>$$P_R = \frac{2^{-96}(1-2^{-8})^4}{1-2^{-128}}. \tag{11}$$</p>
+<p>giving a distinguishing gap of <span>P_A/P_R \approx 1+2^{-35.22}</span>. Using the sample-complexity formula of Samajder and Sarkar,</p>
+<p>$$N \approx \frac{3\left(\sqrt{P_A\ln(1/\alpha)} + \sqrt{P_R\ln(2/\beta)}\right)^2}{(P_A-P_R)^2}, \tag{13}$$</p>
+<p>and the threshold</p>
+<p>$$\mathrm{thd} = N(P_A-P_R) - \sqrt{3NP_A\ln(1/\alpha)} = \sqrt{3NP_R\ln(2/\beta)}, \tag{14, 15}$$</p>
+<p>with <span>\alpha=\beta=0.05</span> the paper obtains <span>N\approx2^{171.8}</span> pairs, requiring <span>2^{86.4}</span> ciphertexts, with threshold <span>\mathrm{thd}\approx2^{39.6}</span>. The success probability is computed via the standard hypothesis-testing decomposition (<span>H_1</span>: AES output, <span>H_0</span>: random permutation, equal priors):</p>
+<p>$$P_{succ} = \tfrac12(1-\alpha) + \tfrac12(1-\beta) = 1 - \tfrac{\alpha+\beta}{2} = 0.95.$$</p>
+<p>The resulting time complexity is <span>86.4\cdot2^{86.4}\approx 2^{92.8}</span> memory accesses (English-ASCII model). Under the uniform-ASCII model, the byte-passive probability is <span>1/95\approx2^{-6.57}</span>, giving <span>P_A\approx2^{-96.023}</span>, <span>P_A/P_R\approx1+2^{-45.3}</span>, <span>N\approx2^{191.9}</span> pairs (<span>2^{96.5}</span> ciphertexts), <span>\mathrm{thd}\approx2^{49.7}</span>, and time complexity <span>96.5\cdot2^{96.5}\approx2^{103.1}</span> memory accesses.</p>
+</section>
+<section><h2>Ciphertext-Only Key-Recovery Attack on 6-Round AES (Section 6.2, Algorithm 1)</h2>
+<p>The 6-round attack appends one round to the 5-round distinguisher. The starting point (Figure 9 of the paper) is the <span>m=3</span> version of the weighted average, i.e. the probability that the 5-round ciphertext pair has exactly one active byte in a fixed inverse diagonal at positions <span>[0,7,10,13]</span>:</p>
+<p>$$\frac{\sum_{i=1}^{4}\binom{4}{i}\mathrm{Pr}[i\Rightarrow3]\cdot(1-2^{-16.24})^{i}(2^{-4.06})^{4(4-i)}}{1-2^{-64.9}} \approx 2^{-118.006}\quad(\text{English-ASCII}),$$</p>
+<p>versus a random-permutation baseline of <span>4\cdot2^{-120}(1-2^{-8})/(1-2^{-128})</span>. Since the pair is known (conditioned on) to have exactly one fully active inverse diagonal at fixed positions, partial-decrypting with the correct 32-bit subkey <span>RK_6[0,7,10,13]</span> should produce a single active byte in <span>\Delta SR_5</span> with probability</p>
+<p>$$P_A = 2^{-118.006}\cdot\frac{1-2^{-128}}{2^{-96}(1-2^{-8})^4},$$</p>
+<p>whereas a wrong key gives the random baseline <span>P_R = 4P_{4,3} = 4\cdot2^{-120}(1-2^{-8})/\left(2^{-96}(1-2^{-8})^4\right)</span>, so the correct-key/wrong-key ratio is <span>\approx 1+2^{-36.24}</span>.</p>
+<p>With target success rate <span>95\%</span> (<span>\alpha=0.05</span>) and Type-II error <span>\beta=2^{-32}</span> (needed because the targeted subkey space is 32 bits), Eqs. (13)-(14) give <span>N\approx2^{101.4}</span> pairs and threshold <span>\mathrm{thd}\approx2^{42.8}</span>. Since the required 12 specified bytes must be passive (probability <span>\approx2^{-96}</span>), the total number of ciphertext pairs needed is <span>\approx2^{197.4}</span>, from <span>2^{99.2}</span> ciphertexts.</p>
+<p><b>Attack procedure (English-ASCII, all key sizes share Algorithm 1's core, see below):</b></p>
+<ol>
+<li>Filter the <span>2^{197.4}</span> ciphertext pairs, keeping only those with zero difference at 12 specified byte positions and nonzero difference at the 4 positions <span>S=\{0,7,10,13\}</span>; roughly <span>2^{101.4}</span> pairs survive, stored in list <span>A</span> (memory <span>\approx2\cdot2^{101.4}\cdot2^7 = 2^{106.4}</span> bytes).</li>
+<li>For each of <span>2^8</span> guesses of <span>RK_6[0]</span>: initialize <span>2^{24}</span> counters (one per candidate <span>RK_6[7,10,13]</span>); for each surviving pair, partially decrypt through the guessed byte, solve the 3 linear equations <span>\Delta MC_5^{-1}[1,2,3]=0</span> for the corresponding 24-bit subkey, and increment each of the (roughly <span>2^{2}</span>, since <span>224\cdot2^{-22}=2^2</span>) resulting key candidates' counters.</li>
+<li>For each of the <span>2^{24}</span> candidates, keep it if its counter exceeds threshold <span>\mathrm{thd}+N\cdot P_R \approx 2^{42.8}+2^{79.5}</span>; this is repeated for each of the <span>2^8</span> guesses of <span>RK_6[0]</span>, over a total key space of <span>2^{32}</span>, leaving (with 95% success) only the correct 32-bit subkey <span>RK_6[0,7,10,13]</span>.</li>
+</ol>
+<p>Complexity accounting: each of the <span>2^{101.4}</span> pairs yields about <span>2^{10}</span> subkey candidates across all <span>RK_6[0]</span> guesses combined, giving <span>2^{111.4}</span> memory accesses / additions total; memory complexity for the 24-bit counter array is <span>2^{24}\cdot80\text{ bits}\approx2^{27.3}</span> bytes. Repeating this whole 32-bit-subkey recovery four times, choosing the active-byte position in a different column each time, recovers the full 128-bit round-6 subkey, for an overall <span>2^{113.4}</span> additions (English-ASCII, all key sizes for the 128-bit-subkey-recovery stage).</p>
+<p><b>Completing key recovery per key size (English-ASCII):</b></p>
+<ul>
+<li><b>AES-128:</b> stops here; time <span>2^{113.4}</span> additions, memory <span>2^{106.4}</span> bytes, data <span>2^{99.2}</span> ciphertexts.</li>
+<li><b>AES-192:</b> guess the 64-bit <span>RK_5[8,\ldots,15]</span>, combine with recovered <span>RK_6</span>, decrypt a ciphertext and test whether the plaintext is plausible English-ASCII (the unicity distance under the weaker uniform-ASCII plausibility test, <span>64/22.9\approx2.79</span> blocks, is used conservatively, needing 3-4 ciphertexts); exhaustive search over the 64-bit guess with 4 ciphertexts costs <span>4\cdot2^{64}\approx2^{66}</span> encryptions (not dominant). Overall: <span>2^{113.4}</span> additions, <span>2^{106.4}</span> bytes, <span>2^{99.2}</span> ciphertexts.</li>
+<li><b>AES-256:</b> guess the 128-bit <span>RK_5</span>, unicity distance <span>128/22.9\approx5.59</span> blocks (7-8 ciphertexts needed); exhaustive search costs <span>8\cdot2^{128}\approx2^{131}</span> encryptions, which dominates. Overall: <span>2^{131}</span> encryptions, <span>2^{106.4}</span> bytes, <span>2^{99.2}</span> ciphertexts.</li>
+</ul>
+<p><b>Uniform-ASCII model (applicable only to AES-192/256, since AES-128 there does not beat brute force):</b> the analogous 5-round probability is <span>\approx2^{-118.006}</span> as well but with different constants, giving <span>P_A/P_R\approx1+2^{-46.3}</span>, <span>N\approx2^{121.6}</span> pairs, threshold <span>\mathrm{thd}\approx2^{52.8}</span>, and <span>2^{217.6}</span> total pairs from <span>2^{109.3}</span> ciphertexts. This yields, for AES-192 and AES-256, overall time complexity <span>2^{133.6}</span> additions, memory <span>2^{126.6}</span> bytes, data <span>2^{109.3}</span> ciphertexts (AES-256's brute-force completion step, <span>8\cdot2^{128}\approx2^{131}</span> encryptions, dominates the stated <span>2^{131}</span> encryptions time figure for that key size).</p>
+</section>
+<section><h2>Remark 3: A Chosen-Plaintext Variant</h2>
+<p>The same truncated differential can be exploited in a chosen-plaintext setting instead of ciphertext-only. Using <span>\mathrm{Pr}[2\Rightarrow3]</span> directly (two active diagonals in the chosen plaintext, one active byte surviving in a fixed ciphertext inverse diagonal after 5 rounds), the paper computes:</p>
+<p>$$P_A = \frac{\mathrm{Pr}[2\Rightarrow3](1-2^{-128})}{2^{-96}(1-2^{-8})^4}, \qquad P_R = \frac{4\cdot2^{-120}(1-2^{-8})}{2^{-96}(1-2^{-8})^4}.$$</p>
+<p>With <span>\alpha=0.05,\beta=2^{-32}</span>, Eq. (13) gives <span>N\approx2^{53.7}</span> pairs, i.e. <span>2^{149.7}</span> total pairs, generated efficiently using "structures" (plaintext sets where the two active diagonals range over all values with the rest fixed): about <span>2^{22.7}</span> structures (<span>2^{86.7}</span> chosen plaintexts total) suffice, each yielding <span>\approx2^{127}</span> usable pairs after excluding those accidentally landing in the three-passive-diagonal case. The remainder of the attack follows Algorithm 1 unchanged, with different pair counts. This gives, for AES-128, time complexity <span>2^{65.7}</span> additions, memory <span>2^{58.7}</span> bytes, data <span>2^{86.7}</span> chosen plaintexts &mdash; substantially cheaper than the ciphertext-only version, as expected given the stronger (chosen-plaintext) attack model. For AES-192/256, the paper notes that a cheaper alternative exists: Daemen and Rijmen's integral attack recovers the 5th-round equivalent subkey in about <span>2^{38}</span> encryptions, after which the master key follows by inverting the key schedule between two consecutive round subkeys.</p>
+</section>
+<section><h2>Comparison with Prior Work (Table 1)</h2>
+<p>The paper's Table 1 situates its results among prior secret-key distinguishers/attacks on 5- and 6-round AES. Selected entries (D = distinguisher, KR = key recovery; CP = chosen plaintext, CC = chosen ciphertext, ACC = adaptive chosen ciphertext, ACPC = adaptive chosen plaintext/ciphertext, C-O = ciphertext-only):</p>
+<p><b>5-round distinguishers:</b> Yoyo (R&oslash;njom et al.), <span>2^{26.8}</span> data, ACC, <span>2^{24.8}</span> XOR + <span>2^{26.8}</span> memory accesses; corrected Yoyo** (Mondal et al.), <span>2^{30.65}</span> data; Truncated Differential (Bao et al.), <span>2^{68}</span> CP data, <span>2^{73.3}</span> memory accesses; Truncated Differential (Chang et al.), <span>2^{42.59}</span> CP data, <span>2^{42.91}</span> encryptions; Probabilistic Mixture Differential (Grassi-Schofnegger), <span>2^{55}</span> CP; Truncated Differential via mean (Grassi-Rechberger), <span>2^{48.96}</span> CP; Multiple-of-8 (Grassi-Rechberger-R&oslash;njom), <span>2^{32}</span> CP; Exchange Attack (Bardeh-R&oslash;njom), <span>2^{30}</span> CP. <b>This paper's 5-round ciphertext-only distinguisher:</b> <span>2^{86.4}</span> data (C-O, English-ASCII), <span>2^{92.8}</span> memory accesses; and <span>2^{96.5}</span> data (C-O, uniform-ASCII), <span>2^{103.1}</span> memory accesses.</p>
+<p><b>6-round attacks:</b> Yoyo, <span>2^{123.8}</span> data; corrected Yoyo**, <span>2^{129.15}</span>; Truncated Differential (Bao et al.), <span>2^{89.43}</span> CP, <span>2^{96.52}</span> memory accesses; Zero Difference (R&oslash;njom et al.), <span>2^{122.8}</span> ACC data; Exchange Attack, <span>2^{88.2}</span> CP; Truncated Boomerang (Bariant-Leurent), <span>2^{87}</span> ACC; Boomerang Chain (Yan et al.), <span>2^{76.57}</span> ACPC; Truncated Differential (Chang et al.), <span>2^{62.88}</span> ACPC data, <span>2^{63.42}</span> encryptions. The paper positions its own results as the first ciphertext-only entries in this table for both 5 and 6 rounds, trading substantially higher data/time complexity for a strictly weaker adversarial model (no chosen plaintexts or ciphertexts required at all).</p>
+</section>
+<section><h2>Conclusion and Future Work</h2>
+<p>The paper's stated contributions are: (1) a general analytical framework unifying and extending prior truncated-differential analyses of 5-round AES; (2) exact computation, for the single-active-diagonal setting, of all 48 <span>(m,i)</span> configurations across <span>\chi(m\to i^+)</span>, <span>\mathrm{Pr}[m\to i]</span>, and <span>\mathrm{Pr}[m\to i^+]</span>; (3) the first systematic treatment of multi-active-diagonal truncated differentials, yielding 72 new differentials; (4) validation via independent derivations, cross-theorem checks, and independent computer enumeration; and (5) the first ciphertext-only distinguisher for 5-round AES and ciphertext-only key-recovery attack on 6-round AES across all key sizes.</p>
+<p>The authors are explicit that they do not remove the standard round-independence heuristic, citing Chang et al.'s independence-free computation of <span>\chi(1\to1^+)</span> (which nearly matches their own value), mini-AES experiments by Grassi et al. and Bao et al., and Liu-Tessaro-Vaikuntanathan's theoretical work on approximate pairwise independence in SPNs as partial justification that the resulting error is negligible for the cases studied. They frame their contribution as making previously intractable multi-active/multi-passive-diagonal combinatorics tractable under this standard heuristic, noting the same techniques (equivalence-class partitioning, exact MDS transition probabilities, systematic inclusion-exclusion) would remain useful even if the independence assumption were later removed.</p>
+<p><b>Open problems and future directions noted by the authors:</b></p>
+<ul>
+<li>The fully general case of multiple active diagonals in the plaintext <em>together with</em> multiple passive inverse diagonals in the ciphertext, for 5-round AES, remains open (the paper covers either single active diagonal / arbitrary passive inverse diagonals, or multiple active diagonals / single passive inverse diagonal, but not both generalized simultaneously).</li>
+<li>Extending the ciphertext-only attack to 6-round AES under more relaxed plaintext assumptions.</li>
+<li>Extending the framework beyond 5 rounds under additional structural or probabilistic relaxations.</li>
+<li>Applying the same machinery to other AES-like SPN ciphers with MDS or almost-MDS diffusion layers; the authors cite their own companion work on truncated differential analysis of the Midori-64 cipher as one such example.</li>
+</ul>
+</section>
+<section><h2>Algorithms</h2>
+<p>The paper contains one explicit algorithm, Algorithm 1, describing the ciphertext-only key-recovery attack on 6-round AES-128 under the English-ASCII plaintext model (the same procedure, with different pair counts, underlies the AES-192/256 and uniform-ASCII variants described in the text).</p>
+<pre><code>Algorithm 1: Ciphertext-only Attack on 6-Round AES (English-ASCII)
+Require: 2^99.2 ciphertexts
+Ensure: Correct 32-bit subkey RK6[0, 7, 10, 13]
+
+1: Initialize empty lists A and K
+2: for each ciphertext pair (Cm, Cn), where 1 <= m < n, generated from
+   the 2^99.2 ciphertexts do
+3:     if Delta(Cm[t], Cn[t]) = 0 for all t not in S
+          and Delta(Cm[t], Cn[t]) != 0 for all t in S,
+          where S = {0, 7, 10, 13} then
+4:         Add (Cm, Cn) to the list A
+5:     end if
+6: end for
+7: for each 8-bit guess for RK6[0] do
+8:     Initialize an empty counter list B_i for each possible value of
+       RK6[7, 10, 13], where 1 <= i <= 2^24
+9:     for each ciphertext pair (Cm, Cn) in A do
+10:        Compute Delta SB6^{-1}[1, 2, 3] through Delta MC5^{-1}[1, 2, 3] = 0
+11:        if SB_out^in(Delta SB6^{-1}[1, 2, 3], Delta SB6) != empty then
+12:            Determine subkeys for RK6[7, 10, 13]
+13:            Increment the counter B_i associated with each subkey
+14:        end if
+15:    end for
+16:    for each i in {1, ..., 2^24}, where i indexes one candidate value of
+        RK6[7, 10, 13] do
+17:        if counter of B_i > 2^79.5 + 2^42.8 then
+18:            Add 32-bit subkey (RK6[0, 7, 10, 13]) to K
+19:        end if
+20:    end for
+21: end for
+22: return list K
+</code></pre>
+<p>Notes on the algorithm's steps, as explained in the surrounding text: Step 2 (lines 2-7) is a filtering pass that keeps only ciphertext pairs consistent with the target truncated differential (12 specified bytes passive, 4 specified bytes active), reducing <span>2^{197.4}</span> candidate pairs down to about <span>2^{101.4}</span> pairs stored in <span>A</span> (memory cost about <span>2^{106.4}</span> bytes). Step 3 (lines 8-16) fixes an 8-bit guess of <span>RK_6[0]</span>, partially decrypts each surviving pair through that byte, and for each pair solves three linear equations (<span>\Delta MC_5^{-1}[1,2,3]=0</span>) to identify the roughly <span>2^{2}</span> compatible values of the 24-bit subkey <span>RK_6[7,10,13]</span> (since <span>2^{24}\cdot2^{-22}=2^2</span>), incrementing the corresponding counters (memory <span>\approx2^{27.3}</span> bytes for the counter array). Step 4 (lines 17-21) applies the statistical threshold <span>\mathrm{thd}+N\cdot P_R\approx2^{42.8}+2^{79.5}</span> derived from the distinguisher's success/error targets to retain only the (with high probability, unique) correct 32-bit subkey candidate, repeating over all <span>2^8</span> guesses of <span>RK_6[0]</span>. The overall time complexity of Algorithm 1 is <span>2^{111.4}</span> additions/memory accesses for recovering one 32-bit subkey quadruple; running it four times (varying which column of the 5-round distinguisher's output byte is targeted) recovers the full 128-bit round-6 subkey at a combined cost of <span>2^{113.4}</span> additions, after which key-schedule-specific brute-force completion recovers the full master key for AES-192 and AES-256 as described in Section 6.2 of this summary.</p>
+<p>The paper contains no other named algorithms; all other procedures (probability derivations in Lemmas 1-3 and Theorems 1-4, and the distinguisher construction of Section 6.1) are presented as mathematical derivations rather than as pseudocode.</p>
+</section>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/\bfig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+})();
+function rtSetupEquations(){
+  var prev=document.getElementById('rt-eqprev');
+  if(!prev){prev=document.createElement('div');prev.id='rt-eqprev';document.body.appendChild(prev);}
+  function showEq(html,e){prev.innerHTML=html;prev.style.display='block';var x=Math.min(e.clientX+20,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+20,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hideEq(){prev.style.display='none';}
+  var eqs=document.querySelectorAll('mjx-container[display="true"]'),htmlByNum={};
+  for(var i=0;i<eqs.length;i++){var n=i+1;eqs[i].id='eq'+n;htmlByNum[n]=eqs[i].outerHTML;}
+  if(!eqs.length)return;
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='script'||tg==='style')continue;
+    if(pn.closest&&pn.closest('mjx-container'))continue;
+    if(/\beq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!htmlByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#eq'+num;a.className='rt-eqref';a.textContent=m[0];
+      (function(h){a.addEventListener('mousemove',function(e){showEq(h,e);});a.addEventListener('mouseleave',hideEq);})(htmlByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+}
+window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],tags:'none'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},startup:{pageReady:function(){return MathJax.startup.defaultPageReady().then(function(){rtSetupEquations();});}}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>

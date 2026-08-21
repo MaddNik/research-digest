@@ -26,6 +26,18 @@
   source_url: "https://github.com/ephemer4l/NBMM"
   pdf: ""
   tags: ["homomorphic encryption", "BGV", "matrix multiplication", "normal bases", "self-dual normal basis", "optimal normal basis", "cyclotomic fields", "Galois rings", "bilinear forms", "triple product property", "Strassen algorithm", "Cohn-Umans", "tensor rank", "RLWE", "HElib"]
+- slug: "multi-diagonal-truncated-differentials-reduced-round-aes-2026-08-12"
+  title: "Multi-Diagonal Truncated Differentials and Ciphertext-Only Attacks on Reduced-Round AES"
+  url: "/summaries/multi-diagonal-truncated-differentials-reduced-round-aes-2026-08-12/"
+  date: "2026-08-12"
+  category: "Aes Cryptanalysis"
+  pub: "2026"
+  publisher: "IACR ePrint Archive, Paper 2026/1637"
+  meta_line: "IACR ePrint Archive, Paper 2026/1637"
+  source_type: "PDF (text-layer)"
+  source_url: "https://eprint.iacr.org/2026/1637"
+  pdf: ""
+  tags: ["AES", "cryptanalysis", "differential cryptanalysis", "truncated differential", "ciphertext-only attack", "block cipher", "SPN cipher", "key-recovery attack", "reduced-round AES", "MixColumns", "MDS matrix"]
 - slug: "shuffling-is-not-enough-permutation-model-confidentiality-2026-08-10"
   title: "Shuffling is Not Enough: Breaking Permutation-Based Model Confidentiality in Hybrid FHE Inference"
   url: "/summaries/shuffling-is-not-enough-permutation-model-confidentiality-2026-08-10/"
