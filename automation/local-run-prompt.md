@@ -22,18 +22,28 @@ skip it rather than padding.
 4. Cryptography: protocols, primitives, cryptanalysis, zero-knowledge, MPC
 5. Hardware security: side-channel and fault attacks, secure and trusted hardware, TEEs, supply chain
 
-Search these primary sources with WebSearch, and open the actual abstract pages
-with WebFetch:
-- arXiv recent listings and search: physics.optics, quant-ph, cs.CR
-- IACR ePrint: https://eprint.iacr.org/ (recent feed) for PQC, FHE, crypto, hardware
-- Venue announcements where relevant (TCHES/CHES, Eurocrypt, Crypto, Optica, Nature Photonics)
+There is no web-search tool available. Discover candidates by fetching these
+fixed seed endpoints with `fetch_url` and parsing the entries out of the
+returned text yourself:
+- arXiv API, one query per relevant category, sorted newest first, for
+  example:
+  `http://export.arxiv.org/api/query?search_query=cat:physics.optics&sortBy=submittedDate&sortOrder=descending&max_results=50`
+  (swap `cat:physics.optics` for `cat:quant-ph` and `cat:cs.CR` for the other
+  topics). This returns an Atom XML feed; each `<entry>` has a `<title>`, an
+  `<id>` (the arXiv abs URL), and a `<published>` date you can filter to the
+  last 7 days.
+- IACR ePrint's recent-papers feed:
+  `https://eprint.iacr.org/rss/rss.xml?order=recent` (Atom/RSS XML, newest
+  first) for PQC, FHE, crypto, and hardware security candidates.
+- Venue announcement pages where relevant, if you already know a stable URL
+  for one (TCHES/CHES, Eurocrypt, Crypto, Optica, Nature Photonics).
 
 Aim for about 5 to 8 strong papers per topic. Prefer substance over volume; skip
 incremental or off-topic results.
 
 ## 3. Verify every summary (mandatory)
 For each paper you include:
-1. Open the actual abstract or paper page (WebFetch the URL).
+1. Open the actual abstract or paper page with `fetch_url` (mode text).
 2. Write the summaries grounded only in the abstract. No claims the source does
    not make, no hype.
 3. Confirm that the title, authors, date, venue, and every factual claim match

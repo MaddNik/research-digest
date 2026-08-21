@@ -11,16 +11,43 @@ Run `git pull --rebase` first.
 ## 2. Research upcoming conferences
 Find notable UPCOMING conferences (events whose dates are in the future relative
 to today) in the semiconductor and/or photonics domains. Cover both areas, with
-an emphasis on Europe where relevant, for example:
-- Semiconductor / FPGA / EDA / circuits: FPL, ACM/SIGDA FPGA, DATE, DAC, ISSCC,
-  ESSERC (ESSCIRC), CICC, VLSI Symposium, Hot Chips, ICCAD.
-- Photonics: OFC, ECOC, CLEO, SPIE Photonics West, IEEE Photonics Conference,
-  Integrated Photonics Research.
-Include any others you find that fit "semiconductor and/or photonics" and look
-significant. Aim for roughly 8 to 15 upcoming entries.
+an emphasis on Europe where relevant.
 
-For each, use WebSearch and open the official conference site with WebFetch to
-confirm the details. Drop any conference you cannot verify.
+There is no web-search tool available. Start from this fixed seed list of
+official homepages (fetch each with `fetch_url`, mode text) and follow the
+links on each page to find the current or next edition's dates, location, and
+program:
+- Semiconductor / FPGA / EDA / circuits:
+  FPL: https://fpl.org/
+  ACM/SIGDA FPGA: https://www.isfpga.org/
+  DATE: https://www.date-conference.com/
+  DAC: https://dac.com/
+  ISSCC: https://www.isscc.org/
+  ESSERC (successor to ESSCIRC/ESSDERC, merged 2024): https://www.esserc2026.org/
+    (this one rotates to a year-numbered domain each edition; if that URL is
+    stale, fetch https://www.esserc2026.org/ anyway and follow any "next
+    edition" link, or fall back to searching IEEE CEDA's event listing if you
+    have another verified URL for it)
+  CICC: https://www.ieee-cicc.org/
+  VLSI Symposium: https://www.vlsisymposium.org/
+  Hot Chips: https://hotchips.org/
+  ICCAD: https://iccad.com/
+- Photonics:
+  OFC: https://www.ofcconference.org/
+  ECOC: https://www.ecocexhibition.com/
+  CLEO: https://cleoconference.org/
+  SPIE Photonics West: https://spie.org/conferences-and-exhibitions/photonics-west
+  IEEE Photonics Conference (IPC): https://ieee-ipc.org/
+  Integrated Photonics Research (IPR, part of Optica's Advanced Photonics
+    Congress): https://www.optica.org/events/congress/advanced_photonics_congress/
+
+These homepages sometimes redirect or link to a year-specific subdomain (e.g.
+`2026.fpl.org`) for the current edition; follow those links with another
+`fetch_url` call rather than guessing the year-numbered URL yourself. Include
+any other conference you're confident fits "semiconductor and/or photonics"
+and look significant, fetched from a URL you already have (not searched for).
+Aim for roughly 8 to 15 upcoming entries. Drop any conference you cannot
+verify from the fetched page content.
 
 ## 3. Write the data file
 Overwrite `_data/conferences.yml` with the verified upcoming list. Use exactly

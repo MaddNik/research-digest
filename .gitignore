@@ -31,3 +31,5 @@ automation/logs/
 
 # summary poller runtime
 automation/.poll.lock
+automation/.run-weekly.lock
+automation/.run-conferences.lock

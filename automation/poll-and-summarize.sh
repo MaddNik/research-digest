@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
 # Poll open "summary-request" GitHub issues and run summarize-anything on each.
-# Invoked by cron during the weekday run slot. Uses the existing headless `claude`
-# (subscription login, no Anthropic API) and the existing GitHub PAT via curl
-# (no `gh` dependency). The Stop hook (sync-summaries.sh) auto-publishes + pushes
-# when claude exits, so this script never publishes itself.
-#
-# Usage gate: skips when the cached Claude 5h/7d usage is >= 95% (cache written by
-# ~/.claude/statusline.py). If a run still hits the limit, the issue is left queued
-# and retried in the next slot.
+# Invoked by cron during the weekday run slot. Uses the custom OpenRouter
+# tool-calling harness (automation/openrouter_agent.py), billed per-token via
+# ~/.openrouter_api_key, and the existing GitHub PAT via curl (no `gh`
+# dependency). The Stop hook (sync-summaries.sh) auto-publishes + pushes when
+# the harness exits, so this script never publishes itself.
 set -uo pipefail
 
 export HOME=/home/nik
@@ -19,14 +16,13 @@ GH_REPO="$OWNER/research-digest"
 API="https://api.github.com/repos/$GH_REPO"
 PAGES_BASE="https://maddnik.github.io/research-digest/summaries"
 RM="/home/nik/research-material"
-CACHE="$HOME/.claude/rate-limits-cache.json"
 PROMPT="$REPO/automation/summarize-request-prompt.md"
+HARNESS="$REPO/automation/openrouter_agent.py"
 LOGDIR="$REPO/automation/logs"
 LOCK="$REPO/automation/.poll.lock"
-USAGE_MAX=95
 RETRY_CAP=2
 # Model for headless deep-summary generation.
-MODEL=opus
+MODEL="${OPENROUTER_MODEL:-anthropic/claude-sonnet-5}"
 
 TOKEN="$(cat "$HOME/.gh_pat" 2>/dev/null)"
 [ -n "$TOKEN" ] || TOKEN="$(sed -n 's#https://[^:]*:\([^@]*\)@github.com#\1#p' "$HOME/.git-credentials" 2>/dev/null | head -1)"
@@ -57,31 +53,16 @@ cd "$REPO" || exit 1
 {
   echo "=== poll $TS ==="
   if [ -z "$TOKEN" ]; then echo "no GitHub token found; exiting"; exit 1; fi
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "FATAL: python3 not found in PATH ($PATH)"
+    exit 127
+  fi
+  if [ ! -s "$HOME/.openrouter_api_key" ]; then
+    echo "FATAL: $HOME/.openrouter_api_key is missing or empty"
+    exit 127
+  fi
+  export OPENROUTER_API_KEY="$(cat "$HOME/.openrouter_api_key")"
   git pull --rebase --autostash 2>&1 || echo "(pull failed, continuing)"
-
-  # --- usage gate -------------------------------------------------------------
-  GATE="$(python3 - "$CACHE" "$USAGE_MAX" <<'PY'
-import json, sys, time
-path, umax = sys.argv[1], float(sys.argv[2])
-try:
-    d = json.load(open(path))
-except Exception:
-    print("STALE -1 -1"); raise SystemExit
-age = time.time() - float(d.get("written_at") or 0)
-rl = d.get("rate_limits") or {}
-def pct(k):
-    v = (rl.get(k) or {}).get("used_percentage")
-    try: return float(v)
-    except (TypeError, ValueError): return -1.0
-h5, d7 = pct("five_hour"), pct("seven_day")
-if age > 1800:        print("STALE %.0f %.0f" % (h5, d7))
-elif h5 >= umax or d7 >= umax: print("SKIP %.0f %.0f" % (h5, d7))
-else:                 print("RUN %.0f %.0f" % (h5, d7))
-PY
-)"
-  echo "usage gate: $GATE"
-  if [ "${GATE%% *}" = "SKIP" ]; then echo "no headroom (>= ${USAGE_MAX}%); exiting"; exit 0; fi
-  # STALE or RUN both proceed (STALE relies on the limit-error safety net).
 
   # --- fetch all open summary requests (any creator) -------------------------
   ROWS="$(api "$API/issues?state=open&labels=summary-request&per_page=50" \
@@ -145,17 +126,21 @@ PY
     add_label "$NUM" summarizing
     BEFORE="$(find "$RM" -maxdepth 3 -name summary.html 2>/dev/null | sort -u)"
 
-    PROMPT_TEXT="$(SRC="$SRC" LEVEL="$LEVEL" CAT="$CAT" envsubst '${SRC} ${LEVEL} ${CAT}' < "$PROMPT")"
-    OUT="$(claude -p "$PROMPT_TEXT" --model "$MODEL" --dangerously-skip-permissions --output-format text < /dev/null 2>&1)"
+    # Rollback fallback (kept for one cycle, then delete): the previous
+    # subscription-based invocation via Claude Code's CLI.
+    # PROMPT_TEXT="$(SRC="$SRC" LEVEL="$LEVEL" CAT="$CAT" envsubst '${SRC} ${LEVEL} ${CAT}' < "$PROMPT")"
+    # OUT="$(claude -p "$PROMPT_TEXT" --model opus --dangerously-skip-permissions --output-format text < /dev/null 2>&1)"
+    OUT="$(python3 "$HARNESS" --prompt-file "$PROMPT" --model "$MODEL" \
+      --var "SRC=$SRC" --var "LEVEL=$LEVEL" --var "CAT=$CAT" < /dev/null 2>&1)"
     RC=$?
     printf '%s\n' "$OUT"
 
     git pull --rebase --autostash 2>&1 || true   # Stop hook published during the run
 
-    if printf '%s' "$OUT" | grep -qiE 'usage limit|resets at|5-hour limit|hit your limit'; then
-      echo "#$NUM limit-blocked; requeueing for next slot"
+    if [ "$RC" -eq 2 ]; then
+      echo "#$NUM hit the harness's iteration cap; requeueing for next slot"
       remove_label "$NUM" summarizing
-      break
+      continue
     fi
 
     AFTER="$(find "$RM" -maxdepth 3 -name summary.html 2>/dev/null | sort -u)"
