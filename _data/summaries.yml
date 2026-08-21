@@ -422,3 +422,15 @@
   source_url: "https://arxiv.org/abs/2305.11423"
   pdf: ""
   tags: ["tfhe"]
+- slug: "attention-is-all-you-need-2017-06-12"
+  title: "Attention Is All You Need"
+  url: "/summaries/attention-is-all-you-need-2017-06-12/"
+  date: "2017-06-12"
+  category: "Deep Learning Transformers"
+  pub: "June 2017"
+  publisher: "NeurIPS 2017 (31st Conference on Neural Information Processing Systems); arXiv:1706.03762"
+  meta_line: "NeurIPS 2017 (31st Conference on Neural Information Processing Systems); arXiv:1706.03762 · June 2017"
+  source_type: "PDF (text-layer)"
+  source_url: "https://arxiv.org/abs/1706.03762"
+  pdf: ""
+  tags: ["transformer", "self-attention", "attention mechanism", "sequence transduction", "machine translation", "encoder-decoder", "multi-head attention", "positional encoding", "deep learning", "neural networks", "concepts"]
