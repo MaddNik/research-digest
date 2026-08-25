@@ -2,6 +2,18 @@
 # Regenerated from research-material; entries with a summaries/<slug>/
 # folder but no research-material source are preserved as-is.
 
+- slug: "pqc-torus-ntru-kem-2026-08-14"
+  title: "A Torus-Structured Generalisation of NTRU: the NTC Assumption, its Cryptanalysis, and a Compact KEM"
+  url: "/summaries/pqc-torus-ntru-kem-2026-08-14/"
+  date: "2026-08-14"
+  category: "Research Material"
+  pub: "2026"
+  publisher: "IACR ePrint Archive 2026/1642"
+  meta_line: "IACR ePrint Archive 2026/1642"
+  source_type: "PDF (text-layer)"
+  source_url: "https://eprint.iacr.org/2026/1642"
+  pdf: ""
+  tags: ["post-quantum cryptography", "lattice-based cryptography", "NTRU", "key encapsulation mechanism", "non-split maximal torus", "overstretched NTRU", "dense sublattice discovery", "module-LWE", "cryptanalysis", "concepts"]
 - slug: "efficient-large-integer-arithmetic-for-fhe-2026-08-13"
   title: "Efficient Large-Integer Arithmetic for FHE"
   url: "/summaries/efficient-large-integer-arithmetic-for-fhe-2026-08-13/"

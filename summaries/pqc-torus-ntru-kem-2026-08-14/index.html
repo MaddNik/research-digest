@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Torus-Structured Generalisation of NTRU: the NTC Assumption, its Cryptanalysis, and a Compact KEM</title>
+<style>
+:root{--bg:#F3F5F4;--surface:#FFFFFF;--ink:#161A1C;--muted:#5C6670;--line:#DBE0DE;--accent:#0C8C80}
+@media (prefers-color-scheme:dark){:root{--bg:#0B0F12;--surface:#111619;--ink:#E7EEEA;--muted:#95A2A1;--line:#1F282C;--accent:#2CD4BE}}
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;line-height:1.5;margin:1rem 0}
+pre code{background:none;border:0;padding:0;border-radius:0;display:block;white-space:pre;font-size:13px}
+code{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:var(--surface);border-bottom:1px solid var(--line);font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:var(--accent);text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+#rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
+#rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
+a.rt-figref,a.rt-eqref{color:var(--accent);text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+body{counter-reset:rt-eq}
+mjx-container[display="true"]{position:relative;padding-right:2.4em}
+mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Deep Summaries</a><a href="https://eprint.iacr.org/2026/1642" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
+<header><h1>A Torus-Structured Generalisation of NTRU: the NTC Assumption, its Cryptanalysis, and a Compact KEM</h1><p class="meta">IACR ePrint Archive 2026/1642 &middot; <a href="https://eprint.iacr.org/2026/1642" target="_blank" rel="noopener noreferrer">full view &#8599;</a></p></header>
+<section><h2>Overview and Motivation</h2>
+<p><b>Source.</b> IACR ePrint 2026/1642, "A Torus-Structured Generalisation of NTRU: the NTC Assumption, its Cryptanalysis, and a Compact KEM", by Sidoine Djimnaibeye (ChadUP), Djiby Sow (Universite Cheikh Anta Diop, Dakar), and Mahamat Borgou Hassan (ENASTIC, N'Djamena). Category: Foundations. History: received 2026-08-09, revised 2026-08-14. License CC BY-NC.</p>
+<p>The paper asks whether anything useful lives between two families of lattice-based public-key primitives: NTRU, whose public key is a single planted ring element and whose economy is paid for by an "overstretched" regime (a modulus threshold past which the plant is found faster than generic lattice reduction predicts), and module-LWE constructions such as Kyber/ML-KEM, whose public key is pseudorandom by a worst-case reduction but whose size grows with the module rank.</p>
+<p>The authors introduce <b>Noisy Torus Conjugation (NTC)</b>: instead of planting a short secret as an NTRU quotient $h = g/f$, they confine a short secret to a non-split maximal torus of the matrix algebra $GL_k(R_q)$ and let it act by conjugation on a uniform matrix, with the result masked by additive noise. NTRU is exactly the $k=1$ member of this family. For $k \ge 2$ two structural changes occur relative to NTRU:</p>
+<ul>
+<li>The planted module occupies only a fraction $1/(2k)$ of the published lattice's dimension (versus NTRU's $1/2$), which raises the dense-sublattice-discovery "fatigue" threshold and widens the usable modulus window.</li>
+<li>The norm-map shortcut that collapses the overstretched NTRU problem to a lower dimension is blocked, because the conjugated matrix must be uniform over the whole matrix algebra rather than confined to the torus.</li>
+</ul>
+<p>On top of NTC the authors build an IND-CCA KEM whose passive security reduces tightly to NTC together with one additional decisional assumption. At NIST categories 1, 3, and 5 the scheme reaches public keys within 1.08 to 1.16 times the size of Kyber's and ciphertexts 2.0 to 2.1 times Kyber's. A companion (uncited-in-detail) paper apparently builds a Fiat-Shamir-with-aborts signature on the same assumption. Throughout, the authors are explicit about what is proved, what is heuristic, what is measured by experiment, and what remains open; the assumption itself is new and carries no worst-case reduction at the efficient parameter sets, though Appendix F gives a conditional worst-case fallback at a quantified size penalty.</p>
+</section>
+<section><h2>Preliminaries: Rings, the Algebra A, and Non-Splitness</h2>
+<p>Let $n$ be a power of two and $q$ a prime with $q \equiv 1 \pmod{2n}$, so $R_q = \mathbb{Z}_q[x]/(x^n+1)$ splits fully via the NTT, $R_q \cong \prod_{i=1}^n \mathbb{F}_q$. Fix $\alpha \in R_q$ and an integer $k \ge 2$, and define the commutative $R_q$-algebra
+$$A := R_q[y]/(y^k - \alpha),$$
+a free $R_q$-module of rank $k$. Write $\alpha_i \in \mathbb{F}_q$ for the $i$-th NTT evaluation of $\alpha$.</p>
+<p><b>Definition (non-split parameter).</b> $\alpha$ is non-split of order $k$ if for every slot $i = 1, \dots, n$ the polynomial $y^k - \alpha_i$ is irreducible in $\mathbb{F}_q[y]$. For $k=2$ this means every $\alpha_i$ is a non-square in $\mathbb{F}_q$.</p>
+<p><b>Lemma (CRT structure).</b> If $\alpha$ is non-split of order $k$, then $A \cong \prod_{i=1}^n \mathbb{F}_{q^k}$ as rings: a product of large fields with no factor isomorphic to $R_q$. This is exactly what blocks CRT/slotwise attacks, since shortness of an element of $A$ becomes a global condition on its coefficient vector rather than a per-slot one.</p>
+<p><b>Lemma (invertibility).</b> $a \in A$ is invertible iff its evaluation in $\mathbb{F}_{q^k}$ is nonzero in every CRT slot; for $a$ drawn from a centered binomial distribution with parameter $\eta \ge 1$, the probability of non-invertibility is at most $n q^{-k}$.</p>
+<p>Every $a \in A$ acts by left multiplication on the basis $\{1, y, \dots, y^{k-1}\}$, giving a matrix $M_a \in M_k := M_k(R_q)$. The map $\mathcal{M}: a \mapsto M_a$ is an injective $R_q$-algebra homomorphism (the regular representation) carrying $A^\times$ into $GL_k(R_q)$; its image $\mathcal{M}(A) = R_q[Y]$, $Y := M_y$, is a maximal commutative subalgebra of $M_k$, i.e. a non-split maximal torus. For $k=2$,
+$$M_{(u,v)} = \begin{pmatrix} u & \alpha v \\ v & u \end{pmatrix}.$$</p>
+<p><b>Two ring families and expansion factors.</b> The paper uses (i) power-of-two cyclotomics $R = \mathbb{Z}[x]/(x^n+1)$, $n \in \{256, 512\}$; and (ii) $R = \mathbb{Z}[x]/(x^N - x^{N/2} + 1) = \mathbb{Z}[x]/\Phi_{3N}(x)$, $N = 2^a \cdot 3$ (the NTTRU-style ring; for $N=384$ this is $\Phi_{1152}$). Expansion factors $E_R$ (plain product) and $E_\alpha$ (product involving the twist $\alpha$) are defined via a coefficient-counting quantity $N_k^{(s)}$; the key finding is that in <i>both</i> ring families $E_\alpha = k E_R$ for $k=2$, so the twist $\alpha = x$ costs only a factor $k$ in variance relative to a plain product, versus a factor $1 + (k-1)\alpha^2$ (i.e. 10 for $\alpha=3$, 26 for $\alpha=5$) for a constant twist. This makes $\alpha = x$ vastly preferable.</p>
+<p><b>Lemma (non-splitness of the twist $\alpha = x$).</b> Let $M$ be the multiplicative order of $x$ modulo the defining polynomial ($M = 2n$ in the power-of-two family, $M = 3N$ in the second family), and assume $M \mid q-1$ (full NTT). Then $\alpha = x$ is non-split of order 2 iff
+$$q \equiv M + 1 \pmod{2M}.$$
+The proof evaluates $x$ in each slot to a primitive $M$-th root of unity $\zeta$ and uses $\zeta^{(q-1)/2} = (-1)^t$ where $q - 1 = Mt$; non-splitness holds exactly when $t$ is odd. Specialised: $q \equiv 2n+1 \pmod{4n}$ in the power-of-two family, and $q \equiv 1153 \pmod{2304}$ for $\Phi_{1152}$.</p>
+</section>
+<section><h2>The NTC Assumption: Definitions and Structural Theory</h2>
+<p><b>Instance distribution.</b> Let $\chi_s$ be a distribution on $A$ supported on $\|s\|_\infty \le \eta_s$ and $\chi_e$ a distribution on $M_k$ supported on $\|e\|_\infty \le \eta_e$ (e.g. coefficientwise centered binomial). Write $\chi_s^\times$ for $\chi_s$ conditioned on $s \in A^\times$. The distribution $D_{pp}$ over $M_k \times M_k$ is obtained by
+$$A \leftarrow_\$ U(M_k), \quad s \leftarrow_\$ \chi_s^\times, \quad e \leftarrow_\$ \chi_e, \quad t := (M_s A + e) M_s^{-1},$$
+outputting $(A, t)$; $(s,e)$ is the planted witness. Since $\Pr[s \notin A^\times] \le n q^{-k}$, conditioning on invertibility is statistically benign.</p>
+<p><b>NTC-Search.</b> Given $(A,t) \leftarrow_\$ D_{pp}$ and bounds $\beta = (\beta_s, \beta_e)$ with $\beta_s \ge \eta_s$, $\beta_e \ge \eta_e$, find $(s', e') \in A \times M_k$ with $s' \ne 0$, $\|s'\|_\infty \le \beta_s$, $\|e'\|_\infty \le \beta_e$, and
+$$t M_{s'} = M_{s'} A + e'.$$
+Requiring $s' \in A$ (rather than an arbitrary short approximate kernel vector of the Sylvester-type operator $L_{t,A}: X \mapsto tX - XA$) is what makes the problem non-trivial: the secret is constitutively confined to the commutant $R_q[Y] = \mathcal{M}(A)$.</p>
+<p><b>NTC-Dec.</b> Distinguish $(A,t) \leftarrow_\$ D_{pp}$ from a uniform pair $(A,u) \leftarrow_\$ U(M_k) \times U(M_k)$.</p>
+<p><b>Assumption (NTC).</b> For every admissible parameter family $pp = pp(\lambda)$ and every PPT adversary $B$, both $\mathrm{Adv}^{search}_{pp,\beta}(B)$ and $\mathrm{Adv}^{dec}_{pp}(B)$ are negligible in $\lambda$.</p>
+<p><b>Marginal uniformity.</b> For fixed $(s,e)$ with $s \in A^\times$, if $A$ is uniform on $M_k$ then $t = (M_sA+e)M_s^{-1}$ is exactly uniform on $M_k$ (because $A \mapsto M_sAM_s^{-1}$ is a bijection and $t$ is a fixed translate of a uniform variable). Hence each component of an instance is individually uniform; all information about the witness lies in the joint correlation, so no statistical test on $t$ alone (spectrum, determinant, coefficient distribution) can gain any advantage.</p>
+<p><b>Torus translation invariance.</b> For every $c \in A$ (not necessarily short), $(A,t) \mapsto (A + M_c, t + M_c)$ maps $D_{pp}$ to $D_{pp}$ with the same witness, and $U \times U$ to itself (the proof uses that the commutator of $c,s \in A$ vanishes since $A$ is commutative). This yields a normal form (one may assume $\pi(A) = 0$ for a fixed projection $\pi: M_k \to \mathcal{M}(A)$) but only a self-reduction of codimension $k^2 - k$, <i>not</i> a full random self-reduction; no worst-case-to-average-case reduction is known.</p>
+<p><b>Rigidity of short solutions.</b> The key structural theorem: let $A \leftarrow_\$ U(M_k)$ and $C(A_i)$ the centraliser of the $i$-th NTT slot $A_i \in M_k(\mathbb{F}_q)$. With probability at least $1 - n\,\omega(k)\, q^{-k^2/2}$ (where $\omega(k)$ counts distinct prime divisors of $k$; at $k=2$ this is $1 - n q^{-2}$), for every slot $i$,
+$$C(A_i) \cap \mathcal{M}(\mathbb{F}_{q^k}) = \mathbb{F}_q \cdot I_k.$$
+The proof identifies $C(A_i) \cap T$ (for $T = \mathcal{M}(\mathbb{F}_{q^k})$) as an $\mathbb{F}_q$-subalgebra of the field $T$, hence a subfield $\mathbb{F}_{q^d}$ for some $d \mid k$; a union bound over the primes $p \mid k$ bounds the probability that a larger subfield $\mathbb{F}_{q^p}$ lies in the centraliser at $q^{k^2/p - k^2} \le q^{-k^2/2}$.</p>
+<p><b>Corollary (parametrisation of solutions).</b> Any solution can be written $s' = su$ with $u := s^{-1}s' \in A$; then $e' = M_s[A,M_u] + eM_u$. If $u \in R_q$ then $[A,M_u]=0$ and $(s',e') = (us,ue)$; if $u \notin R_q$, rigidity forces $[A,M_u] \ne 0$, and $M_s[A,M_u]$ is heuristically of size $\Theta(q)$, incompatible with $\|e'\|_\infty \le \beta_e \ll q$. So the only structurally guaranteed short solutions form the planted rank-one module
+$$P := \{(us,ue): u \in R_q\},$$
+of rank $n$ over $\mathbb{Z}$ inside a lattice of dimension $nk(1+k)$: density $1/(k(1+k))$, the analogue of NTRU's trivial rotations $(x^jf, x^jg)$.</p>
+<p><b>Heuristic (uniqueness of short solutions).</b> Let $\Lambda_{A,t} := \{(a,E) \in A \times M_k : tM_a \equiv M_aA + E \pmod q\}$, a lattice of dimension $d = nk(1+k)$ and volume $q^{nk^2}$. Under the Gaussian heuristic, its first minimum outside $P$ is approximately
+$$\lambda_1(\Lambda_{A,t} \setminus P) \approx \sqrt{\tfrac{d}{2\pi e}}\, q^{k/(k+1)}.$$
+Parameters are chosen so $\sqrt{d}\max(\beta_s,\beta_e)$ is well below this bound, so that every solution in the search problem's sense lies in $P$: solving NTC-Search then means recovering the witness up to a short scalar of $R_q$, exactly as "NTRU recovers $(f,g)$ up to a unit".</p>
+<p><b>Search reduces to decision (Proposition).</b> Assuming the uniqueness heuristic, a search adversary with advantage $\varepsilon$ yields a decision distinguisher with advantage $\ge \varepsilon - \mathrm{negl}(\lambda)$: the reduction runs the search adversary and accepts iff the returned pair verifies; on a uniform instance the lattice carries no plant, so its Gaussian-heuristic minimum exceeds the bound and no valid short solution exists. The <i>converse</i> reduction (decision to search) is explicitly stated as open: the usual rerandomisation machinery for (Ring-)LWE search-to-decision needs fresh samples, unavailable here since a key defines a single instance and the torus orbit only rerandomizes a codimension-$(k^2-k)$ slice. This mirrors NTRU, where the decision variant must likewise be assumed separately.</p>
+<p><b>Multi-instance variant.</b> Sampling one $s$ and exposing $\ell$ instances $(A_j,t_j)$ under the same secret is monotonically harder as $\ell$ grows; the KEM uses only $\ell=1$, the most conservative form.</p>
+<p><b>Degeneracies that locate NTC in the landscape.</b> At $k=1$, $A = R_q$, the regular representation is the identity, and the relation collapses to $t - A = es^{-1}$, i.e. decisional NTRU: NTC strictly contains NTRU and every parameter set must respect known NTRU constraints. Conditioning $A$ into the torus $\mathcal{M}(A)$ degenerates the instance into a commutative relation on which the norm map $N_{A/R_q} = \det \circ \mathcal{M}$ applies, collapsing the dimension from $nk$ to $n$ (fatal for security), which is exactly why Definition 2 insists $A$ be uniform over all of $M_k$. NTC belongs to the broader NTRU-with-errors/matrix-NTRU family (NTWE, MiNTRU), differing by confining the secret to a non-split maximal torus and by the conjugation (rather than exact quotient) shape of the instance.</p>
+</section>
+<section><h2>The Key Encapsulation Mechanism</h2>
+<p>The KEM is built in two steps: a passively-secure PKE whose IND-CPA security rests on NTC-Dec plus one additional decisional assumption (cLWE$_A$, below), followed by a Fujisaki-Okamoto transform giving IND-CCA in the random-oracle model.</p>
+<p><b>Constraints forced by the algebra (from Appendix E).</b> Two features are not design freedoms but algebraic necessities: (1) the only secret operation available to the receiver is multiplication by $M_s$, so whatever is extracted is scaled by $s$; a Kyber-style $\lceil q/2 \rceil$ encoding would make $\|sm\|_\infty$ far too large and wrap around modulo $q$, forcing the NTRU-style $p$-adic encoding route instead. (2) decryption closes only if the sender's randomness commutes with $M_s$; by the rigidity theorem the commutant of a generic matrix meets $\mathcal{M}(A)$ only in the scalars, so encryption randomness must live in $A$ itself, not in an arbitrary short matrix of $M_k$.</p>
+<p><b>Three simplifications permitted by the cryptanalysis (Section 4.1), used on credit from Section 5:</b></p>
+<ul>
+<li><i>Lever 1: row truncation.</i> Cryptanalysis shows the optimal column subselection is always $m^*=1$: the attacker only ever uses one column, so the other $k^2-k$ error coordinates carry no fresh entropy about $s$. Taking $s \equiv 1 \pmod p$ and restricting the message to the first coordinate lets Dec read only the first coordinate of the decryption quantity $D$; the receiver only needs $t_{[1,:]}$ and $c_{2[1,:]}$. This cuts $pk$ from $nk^2$ to $nk$ coefficients and $ct$ from $nk(k+1)$ to $2nk$.</li>
+<li><i>Lever 2: MSB encoding.</i> Multiplying by the unit $\Delta := (q+1)/2$ turns the $p$-adic encoding into an MSB encoding, under which the rounding error from a compression function $\mathrm{Compress}_d$ enters additively as ordinary noise (rather than destroying the residue mod $p$ under LSB encoding). The public row $t_{[1,:]}$ is not compressible at all (its rounding error multiplies a product of two secrets); $c_1, c_{2[1,:]}$ tolerate moderate compression ($d = 11$–$12$ bits).</li>
+<li><i>Lever 3: decoupled noise widths.</i> A single width used everywhere (as in the untruncated reference design) is suboptimal: widening $\chi_r$ hardens the second assumption at only linear cost in the noise budget, whereas widening $\chi_f$ costs quadratically. Decoupling $(\chi_f, \chi_r, \chi_{s'})$ into three widths $(\eta_f,\eta_r,\eta_{s'})$ is needed to make the category-3 parameter search succeed.</li>
+</ul>
+<p><b>Notation.</b> In addition to $pp = (n,q,k,\alpha)$, the scheme fixes a small prime $p$ with $p \nmid q$, three noise widths $(\eta_f,\eta_r,\eta_{s'})$, and a compression parameter $d$. Distributions: $\chi_{s'}$ over $A$, $\chi_r$ over $A$, $\chi_f$ over $R_q$, each centred binomial. The message space is $R_2$ (a single ring element with binary coefficients), with $p=2$ throughout so $\Delta p \equiv 1 \pmod q$. For $a \in A$, $\mathrm{coef}(a) \in R_q^k$ is its coefficient vector; $\mathrm{coef}_1(\cdot)$ is the first coordinate and $\mathrm{row}_1(\cdot)$ the first matrix row.</p>
+<p><b>Correctness (Lemma 7, untruncated reference design).</b> For the reference design $t := (M_sA + p e')M_s^{-1}$, $c_1 := A\,\mathrm{coef}(r) + pf_1 + \mathrm{coef}(m)$, $c_2 := tM_r + pf_2$, and $D := c_2\,\mathrm{coef}(s) - M_s c_1$, one has
+$$D = p\big(e'\,\mathrm{coef}(r) + f_2\,\mathrm{coef}(s) - M_sf_1\big) - \mathrm{coef}(sm) \pmod q.$$
+<b>Proposition (correctness).</b> If
+$$p\big(\|e'\mathrm{coef}(r)\|_\infty + \|f_2\mathrm{coef}(s)\|_\infty + \|M_sf_1\|_\infty\big) + \|\mathrm{coef}(sm)\|_\infty < q/2,$$
+then $D$ does not wrap modulo $q$ and Dec succeeds. The failure probability $\delta$ is analysed exactly in Section 4.5 (see Cryptanalysis section below).</p>
+<p><b>Specialisation to the deployed scheme.</b> With $u_1, u_2$ the rounding errors of $\mathrm{Compress}_d$ applied to $c_1, c_{2[1,:]}$ (uniform on $(-q/2^{d+1}, q/2^{d+1}]$, variance $V := (q/2^d)^2/12$), and $s = 1 + ps'$,
+$$D_1 = -\Delta\,\mathrm{coef}_1(sm) + \big(e_1\mathrm{coef}(r) + g_1\mathrm{coef}(s) - \mathrm{row}_1(M_s)f_1\big) - u_2\mathrm{coef}(s) + \mathrm{row}_1(M_s)u_1 \pmod q,$$
+with coordinatewise variance
+$$\sigma^2_{D_1} = k E_R \sigma^2_f\sigma^2_r + \sigma^2_f + p^2 k E_R \sigma^2_f\sigma^2_{s'} + \sigma^2_f + p^2 E_\alpha \sigma^2_f\sigma^2_{s'} + V(1+p^2kE_R\sigma^2_{s'}) + V(1+p^2E_\alpha\sigma^2_{s'}) + E_\alpha\sigma^2_{s'}/4.$$
+Decryption succeeds when $|D_1 + \Delta m_0| < q/4$.</p>
+<p><b>The $p$-adic key is free (Lemma 8, rescaling).</b> The map $(A,t) \mapsto (p^{-1}A, p^{-1}t)$ (mod $q$) is a bijection of $M_k \times M_k$ carrying the KeyGen output distribution exactly onto $D_{pp}$ and the uniform distribution onto itself, so the distinguishing advantage against KeyGen's output equals that against $D_{pp}$, with a tight reduction to NTC-Dec; the same rescaling applies to ciphertexts.</p>
+<p><b>The second assumption: commutant LWE (cLWE$_A$).</b> For $\ell \ge 1$, distinguish $(B_i, B_iM_r + F_i)_{i \le \ell}$ from $(B_i, U_i)_{i \le \ell}$, where $B_i, U_i \leftarrow_\$ U(M_k)$, $r \leftarrow_\$ \chi_r$ in $A$ (common to all $i$), and $F_i \leftarrow_\$ \chi_f^{k\times k}$; individual samples may be truncated to a subset of columns or rows. The deployed scheme uses $\ell=2$: sample 1 truncated to its first column (giving exactly module-LWE of rank $k$ over $R_q$ with short secret $\mathrm{coef}(r)$), sample 2 truncated to its first row (giving ring-LWE over the étale algebra $A$ itself, which at the deployed twist $\alpha=x$ turns out to be a standard cyclotomic ring of doubled degree $nk$: e.g. $A \cong \mathbb{Z}_q[y]/(y^{2n}+1)$ in the power-of-two family, or $\mathbb{Z}_q[y]/\Phi_{6n}(y)$ in the $\Phi_{3N}$ family). No subring shortcut applies: the trace descent $\mathrm{Tr}_{A/R_q}$ yields module-LWE of rank $k$ in dimension $nk$, with no reduction to dimension $n$, because the relation is additive rather than multiplicative.</p>
+<p><b>Theorem (IND-CPA).</b> For every PPT adversary $B$ against IND-CPA of the PKE there exist PPT $B_1, B_2$ with
+$$\mathrm{Adv}^{ind\text{-}cpa}_{PKE}(B) \le \mathrm{Adv}^{dec}_{pp}(B_1) + \mathrm{Adv}^{cLWE}_{pp,2}(B_2),$$
+with running times of $B_1,B_2$ equal to that of $B$ up to additive polynomial overhead. Proof by two hybrid games: $G_0 \to G_1$ replaces $t_{[1,:]}$ by a uniform value (a truncated NTC-Dec challenge); $G_1 \to G_2$ replaces $(c_1 - \Delta\mathrm{coef}(m_0), c_{2[1,:]})$ by uniform elements, which is exactly the truncated cLWE$_A$ instance with shared secret $r$; in $G_2$ the challenge bit is information-theoretically hidden. The reduction is tight and invokes neither the uniqueness heuristic nor non-splitness (those are needed only for the search problem, though non-splitness is still needed upstream to block the CRT attack that would make NTC-Dec false).</p>
+<p><b>FO transform to IND-CCA.</b> Applying $\mathrm{FO}^{\not\perp}$ with implicit rejection (hash functions $G,H$ and a KDF, modelled as random oracles, and a secret seed $z$ in $sk$):
+</p>
+<p><b>Theorem 2 (IND-CCA, ROM).</b> With $\delta$ the failure probability of the correctness proposition and $B$ making at most $q_G, q_H$ queries to $G,H$, there is PPT $B'$ with
+$$\mathrm{Adv}^{ind\text{-}cca}_{KEM}(B) \le 2\,\mathrm{Adv}^{ind\text{-}cpa}_{PKE}(B') + q_G\delta + \frac{c_1 q_G + c_2 q_H}{\sqrt{p^{nk}}},$$
+for small constants $c_1,c_2$ depending on the FO variant. Consequences: the term $q_G\delta$ forces $\delta \ll 2^{-\lambda}$ (targeting $\delta < 2^{-140}$ at $\lambda=128$, $q_G \le 2^{64}$), and the message space $A_p$ has $p^{nk}$ elements, ample entropy.</p>
+<p><b>Sizes.</b> With row truncation: $pk = nk$ ring coefficients plus a seed, $ct = 2nk$ coefficients before compression (versus $nk^2$ and $nk(k+1)$ for the untruncated design). At the deployed categories the untruncated design would cost 1.91-3.78 kB $pk$ and 2.81-5.62 kB $ct$, a factor 2.3-2.7 on $pk$ and 1.5-2 on $ct$ worse.</p>
+<p><b>A caution the paper states explicitly (Remark 6, no noise-free coordinates):</b> dropping coordinates of $e_1$ or $g_1$ that "the attack does not use" is unsafe, because the public relation $t_{[1,:]}M_s - \mathrm{row}_1(M_s)A = e_1$ is, column by column, a linear equation in $\mathrm{coef}(s)$; a zero coordinate of $e_1$ turns the corresponding column into an exact linear constraint that, combined with shortness of $s$, recovers the key. Every published equation must carry noise; only what is <i>published</i> may be truncated.</p>
+<p><b>Remark on key reuse (Remark 13):</b> the pair $(A,t)$ must not be reused across the KEM and a signature scheme built on the same relation without an explicit joint assumption, since signatures reveal short linear relations on $s$ and hint-correlated error functions that the IND-CCA analysis does not model.</p>
+</section>
+<section><h2>Cryptanalysis: the Estimator, Structural Attack Surface, and Failure Probability</h2>
+<p>Because NTC is a new assumption with no worst-case reduction, the paper devotes about half its length to cryptanalysis, organized around a single estimator calibrated against published figures for Kyber.</p>
+<p><b>Structural attack surface (Section 5.1), attacks excluded for free:</b></p>
+<ul>
+<li><b>$k=1$ is NTRU.</b> Every parameter set must at minimum satisfy known NTRU constraints, in particular the overstretched analysis.</li>
+<li><b>The commutative reading is strictly weaker and must be excluded.</b> If $A$ were conditioned into the torus $\mathcal{M}(A)$, the instance would collapse to $b := t - A = es^{-1} \in A$, and the norm map $N_{A/R_q}(a) = \det M_a$ turns $bs=e$ into $N(b)N(s) = N(e)$, an NTRU instance in dimension $n$ rather than $nk$ -- fatal. This is why $A$ must be uniform over all of $M_k$.</li>
+<li><b>Adjugate linearisation is not competitive.</b> Multiplying by $\mathrm{adj}(M_s)$ gives $N(s) t = M_sA\,\mathrm{adj}(M_s) + e\,\mathrm{adj}(M_s)$, linear in the entries of $\mathrm{adj}(M_s)$, but this trades nonlinearity for a squared secret (entries of size $\eta^{k-1}$) in an inflated dimension, strictly worse at $k=2$ and worse still for $k \ge 3$.</li>
+<li><b>CRT and slot attacks are blocked by non-splitness, and only by it.</b> If $\alpha$ were split, $A$ would contain a factor isomorphic to $R_q$ and shortness could be tested slot by slot.</li>
+<li><b>Column subselection: the attack uses one column.</b> The primal lattice may be truncated to $m \le k$ retained columns (dimension $nk(1+m)$, volume $q^{nkm}$); at every parameter set the numerical optimum is $m^*=1$, meaning the extra $k^2-k$ error coordinates carry no fresh entropy about $s$. This is the fact that licenses row truncation in the KEM (no security is lost by not publishing them).</li>
+</ul>
+<p><b>The primal estimator and its calibration (Section 5.2).</b> Security against lattice reduction uses the standard 2016 estimate for primal uSVP: blocksize $\beta$ suffices when
+$$\sqrt{\beta/d}\,\|v\| \le \delta_\beta^{\,2\beta - d - 1}\, \mathrm{vol}^{1/d}, \qquad \delta_\beta = \left(\frac{(\pi\beta)^{1/\beta}\beta}{2\pi e}\right)^{1/(2(\beta-1))},$$
+with core-SVP costs $0.292\beta$ classically and $0.265\beta$ quantumly. Two lattices are estimated (the NTC lattice, optimised over retained columns $m \le k$; and the cLWE$_A$ lattice, optimised over samples $m_s \le nk+nk^2$) and the minimum reported. Calibrated on Kyber's own module-LWE instances using each category's actual secret width, the estimator reproduces the published core-SVP figures to within 1.2 bits (e.g. Kyber-512: estimated 118.6 vs published 118). The authors note the discrepancy is sensitive to the assumed secret width: using $\eta=2$ instead of Kyber-512's actual $\eta_1=3$ would move the estimate to 111.5 and degrade the apparent calibration to 6.5 bits.</p>
+<p><b>Checking the estimator under actual reduction.</b> Single-shot BKZ-$\beta$ key recovery on scaled-down instances of the KEM's own key lattice shows the <i>rescaled</i> form of the estimate (rescaling the secret block by $\omega := \sigma_e/\sigma_s$ before applying the bound) tracks reduction to about three blocksizes, while the <i>unrescaled</i> form -- the one that reproduces the headline figures of Section 6.1 -- runs 9 to 20 blocksizes high (i.e. 3 to 6 bits optimistic in the unsafe direction) at toy dimensions ($2nk \le 192$).</p>
+<p><b>Unequal secret and error widths (Section 5.4).</b> Both KEM schemes use secrets and errors of different widths deliberately, since widening $\chi_r$ costs the noise budget only linearly while widening $\chi_f$ costs quadratically. In the KEM the lattice secret is $s = 1+ps'$ (not $s'$): with $p=2$, $\chi_{s'} = B_3$, one gets $\sigma_s^2 = p^2 \cdot 3/2 = 6$, while the error $e_1 \leftarrow_\$ \chi_f = B_2$ is unscaled, $\sigma_e^2 = \eta_f/2 = 1$, so $\sigma_s/\sigma_e = 2.45$ -- the largest such ratio in the paper (Kyber has $\omega=1$). Rescaling by $\omega$ <i>lowers</i> the estimate by 4.7 to 8.5 bits relative to the unrescaled figures reported in Section 6.1; because the rescaled form is the one that tracks actual reduction, the paper explicitly withdraws any claim that the quoted (unrescaled) figures are conservative -- on the evidence available they are optimistic.</p>
+<p><b>The exact decryption failure probability (Section 4.5 / Appendix D).</b> The Gaussian tail bound of Section 4.4 under-estimates the true tail of a sum of products of bounded (centred binomial) random variables. The exact cumulant generating function of $D_1$ is computable term by term (each summand has bounded support), and the tail is obtained via a saddlepoint (Lugannani-Rice) expansion, checked against a closed-form comparison case to agree to 0.5 bits out to twelve standard deviations. Two effects compound: the variance itself is under-estimated by the Gaussian approximation to the discretisation/rounding term by 2 to 9 bits, and the non-Gaussian tail shape costs a further 2 to 3 bits, so overall the Gaussian $\delta$ is optimistic by 5 to 12 bits at the deployed parameters. At category 1 this shrinks the correctness margin from 16 bits (Gaussian) to 4 bits (exact), which is what makes the failure constraint bind in the parameter tuning of Section 6.1.</p>
+</section>
+<section><h2>The Hybrid Attack and the Necessity of a Calibrated Model</h2>
+<p>Howgrave-Graham's hybrid attack guesses $g$ coordinates of a narrow secret by meet-in-the-middle and solves the residual lattice problem in dimension $d-g$. Two models are compared.</p>
+<p><b>The strict model is ruled out.</b> If the attacker reran a fresh uSVP reduction on the residual lattice for each guess, the cost would be $\max(0.292\beta(d-g),\, gH(\chi_s)/2)$ optimised over $g$. Applied to Kyber-512 this predicts a hybrid gain of 22 bits over the primal attack, which the published Kyber security analyses exclude -- so this model is discarded for parameter selection and reported only as a stress column.</p>
+<p><b>The Babai/GSA model (standard since Wunderer).</b> BKZ runs once on the residual basis; per guess the attacker performs a nearest-plane call that succeeds when the smallest Gram-Schmidt norm exceeds the noise standard deviation by a constant factor $\tau$:
+$$b^*_{\min} = \delta_\beta^{1-d'}\,\mathrm{vol}^{1/d'} \ge \tau\sigma, \qquad d' := d-g,$$
+which determines $\beta$ and hence cost $\max(0.292\beta,\, gH/2)$. The single free constant $\tau$ is fitted on Kyber: at $\tau=1.0$ the model concedes 20-28 bits to the attacker on Kyber (excluded by published analyses); at $\tau=3.0$ it concedes nothing (uninformative). The crossing lies between $\tau=1.5$ and $\tau=2.0$; the authors adopt $\tau=2.0$, explicitly noting this sits at the crossing and not comfortably beyond it.</p>
+<p><b>Replacing the GSA with a measured profile simulator (Appendix B).</b> The Geometric Series Assumption underlying the closed form can be checked directly, since the fatigue-measurement harness (Section 5.6) records the Gram-Schmidt profile of every reduced basis at the moment of its event. Against measured profiles, the GSA closed form over-states the decoding radius $b^*_{\min}$ by a factor 1.31 on average over 34 non-degenerate cells (1.44 at $\beta \in [25,34]$, 1.26 at $\beta \in [45,60]$), while the Chen-Nguyen BKZ 2.0 profile simulator (seeded with the q-ary Z-shape) reproduces measurement to 0.98-1.09 on the same bands. Recomputed with the simulator in place of the closed form, the hybrid attack ceases to bind at any of the three KEM parameter sets, and the optimum degenerates to pure meet-in-the-middle guessing.</p>
+<p><b>Consequence for parameter selection.</b> Under the profile simulator the hybrid binds nowhere, so the primal figures of Section 6.1 are the reference at every parameter set; the GSA closed form is retained only as a stress model (its sensitivity table is reported but not used to select parameters). The authors flag the caveat that the simulator itself is checked at $\beta \le 60$ in dimension $\le 256$ but applied at $\beta \approx 400$ in dimension $\ge 1024$.</p>
+</section>
+<section><h2>Dense Sublattice Discovery and the Fatigue Threshold (the Central Cryptanalytic Result)</h2>
+<p>This subsection (Section 5.6) is explicitly flagged by the authors as carrying more weight than any other, since dense sublattice discovery (DSD) is the one attack specific to planted constructions, and it governs the upper bound on the modulus $q$ (correctness governs the lower bound; the gap between them is the usable "window").</p>
+<p><b>Bookkeeping: the density that matters is that of the <i>published</i> lattice.</b> The full NTC lattice has dimension $nk(1+k)$ and a plant of rank $n$ (density $1/(k(k+1))$), but the scheme does not publish that lattice -- it exposes a single row (row truncation). What an attacker actually holds is
+$$\Lambda = \{(s,e): L_1(s) + e \equiv 0 \pmod q\}, \qquad \dim \Lambda = 2nk, \quad \det \Lambda = q^{nk}, \quad \mathrm{rank}\,P = n,$$
+a density of $1/(2k)$ -- $1/4$ at $k=2$ -- against NTRU's $1/2$. (Both formulas agree at $k=1$.) Structurally the deployed lattice is an NTRU lattice of half-dimension $nk$ whose plant is $k$ times sparser, and it is this factor -- not the full-lattice factor $k(k+1)/2$ -- against which the fatigue simulation must be run.</p>
+<p><b>Figure 1 description (text/schematic figure, not extracted as an image asset).</b> The paper's Figure 1 is a schematic diagram comparing, at equal ambient dimension $2N$, equal determinant $q^N$, and equal planted-vector norm: on top, NTRU's published lattice with plant rank $N$ (density $1/2$); on the bottom, NTC at $k=2$ with plant rank $N/2$ (density $1/4$). The diagram indicates that the sparser NTC plant pushes its fatigue point $q_{fat}$ (rank $N/2$) above NTRU's fatigue point $q_{fat}$ (rank $N$), widening the usable window between the correctness lower bound $q_{\min}$ and the fatigue upper bound; the predicted gain is 4.5 to 6.3 bits of modulus, and measured brackets are reported to confirm the ordering at every modulus reduced.</p>
+<p><b>Method: a generalised DSD-PT estimator.</b> The authors adapt the DSD-PT estimator of Ducas and van Woerden (originally stated for ambient dimension $2n$ with a plant of exactly rank $n$) to a $q$-ary lattice carrying a dense sublattice of <i>arbitrary</i> rank $r$ inside ambient dimension $d$. Following the original Claim 4.2, the recursion on volumes of intersections $P \cap \Lambda_{[0:s)}$ is generalised so that the quantity being tracked is the co-rank $d-r$ rather than the half-dimension; for ambient dimension $d$ and plant rank $r$, the recursion runs over $s = d-1, \dots, d-r+1$ with intersection rank $s-(d-r)$, and the projection-loss term becomes
+$$\tfrac{1}{2}\left(\psi\!\left(\tfrac{s+1-(d-r)}{2}\right) - \psi\!\left(\tfrac{s+1}{2}\right)\right).$$
+The average log-volume of the plant (a rank-one $R$-module in $R^K$, $K=2k$ ring coordinates, over rings all of whose embeddings are complex) is
+$$\mathbb{E}[\ln\mathrm{vol}(P)] = \frac{n}{2}\big(\ln(n\sigma^2) + \psi(K)\big),$$
+which specialises at $K=2$ to the circulant formula of Ducas-van Woerden up to the single real embedding carried by the circulant ring.</p>
+<p><b>Validation of the generalised estimator.</b> (1) Instantiated on NTRU's own geometry ($d_q = d_1 = n$, $r=n$, $K=2$), the generalised estimator reproduces the original one exactly (discrepancy 0 to machine precision over a grid). (2) On ternary circulant NTRU, the estimator predicts fatigue points matching the published fit $q_{fat} \approx 0.004\,n^{2.484}$: e.g. at $n=79,101,127,151$ it predicts $q_{fat}=233,427,744,1086$ with $q_{fat}/n^{2.484} \approx 0.0042$-$0.0045$ and crossing blocksizes $20,29,48,64$, matching the published constant and blocksize regime.</p>
+<p><b>The density experiment: fixed dimension, fixed norm, varying only plant rank.</b> At $k=2$, NTC plant vectors have squared norm $4\cdot(N/2)\cdot\sigma^2 = 2N\sigma^2$, identical to NTRU's, so the comparison isolates the rank effect cleanly. Predicted fatigue points ($N = nk$):</p>
+<pre>
+N        q_fat, rank N (NTRU)   q_fat, rank N/2 (NTC)   gain (bits)
+160      1216                   27751                   4.51
+192      1919                   85049                   5.47
+224      2819                   215509                  6.26
+</pre>
+<p>The gain <i>grows</i> with the dimension rather than settling at a constant, confirming the structural claim.</p>
+<p><b>Applied to the deployed KEM parameter sets:</b></p>
+<pre>
+              NTC-KEM-512  NTC-KEM-768  NTC-KEM-1024
+q             7681         10369        13313
+beta at q, Pr[DSD]   389, 0     615, 0       855, 0
+q_fat         6.9e7        7.4e8        5.3e9
+margin        13.1 bits    16.1 bits    18.6 bits
+</pre>
+<p>At the deployed modulus DSD never triggers; the attack proceeds by ordinary secret-key recovery, agreeing with the primal estimate to within 5%. These KEM margins supersede the smaller 4.2/5.2/6.1-bit margins a naive rescaling of the ternary fit would give -- that naive approach was conservative by 4-8 bits because it (incorrectly) charged NTC with NTRU's plant density.</p>
+<p><b>Experimental confirmation by actual lattice reduction (not just the predictor).</b> Instances of the published lattice (dimension $2nk$) are generated at admissible moduli $q \equiv 2n+1 \pmod{4n}$, alongside NTRU control instances at the identical ambient dimension $2N$ ($N=nk$), identical determinant $q^N$, identical modulus, and identical planted-vector norm -- so the two families differ <i>only</i> in plant rank ($N$ vs $N/2$). Each instance is reduced by progressive BKZ (fplll, enumeration-based, LLL then blocksizes 3,4,... at eight tours each), and after every tour the basis is tested exactly (not by a norm heuristic) for vectors of the planted module, using the criterion that $v$ lies in the rational span of $P$ iff $v_iw_j - v_jw_i = 0$ in $\mathbb{Q}[x]/(x^n+1)$ for every pair of ring coordinates. Following Ducas-van Woerden, the first event is scored SKR (secret-key recovery) if the found vector is no longer than the witness $w$, and DSD if longer.</p>
+<pre>
+N=nk (ambient 2N)                       96        128
+NTRU, rank N: DSD first                109/109    9/9
+NTC, rank N/2: DSD first                4/109     0/6
+q_fat, rank N (NTRU)                   <=673      <=2689
+q_fat, rank N/2 (NTC)                  >=19489    >=28289
+measured gain (bits)                   >=4.86     >=3.40
+predicted gain                          4.32       4.24
+</pre>
+<p>At every modulus reduced, the rank-$N$ (NTRU) plant is discovered as a dense sublattice and the rank-$N/2$ (NTC) plant essentially is not. At $N=128$ the estimator assigns the six NTC moduli DSD probabilities $0.00, 0.01, 0.19, 0.48, 0.81, 0.96$ as $q$ rises, yet all six reductions returned SKR -- an outcome of probability $0.003$ under the model, i.e. the estimator errs conservatively (calls fatigue earlier than reduction actually delivers it).</p>
+<p><b>Harness calibration and honest limitations (Appendix C).</b> On circulant NTRU the same harness brackets the published experimental fatigue crossings to within 20% at $n=79$ and 2% at $n=101$ (both early, the conservative direction); measured Gram-Schmidt slopes at the event match the estimator's Z-shape to three digits. Three explicit limitations: (i) most affordable cells cross at $\beta < 20$, a degenerate regime where LLL alone can return the whole planted module together with the key, so which event (SKR vs DSD) is recorded can hinge on a tie-break; re-scoring on a tie-break-immune indicator gives a gain of only 1.68 bits at $N=96$ (versus $\ge 4.86$ under the paper's main convention) -- the ordering survives either way but the size of the gap is genuinely open at these scales. (ii) The predictor is validated by its original authors only up to $n \approx 200$, $\beta \approx 60$, while the deployed KEM sets sit at $nk = 512$-$2048$ with crossing blocksizes $130$-$390$; the paper's own experiment reaches only $2N \le 256$ with blocksizes in the tens (enumeration, not sieving), narrowing but not closing this gap. (iii) $\Pr[\mathrm{DSD}]$ is not monotone in $q$ at small dimension (the estimator saturates at $\beta \to 2$), so fatigue must be located by first-crossing search rather than bisection, and degenerate crossings ($\beta<20$) must be discarded; this non-monotonicity is visible in the reduction data itself, not only in the model.</p>
+</section>
+<section><h2>Attacks on Cousin Assumptions and Unmodelled Effects</h2>
+<p><b>Why the two published breaks in the NTRU-with-errors family do not transfer (Section 5.3).</b> MiNTRU (the somewhat-homomorphic scheme underlying homomorphic encryption for finite automata) was broken by Lee and Wallet, who recovered the secret at the smallest claimed-100-bit parameters in about 15 hours of single-core fplll/BKZ 2.0 by applying the overstretched-NTRU analysis (which the original MiNTRU authors had not carried out) to the instance's own lattice. The mechanism is exactly what Section 5.6 already models, but the two features that make MiNTRU vulnerable are both absent in NTC: (1) MiNTRU's gadget matrix $G$ is fixed, public, and short, so its planted sublattice inherits the gadget's density; NTC's $A$ is uniform over the whole of $M_k$ and its planted module has density $1/(2k)$ on the published lattice, the very quantity Section 5.6 measures. (2) MiNTRU needs an overstretched $q$ to get homomorphic depth at all, so it sits on the wrong side of the fatigue point by construction; NTC's deployed sets sit 13-19 bits below their fatigue point.</p>
+<p><b>Galois descent, a second algebraic route that closes.</b> Writing $D := \mathrm{diag}(1,-1)$, one has $M_{\sigma(a)} = DM_aD^{-1}$ for every $a \in A$ (where $\sigma$ is a Galois automorphism), so conjugating the defining relation by $D$ gives $\sigma(t)M_{\sigma(s)} = \mathrm{row}_1(M_{\sigma(s)}DAD^{-1}) + \tilde e$ with $\|\tilde e\|_\infty = \|e_1\|_\infty$. The Galois image of the witness is short, but it is a witness for the instance $(DAD^{-1}, \sigma(t))$, not for $(A,t)$; since $A$ is uniform on $M_k$, $DAD^{-1} \ne A$ except on a negligible fraction of instances, so this conjugate contributes no vector to the lattice the adversary actually holds and $P$ is not enlarged. Had $A$ been drawn from the torus or any $D$-conjugation-invariant set, the conclusion would reverse -- a second, independent reason why $A$ must be uniform over all of $M_k$.</p>
+<p><b>Explicitly unmodelled items (Section 5.7):</b></p>
+<ul>
+<li>Algebraic attacks specific to the torus beyond the norm map, adjugate linearisation, and CRT/slot attacks -- no claim of exhaustiveness is made.</li>
+<li>The column correlation in the <i>untruncated</i> cLWE$_A$ sample (which exposes $k$ correlated short secrets $T_j\,\mathrm{coef}(r)$ under a common public $B$); this is flagged as deserving dedicated scrutiny for the reference design, but the deployed scheme never exposes it.</li>
+<li>Decryption-failure exploitation: $q_G\delta$ bounds only the probability that a failure occurs, not what a chosen-ciphertext attacker could extract from a correlated sequence of failures (the directional-failure literature for Kyber-like schemes has no counterpart here).</li>
+<li>Multi-instance and multi-target settings beyond the single-target, $\ell=1$ figures reported.</li>
+<li>Implementation-level attacks: side channels, fault injection against the rejection loop, and timing behaviour of the two distinct NTTs are out of scope.</li>
+</ul>
+<p>A summary table (Table 10) in the source explicitly marks, in bold, which entries a parameter set cannot be considered validated without: primal uSVP (calibrated to 1.2 bits on Kyber, but loose by 3-6 bits under actual reduction at small dimension), column subselection ($m^*=1$ confirmed numerically at every set), hybrid MitM (calibrated $\tau=2.0$; the GSA over-states the decoding radius by 1.31x versus measurement and ceases to bind under a profile simulator; treated as a stress model only), dense sublattice discovery (the row given the most weight -- simulated and checked against actual reduction, but only at dimension $2N \le 256$, so the <i>ordering</i> is established while the <i>size</i> of the margins still rests on the predictor), norm/adjugate/CRT attacks (excluded structurally), cLWE columns (the vulnerable untruncated variant is not consumed by the deployed scheme), and decryption failure (Gaussian was optimistic by 5-12 bits; all sets still clear $2^{-140}$).</p>
+</section>
+<section><h2>Concrete Parameter Sets</h2>
+<p>Parameters are chosen at NIST categories 1, 3, and 5 by maximising the primal security figure (evaluated on both the NTC lattice and the cLWE$_A$ lattice), subject to three constraints: exact decryption failure $\delta \le 2^{-140}$; $q$ prime with $q \equiv M+1 \pmod{2M}$ (non-splitness of $\alpha=x$); and a margin of at least two bits below the dense-sublattice fatigue estimate. The hybrid attack does not enter the objective, since under the profile simulator it binds at no set.</p>
+<p>The search converges to $\eta_{s'}=3$ (entropy $H \approx 2.33$ bits/coordinate, matching Kyber-512's secret entropy), $\eta_r=12$ (wide, since $\chi_r$ only costs linearly), and a per-category $\eta_f \in \{3,2,4\}$ at categories 1, 3, 5 set jointly by the exact failure constraint and the security columns.</p>
+<pre>
+                       NTC-KEM-512   NTC-KEM-768   NTC-KEM-1024
+NIST category          1             3             5
+ring                   x^256+1       Phi_1152      x^512+1
+n, k                   256, 2        384, 2        512, 2
+q                       7681          10369         13313
+log2 q                  12.91         13.34         13.70
+(eta_f, eta_r, eta_s')  (3,12,3)      (2,12,3)      (4,12,3)
+compression d           12            12            12
+failure delta, exact     2^-149        2^-158        2^-157
+NTC primal, unrescaled   119.7         185.1         256.1
+NTC primal, rescaled     115.6         176.7         251.4
+cLWE primal, unrescaled  120.0         186.3         258.4
+cLWE primal, rescaled    116.2         178.1         254.0
+security (min)           115.6         176.7         251.4
+fatigue margin           13.1 bits     16.1 bits     18.6 bits
+public key               864 B         1376 B        1824 B
+ciphertext                1536 B        2304 B        3072 B
+secret key                224 B         320 B         416 B
+</pre>
+<p>No hybrid row appears: the Babai/GSA model over-states $b^*_{\min}$ by 1.31x against measured Gram-Schmidt profiles and does not bind at any set under the profile simulator, so the primal attack is the reference; the primal figures are given both unrescaled and rescaled, with the minimum taken over the rescaled column, since Section 5.2 finds the rescaled form to be the one reduction actually follows.</p>
+<p><b>How the category-1 set was tuned.</b> The naive baseline $(\eta_f,\eta_r,\eta_{s'})=(2,12,3)$ at $d=11$ is what a selection against the Gaussian $\delta$ and the unrescaled estimate would return, but under the rescaled estimate it stands at only 112.4 bits, some 6 bits below Kyber-512. The gap is entirely the asymmetry $\sigma_s/\sigma_e = 2.45$ (which is 1 for Kyber); closing it means widening $\chi_f$, the expensive lever ($\sigma_f^2$ multiplies five of the eight terms of the noise-variance formula). Raising $\eta_f$ from 2 to 4 at the baseline $q,d$ drives the exact $\delta$ from $2^{-144}$ to $2^{-93}$, so it must be paid for elsewhere; the adopted set instead raises $\eta_f$ to 3 and spends one bit of compression, buying 3.2 bits for 128 bytes of extra ciphertext:</p>
+<pre>
+              eta_f eta_r d  log2 delta(Gauss)  log2 delta(exact)  NTC   cLWE  min   ct
+baseline       2     12   11   -156.3             -144.2           112.4 113.0 112.4 1408 B
+adopted        3     12   12   -164.4             -148.7           115.6 116.2 115.6 1536 B
+rejected       4      8   12   -140.9             -128.6           118.3 115.6  --   1536 B
+</pre>
+<p>The "rejected" row is instructive: selecting against the Gaussian $\delta$ makes $(4,8,3)$ look best (it reaches Kyber-512's exact figure of 118.3 on the NTC column), but the exact tail computation puts its $\delta$ at $2^{-128.6}$, violating the correctness constraint by 11 bits.</p>
+<p><b>Parity with Kyber-512 is not reached.</b> A search over $q \in [6\times10^3, 3\times10^4]$, $\eta_f \le 6$, $\eta_r \le 16$, $\eta_{s'} \le 4$, $d \le 12$ tops out at 115.9 bits (at $q=10753$, $(\eta_f,\eta_r,\eta_{s'})=(6,14,3)$): under the exact failure constraint, this ring caps out three bits below Kyber-512, and the adopted set gives up only 0.3 of those three bits. Closing the rest would require a change of ring rather than of widths. The authors are explicit that the "category 1" label is therefore conditional: it holds under any costing of sieving under which Kyber-512 itself is category 1 with three bits to spare, not as an unconditional claim; they suggest a reader who needs the full Kyber-512 margin should deploy NTC-KEM-768 instead.</p>
+<p><b>Design observations deferred to Appendix E:</b></p>
+<ul>
+<li>$k=2$ is forced by the ciphertext accounting ($nk(k+1)$ coefficients): at fixed ciphertext budget one maximises $nk$ by minimising $k$; e.g. $(n,k)=(256,3)$ and $(512,2)$ give identical ciphertexts but 171 vs 235 bits of security.</li>
+<li>$\Phi_{1152}$ wins at category 3, and only there: this ring family costs 50% more variance per product, but the residue class $q \equiv 1153 \pmod{2304}$ contains a prime as early as 3457, versus $q \equiv 513 \pmod{1024}$'s first prime at 7681 -- a 12-bit modulus rather than a 15-bit one is worth more than the noise penalty. The advantage does not generalise across the grid (within the same family $N=192$ yields only 80.9 bits, $N=768$ reaches 391 bits at a 9 kB ciphertext, dominated by the power-of-two set at 257 bits / 5.62 kB).</li>
+<li>Wide encryption randomness ($\eta_r=12$) reflects that $\chi_r$ enters the noise budget only linearly.</li>
+<li>Two number-theoretic transforms are required across the three categories (one for $x^n+1$, one for $\Phi_{1152}$); if unacceptable, category 3 can be served by the category-5 parameter set at roughly 0.8 kB extra ciphertext, using only one transform.</li>
+</ul>
+</section>
+<section><h2>Implementation and Performance Benchmarking</h2>
+<p><b>Note on an apparent inconsistency in the source.</b> Section 1.2 ("Limitations") states "There is no implementation and no benchmark," and the opening of Appendix G states "We have not implemented the scheme, so this section contains no measurements." However, Section 8 of the same document presents detailed cycle-count benchmarks from two named C implementation trees, and Appendix G.7 explicitly refers forward to "Section 8 reports measurements from the two C trees accompanying this paper and settles the third question [about the radix-3 transform] in the negative." This summary reports both statements as they appear in the fetched PDF text; the most likely explanation is that Section 8 and the G.7 cross-reference were added in the 2026-08-14 revision without updating the older "no implementation" language in Section 1.2 and the Appendix G preamble. Readers should treat the benchmark numbers in Section 8 as the more current and specific claim.</p>
+<p><b>Two implementation trees (Section 8), from an accompanying repository (github.com/Naibeye/ntc_suite):</b> a portable reference tree (schoolbook $O(n^2)$ ring product, scalar constant-time divstep inversion) and an AVX2 tree (implementing the number-theoretic transforms of Appendix G, a lane-local transform-domain inversion, and a four-way SIMD Keccak permutation). Both trees and an independent Python reference emit byte-identical known-answer test vectors.</p>
+<p><b>Measurement methodology.</b> Median reference cycles per operation from `rdtscp`, warm-up then repeated runs under a fixed 0.4s wall-clock budget with at least 15 iterations, on a 12th-generation Intel Core i7-1265U (invariant TSC at 2.688 GHz -- i.e. cycles at base frequency, not current core clock), compiled with gcc 11.4.0, measured 2026-08-14. Peer algorithms are timed by the same harness through liboqs's own x86_64/AVX2 backends, so no cross-tool calibration is involved.</p>
+<pre>
+set              op       reference    AVX2      speed-up
+NTC-KEM-512      KeyGen   1,896,780    81,926     23.2x
+                 Encaps     696,298    94,084      7.4x
+                 Decaps     922,398   110,322      8.4x
+NTC-KEM-768      KeyGen   3,784,506   116,026     32.6x
+                 Encaps   1,149,712   143,444      8.0x
+                 Decaps   1,607,884   155,416     10.3x
+NTC-KEM-1024     KeyGen   7,750,060   121,090     64.0x
+                 Encaps   2,090,652   157,856     13.2x
+                 Decaps   2,964,712   187,692     15.8x
+</pre>
+<p>KeyGen gains the most because the routine that dominated it -- constant-time inversion of $s$ in $A$ -- becomes an independent per-lane inversion in the transform domain, replacing a whole-ring divstep. Speed-ups grow with category because the reference product is quadratic in ring dimension while the transform is quasilinear.</p>
+<p><b>Comparison against NIST-track peers (bytes and median cycles; NTC-KEM via AVX2, peers via liboqs):</b></p>
+<pre>
+category 1:  pk     ct     BW     KeyGen     Encaps     Decaps
+ML-KEM-512      800    768   1568    14,866     16,902     19,722
+NTC-KEM-512     864  1,536   2400    81,926     94,084    110,322
+BIKE-L1       1,541  1,573   3114   326,594     72,300  1,248,282
+FrodoKEM-640  9,616  9,752 19368 1,712,472  1,893,166  1,850,194
+HQC-1         2,241  4,433   6674 2,672,416  5,362,516  8,085,698
+McEliece-348864 261,120 96 261,216 79,500,120  24,908    260,164
+
+category 3:  pk     ct     BW     KeyGen     Encaps     Decaps
+ML-KEM-768    1,184  1,088   2272    24,144     25,756     30,754
+NTC-KEM-768   1,376  2,304   3680   116,026    143,444    155,416
+BIKE-L3       3,083  3,115   6198   916,744    164,958  3,801,658
+FrodoKEM-976 15,632 15,792  31424 3,616,182  3,874,266  3,811,984
+HQC-3         4,514  8,978  13492 8,074,570 16,253,790 25,025,574
+
+category 5:  pk     ct     BW     KeyGen     Encaps     Decaps
+ML-KEM-1024   1,568  1,568   3136    33,670     35,594     42,566
+NTC-KEM-1024  1,824  3,072   4896   121,090    157,856    187,692
+BIKE-L5       5,122  5,154  10276 2,316,680    345,732  9,431,424
+FrodoKEM-1344 21,520 21,696 43216 6,527,558  7,002,278  6,753,240
+HQC-5         7,237 14,421  21658 19,528,498 38,886,848 61,238,658
+</pre>
+<p>Two readings. On cycles, the AVX2 tree sits within a small factor of ML-KEM (5.5x, 4.8x, 3.6x its KeyGen at categories 1, 3, 5, with Encaps/Decaps similar) and ahead of every non-module-LWE peer by one to two orders of magnitude on every operation at every category. The gap to ML-KEM narrows as the category grows, since the fixed price of the torus (factor $\le 4$ on ring multiplications, plus a fixed Keccak share) is diluted as ring work grows. On bandwidth ($pk+ct$, implementation-independent), NTC-KEM sits between ML-KEM and BIKE at every category, at roughly 1.5x ML-KEM -- the position row truncation was designed to buy.</p>
+<p><b>The radix-3 question, settled.</b> The measurements answer whether the $\Phi_{3N}$ transform's extra radix-3 stage makes category 3 disproportionately slow: it does not. NTC-KEM-768 runs at 0.96x, 0.91x, 0.83x the cycles of NTC-KEM-1024 on the three operations -- more expensive per coefficient (its ring is 3/4 the size) but comfortably between categories 1 and 5 in absolute terms -- so the single-transform alternative (serving category 3 via the category-5 parameter set) is not warranted on performance grounds. Two remaining questions (how much instruction-level parallelism absorbs the factor-4 multiplication cost, and the price of the reduced lazy-reduction headroom) are left to a future per-routine profile.</p>
+<p><b>Structural implementation notes (Appendix G):</b></p>
+<ul>
+<li><b>Two transforms needed.</b> Category 1/5 rings ($x^{256}+1$, $x^{512}+1$) need only a standard negacyclic NTT (radix-2, 512/1024 butterflies); category 3's $\Phi_{1152}$ ring ($M=1152=2^7\cdot 3^2$... actually $M=1152$) needs an additional radix-3 stage.</li>
+<li><b>Arithmetic in $A$ costs a factor of 4.</b> At $k=2$, $A \cong \prod_i \mathbb{F}_{q^2}$ with each slot $\mathbb{F}_{q^2} = \mathbb{F}_q[y]/(y^2-\zeta_i)$; a product costs three base-field multiplications by Karatsuba plus one multiplication by the constant $\zeta_i$: $(a_0+a_1y)(b_0+b_1y) = (t_0+\zeta_it_1,\, t_2-t_0-t_1)$ with $t_0=a_0b_0$, $t_1=a_1b_1$, $t_2=(a_0+a_1)(b_0+b_1)$ -- i.e. $4n$ base-field multiplications versus $n$ for a plain ring product.</li>
+<li><b>The twist $\alpha=x$ is essentially free to compute.</b> Multiplication by $x$ is a negacyclic shift (free, a signed permutation) in power-of-two rings, or one extra addition per wrapped coefficient in $\Phi_{3N}$ rings; in the transform domain it is a pointwise multiplication by a known constant.</li>
+<li><b>Operation counts per primitive</b> (length-$n$ transforms / pointwise products): KeyGen 4 transforms, 8 pointwise products plus one inversion in $A$; Encaps 6 transforms, 8 products; Decaps 5 transforms, 4 products plus a full Enc call for FO re-encryption. $A$ and the expanded row $u_1$ are generated directly in the transform domain from a seed (as in Kyber/Dilithium), needing no transforms of their own.</li>
+<li><b>Inversion in $A$</b> for KeyGen is done via the norm map, $a^{-1} = \bar a / N(a)$ with $N(a) = a_0^2 - \zeta_i a_1^2 \in \mathbb{F}_q$, reducing $n$ field inversions to $n$ scalar inversions, batchable via Montgomery's trick to one field inversion plus $O(n)$ multiplications.</li>
+<li><b>Lazy-reduction headroom shrinks.</b> All three moduli fit in signed 16-bit lanes (largest half-modulus 6656 for $q=13313$), but the number of Montgomery products accumulable before a forced reduction drops to 4, 3, 2 at categories 1, 3, 5 respectively, versus 9 for Kyber -- a likely source of constant-factor slowdown in a vectorised implementation.</li>
+<li><b>Sampling.</b> The paper does not use a rejection-free power-of-two interval for the secret width $\eta=2$ (five values per coefficient), which requires the standard technique of drawing four bits and rejecting values $\ge 15$ before reducing modulo 5.</li>
+<li><b>Constant-time hazards:</b> KeyGen's invertibility-resampling loop (failure probability $\le n q^{-k} < 2^{-17}$ at every set) and the FO implicit-rejection comparison/branch in Decaps, both standard but historically error-prone.</li>
+</ul>
+</section>
+<section><h2>The Conjectural Worst-Case Route (Appendix F)</h2>
+<p>NTC-Dec carries no worst-case support. As an alternative -- the route Stehle and Steinfeld took for NTRU -- the authors show that widening the key distribution until the public key is statistically uniform removes the NTC-Dec assumption from the analysis entirely, leaving IND-CPA resting only on cLWE$_A$, which (in the row-truncated form the scheme publishes) is exactly module-LWE and therefore inherits the worst-case reduction to module-SIVP due to Langlois and Stehle.</p>
+<p><b>The key lattice.</b> Fix $A$ and a candidate public key $h \in R_q^k$:
+$$\Lambda_{A,h} := \{(s,e) \in \mathbb{Z}^{nk}\times\mathbb{Z}^{nk} : e \equiv hM_s - \mathrm{row}_1(M_s)A \pmod q\},$$
+dimension $d=2nk$, determinant $q^{nk}$. Since $\Pr[t_{[1,:]} = h] \propto \rho_\sigma(\Lambda_{A,h})$, $t_{[1,:]}$ is near-uniform on $R_q^k$ once this Gaussian mass is essentially independent of $h$ -- the classical smoothing criterion.</p>
+<p><b>Lemma (regularity).</b> For $\varepsilon \in (0,\tfrac12)$ and $\sigma \ge \eta_\varepsilon(\Lambda_{A,h})$ for every $h$, the public key produced with $(s,e_1)$ drawn from a discrete Gaussian of width $\sigma$ is within statistical distance $2\varepsilon$ of uniform.</p>
+<p><b>Lemma (smoothing bound).</b> Under the Gaussian heuristic for the dual minimum, $\lambda_1(\Lambda^*) \approx \sqrt{d/(2\pi e)}\,q^{-1/2}$, and the standard smoothing-parameter bound gives
+$$\eta_\varepsilon(\Lambda_{A,h}) \le c(nk)\sqrt{q}, \qquad c(nk) = \sqrt{\frac{e\ln(4nk(1+1/\varepsilon))}{nk}}.$$
+At $\varepsilon=2^{-128}$, $c = 0.715, 0.508, 0.415, 0.360$ for $nk = 512, 1024, 1536, 2048$. Row truncation's convention $s = 1+ps'$ confines the secret to a coset of $pA$, so the smoothing width must additionally scale by $p$: $\sigma \ge p\,c(nk)\sqrt{q}$.</p>
+<p><b>Theorem 3 (IND-CPA from module-LWE alone, conditional on Conjecture 1).</b> Instantiating the scheme with $(s,e_1)$ drawn from a discrete Gaussian of width $\sigma \ge p\,c(nk)\sqrt{q}$ (encryption distributions unchanged), for every PPT $A$ there is PPT $B$ with
+$$\mathrm{Adv}^{ind\text{-}cpa}_{PKE}(A) \le 2\,\mathrm{Adv}^{mlwe}_{nk,q,\chi_r}(B) + 2^{-127},$$
+using no NTC-type assumption; composing with Langlois-Stehle gives IND-CPA from worst-case module-SIVP.</p>
+<p><b>Concrete instantiation (Proposition 3).</b> $R = \mathbb{Z}[x]/\Phi_{2304}$, $n=768$, $k=2$, $p=2$, $\sigma_{sml}=1$, $q = 10858753$ (prime, satisfying the non-splitness condition for $M=2304$): then $\sigma = 2737$ meets the smoothing bound, decryption failure satisfies $(q/4)/\sigma_{D_1} = 14.61 \Rightarrow \delta \le 2^{-140}$, and the module-LWE instance costs 193.6 bits under the shared estimator. Public key and ciphertext: 4640 and 9216 bytes.</p>
+<pre>
+                        this variant (Prop 3)   category 1     category 3
+nk                      1536                    512            768
+q                       10858753                7681           10369
+sigma (key)             2737                    2.45           2.45
+sigma_sml               1                       1              1
+security (shared est)   193.6 (module-LWE)      115.6          176.7
+key assumption          none (statistical)      NTC-Dec        NTC-Dec
+public key              4640 B                  864 B          1376 B
+ciphertext              9216 B                  1536 B         2304 B
+</pre>
+<p>Read against category 3 (176.7 bits), the worst-case variant costs a factor 3.4 on the public key and 4.0 on the ciphertext for roughly 17 more bits of security. The authors note this is markedly milder than the corresponding NTRU penalty, because the NTC key lattice already has dimension $2nk$ rather than $2n$, so the smoothing width $c(nk)\sqrt q$ carries a factor $1/\sqrt{nk}$ instead of $1/\sqrt n$. The dimension $nk=1536$ is forced (at $nk=1024$ the same constraints yield only 114.5 bits), so an intermediate ring would recover part of the cost.</p>
+<p><b>The plant disappears entirely (Remark 15).</b> At these parameters, $\|(s,e_1)\| \approx \sigma\sqrt{2nk} = 151693$, while the Gaussian heuristic puts the ambient lattice's first minimum at $\sqrt{2nk/(2\pi e)}\sqrt q = 44194$: the "secret" is 3.4 times longer than a generic shortest vector, so there is no unusually short vector to find and no fatigue point -- Section 5.6's entire analysis becomes vacuous for this variant, replaced by ordinary module-LWE/module-SIS hardness on a random lattice.</p>
+<p><b>Remark 16 and Conjecture 1: the missing rigorous step.</b> The Stehle-Steinfeld argument requires a proven (not merely heuristic) lower bound on the dual minimum, uniform over $h$, and their original proof needs $x^n+1$ to factor into <i>few</i> irreducible polynomials modulo $q$: with two degree-$n/2$ factors the exceptional-set bound is $q^{-n/2}$, but with $n$ linear factors (i.e. full splitting, which the transform requires) it degrades to $n/q$. At Proposition 3's parameters, $n/q = 2^{-13.8}$ against the claimed $2^{-127}$ -- a gap of 113 bits. This gap is recorded honestly as <b>Conjecture 1</b> (regularity for completely split $R_q$: for $R_q$ completely split and $\sigma \ge p\,c(nk)\sqrt q$, the bound $\sigma \ge \eta_\varepsilon(\Lambda_{A,h})$ holds for every $h$ with $\varepsilon=2^{-128}$, over the choice of $A$, except with negligible probability), not asserted as a theorem. Everything else in the appendix stated unconditionally (the criterion, the pricing, Proposition 3, Remark 15) does not depend on this conjecture; only Theorem 3 does.</p>
+<p><b>A second route needing no conjecture.</b> The obstruction is complete splitting, which is only needed for the number-theoretic transform, a speed choice, not a security requirement for this variant (which does not use NTC and so does not need the CRT-attack-blocking non-splitness of $\alpha$). In the power-of-two family, choosing $q \equiv 3$ or $5 \pmod 8$ gives $x^n+1 \equiv f_1f_2 \pmod q$ with $\deg f_1 = \deg f_2 = n/2$, both irreducible -- exactly two factors, so the exceptional set is $q^{-n/2}$ and the regularity lemma applies unconditionally, at the price of falling back to Karatsuba multiplication over $\mathbb{F}_{q^{n/2}}$ (only one Cooley-Tukey level available). The authors state they have not carried out the parameter search for such a set, only that the route exists and needs no new mathematics.</p>
+</section>
+<section><h2>Related Work, Limitations, and Open Problems</h2>
+<p><b>Related work.</b> NTC belongs to the "NTRU-with-errors" family, whose members replace NTRU's exact quotient with a noisy relation: NTWE (Gartner) combines NTRU and LWE over a ring; MiNTRU (Genise, Gentry, Halevi, Li, Micciancio) uses matrix secrets for a homomorphic scheme. NTC differs from both by confining the secret to a non-split maximal torus of $GL_k$ (not all of $GL_k$) and by using a noisy conjugation rather than a quotient -- exactly the two features blocking the norm-map and CRT shortcuts. NAIBI (a companion work by overlapping authors) builds reconciliation-based KEMs over non-split commutative algebras directly, without embedding as a matrix torus. The closest matrix relative on the exact-quotient side is Module-NTRU (Cheon-Kim-Kim-Son; Chuengsatiansup-Prest-Stehle-Wallet-Xagawa/ModFalcon), which generalises NTRU's quotient to a secret matrix over all of $GL_d(R_q)$; its relation stays exact, so its published lattice is literally an NTRU lattice in higher dimension to which the ordinary overstretched analysis applies, and its secret is unconstrained, whereas NTC's torus is precisely what denies the adversary the norm map. NTRU Prime and NTTRU are called orthogonal (they alter the ring rather than the group); the second ring family used here ($\mathbb{Z}[x]/(x^N-x^{N/2}+1)$) is the one NTTRU popularised. On the cryptanalytic side the paper relies on the overstretched-NTRU literature (Kirchner-Fouque; Ducas-van Woerden), the 2016 primal-uSVP estimate (Alkim-Ducas-Poppelmann-Schwabe) with sieving exponents (Becker-Ducas-Gama-Laarhoven; Laarhoven-Mosca-van de Pol), and the hybrid attack (Howgrave-Graham; Wunderer).</p>
+<p><b>Limitations, stated by the authors (Section 1.2 and the closing "Status of the assumption" section).</b></p>
+<ul>
+<li>NTC is new and has no worst-case reduction at the efficient parameters; the conjectural worst-case route (Appendix F) rests on Conjecture 1, not yet proved for the completely split rings the fast transform requires.</li>
+<li>The decision problem must be assumed separately from the search problem, as for NTRU: a key defines a single instance and the torus orbit is too small to rerandomise it; confidence can come only from dedicated cryptanalysis, of which the paper supplies "a first round... not a definitive one."</li>
+<li>Fatigue margins are now measured, not merely extrapolated, but by a predictor adapted from Ducas-van Woerden and validated against their NTRU figures at dimensions ($n \le 200$, $\beta \le 60$) far below the deployed regime ($nk = 512$-$2048$, crossing $\beta$ up to $\approx 390$); the paper's own lattice-reduction experiment reaches only $2N \le 256$, so it confirms the <i>ordering</i> (sparser plant survives longer) but not the <i>size</i> of the margins.</li>
+<li>Decryption failure probabilities are computed from the exact noise distribution; what remains unmodelled is what an adversary could exploit from a correlated sequence of failures.</li>
+<li>Section 1.2 states flatly "there is no implementation and no benchmark," which Section 8 of the same document appears to contradict (see the note in the Implementation section above); "two distinct number-theoretic transforms are needed across the security categories" is confirmed either way.</li>
+</ul>
+<p><b>Open problems, in the authors' stated order of priority:</b></p>
+<ol>
+<li>The fatigue experiment at deployed scale: pushing the lattice-reduction measurement to dimensions where crossing blocksizes approach the deployed ones, turning the margins from predicted into observed.</li>
+<li>Proving Conjecture 1 (or adopting the alternative modulus class $q \equiv 3,5 \pmod 8$ that avoids needing it) to make the worst-case fallback of Appendix F unconditional.</li>
+<li>A reduction between the search and decision forms of NTC, or a rerandomisation argument -- the torus orbit is too small as it stands, and it is not known whether that is essential.</li>
+<li>Whether $k \ge 3$ buys anything once the ciphertext accounting that forces $k=2$ in this KEM is absent (e.g. in a primitive without a ciphertext-size constraint), since the planted density falls further to $1/(2k)$.</li>
+<li>An actual implementation reaching the three constants Appendix G.7 lists as measurement-only (the real cost of the factor-4 multiplication overhead, the true price of reduced lazy-reduction headroom, and -- now settled by Section 8 -- the radix-3 transform cost).</li>
+</ol>
+<p><b>Closing self-assessment (from the paper's "Status of the assumption" section).</b> The authors summarise: the rigidity theorem making the search problem well posed rests on the Gaussian heuristic; the fatigue margins bounding the modulus from above come from a predictor validated on NTRU but used well beyond the dimensions/blocksizes checked; lattice reduction on actual NTC instances confirms the direction of the margins (sparser plant discovered later) but only at $2N \le 256$ and crossing blocksizes an order of magnitude below deployed ones, so it corroborates direction, not size. "What we have supplied is a first round of cryptanalysis... what we have not supplied is the years of scrutiny that would make the assumption load-bearing."</p>
+</section>
+<section><h2>Algorithms</h2>
+<p>The source paper contains four explicit named algorithms (KeyGen, Enc, Dec, Encaps, Decaps -- five listings total, numbered Algorithm 1 through Algorithm 5), all belonging to the NTC-KEM construction of Section 4. They are reproduced below exactly as specified, in self-contained pseudocode form.</p>
+
+<p><b>Algorithm 1: KeyGen()</b></p>
+<pre>
+Input:  none
+Output: pk = (rho, t[1,:]), sk = s'
+
+1:  rho <-$ {0,1}^256
+    A := Expand(rho) in M_k                  // A uniform matrix over R_q, expanded from seed
+2:  repeat
+3:      s' <-$ chi_{s'} in A
+        s := 1 + p * s'
+4:  until s in A^x                            // resample until s is invertible in A
+5:  e_1 <-$ chi_f^k                           // one row of ambient error
+6:  t[1,:] := ( row_1(M_s) * A + e_1 ) * M_s^{-1}   in R_q^k
+7:  return pk = (rho, t[1,:]), sk = s'
+</pre>
+
+<p><b>Algorithm 2: Enc(pk, m0)</b></p>
+<pre>
+Input:  pk = (rho, t[1,:]), message m0 in R_2
+Output: ciphertext ct
+
+1:  Delta := (q+1)/2
+    A := Expand(rho)
+2:  r  <-$ chi_r
+    f_1 <-$ chi_f^k
+    g_1 <-$ chi_f^k                          // one row
+3:  c_1 := A * coef(r) + f_1 + Delta * coef(m0)  in R_q^k
+        where coef(m0) = (m0, 0, ..., 0)
+4:  c_2[1,:] := t[1,:] * M_r + g_1            in R_q^k
+5:  return ct := ( Compress_d(c_1), Compress_d(c_2[1,:]) )
+</pre>
+
+<p><b>Algorithm 3: Dec(sk, ct)</b></p>
+<pre>
+Input:  sk = s', ciphertext ct
+Output: message m0 in R_2
+
+1:  decompress ct to c1_tilde, c2_tilde
+2:  D_1 := c2_tilde * coef(s) - row_1(M_s) * c1_tilde   in R_q
+        (s recovered from sk as s = 1 + p*s')
+3:  return m0 := round( 2*D_1 / q )  mod 2
+</pre>
+
+<p><b>Algorithm 4: Encaps(pk)</b> (Fujisaki-Okamoto transform with implicit rejection, FO-not-perp)</p>
+<pre>
+Input:  pk
+Output: ciphertext c, session key K
+
+1:  m <-$ U(A_p)
+2:  (r_bar, K_bar) := G( m, H(pk) )
+3:  c := Enc(pk, m; r_bar)                   // Enc run with explicit randomness r_bar
+4:  return ( c, K := KDF( K_bar, c ) )
+</pre>
+
+<p><b>Algorithm 5: Decaps(sk, c)</b></p>
+<pre>
+Input:  sk (including implicit-rejection seed z), ciphertext c
+Output: session key
+
+1:  m' := Dec(sk, c)
+    (r_bar', K_bar') := G( m', H(pk) )
+2:  if Enc(pk, m'; r_bar') = c then
+3:      return KDF( K_bar', c )
+4:  else
+5:      return KDF( z, c )
+6:  end if
+</pre>
+
+<p><b>Note on other "algorithmic" content in the paper.</b> Several other procedures are described narratively rather than presented as numbered algorithm listings, and are not reproduced here as pseudocode since the source does not present them that way: the dense-sublattice-discovery measurement harness (progressive BKZ via fplll, testing each tour's basis for planted-module membership via the exact rational-span criterion $v_iw_j - v_jw_i = 0$), the generalised DSD-PT fatigue estimator (a recursion over intersection ranks $s = d-1,\ldots,d-r+1$), and the primal-uSVP / hybrid-attack cost estimators (closed-form expressions rather than multi-step procedures). These are documented in prose and formulas in the Cryptanalysis sections above rather than as self-contained algorithms in the source, so per the task's instruction not to fabricate structure that is not in the source, they are omitted from this listing.</p>
+</section>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/\bfig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+})();
+function rtSetupEquations(){
+  var prev=document.getElementById('rt-eqprev');
+  if(!prev){prev=document.createElement('div');prev.id='rt-eqprev';document.body.appendChild(prev);}
+  function showEq(html,e){prev.innerHTML=html;prev.style.display='block';var x=Math.min(e.clientX+20,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+20,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hideEq(){prev.style.display='none';}
+  var eqs=document.querySelectorAll('mjx-container[display="true"]'),htmlByNum={};
+  for(var i=0;i<eqs.length;i++){var n=i+1;eqs[i].id='eq'+n;htmlByNum[n]=eqs[i].outerHTML;}
+  if(!eqs.length)return;
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='script'||tg==='style')continue;
+    if(pn.closest&&pn.closest('mjx-container'))continue;
+    if(/\beq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!htmlByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#eq'+num;a.className='rt-eqref';a.textContent=m[0];
+      (function(h){a.addEventListener('mousemove',function(e){showEq(h,e);});a.addEventListener('mouseleave',hideEq);})(htmlByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+}
+window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],tags:'none'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},startup:{pageReady:function(){return MathJax.startup.defaultPageReady().then(function(){rtSetupEquations();});}}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>
