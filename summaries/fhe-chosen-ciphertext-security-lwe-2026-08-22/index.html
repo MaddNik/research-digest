@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fully Homomorphic Encryption with Chosen-Ciphertext Security from LWE</title>
+<style>
+:root{--bg:#F3F5F4;--surface:#FFFFFF;--ink:#161A1C;--muted:#5C6670;--line:#DBE0DE;--accent:#0C8C80}
+@media (prefers-color-scheme:dark){:root{--bg:#0B0F12;--surface:#111619;--ink:#E7EEEA;--muted:#95A2A1;--line:#1F282C;--accent:#2CD4BE}}
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;line-height:1.5;margin:1rem 0}
+pre code{background:none;border:0;padding:0;border-radius:0;display:block;white-space:pre;font-size:13px}
+code{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:var(--surface);border-bottom:1px solid var(--line);font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:var(--accent);text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+#rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
+#rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
+a.rt-figref,a.rt-eqref{color:var(--accent);text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+body{counter-reset:rt-eq}
+mjx-container[display="true"]{position:relative;padding-right:2.4em}
+mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Deep Summaries</a><a href="https://eprint.iacr.org/2026/1756" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
+<header><h1>Fully Homomorphic Encryption with Chosen-Ciphertext Security from LWE</h1><p class="meta">IACR ePrint 2026/1756 (major revision of a CRYPTO 2025 publication) &middot; <a href="https://eprint.iacr.org/2026/1756" target="_blank" rel="noopener noreferrer">full view &#8599;</a></p></header>
+<section><h2>Overview</h2>
+<p>This paper constructs fully homomorphic encryption (FHE) schemes with chosen-ciphertext (CCA) security from the learning with errors (LWE) assumption, in the standard model (no random oracle, no non-falsifiable knowledge assumptions). The scheme is single-hop (evaluated ciphertexts cannot be evaluated again) and its security relies only on the circular-secure LWE assumption, i.e. exactly the assumption already required for basic CPA-secure (pure, unbounded-depth) FHE. The achieved security notion, called input-verifiable CCA (IV-CCA) security, is new and is proved to be strictly stronger than the classical CCA1 security notion for FHE.</p>
+<p>The construction follows the Naor-Yung double-encryption paradigm, but replaces the general zero-knowledge succinct non-interactive argument of knowledge (ZK-SNARK) used by prior double-encryption-based constructions with a bespoke succinct argument built only from (1) a non-interactive index batch argument (BARG) for NP and (2) a new commitment primitive introduced in this work, called <em>predicate extractable commitment</em> (PEC). Both ingredients are known to be instantiable from plain LWE, which is what lets the whole construction avoid random oracles and non-falsifiable assumptions.</p>
+<p><strong>Authors:</strong> Rupeng Yang, Zuoxia Yu, Willy Susilo (Institute of Cybersecurity and Cryptology, University of Wollongong, Australia). <strong>Venue:</strong> IACR ePrint 2026/1756; noted as "a major revision of an IACR publication in CRYPTO 2025".</p>
+</section>
+<section><h2>Background: Why CCA Security Is Hard for FHE</h2>
+<p>FHE schemes add an evaluation algorithm to a public-key encryption (PKE) scheme: given a circuit $C$ and ciphertexts encrypting $m_1,\dots,m_l$, evaluation outputs a ciphertext that decrypts to $C(m_1,\dots,m_l)$, subject to a <em>compactness</em> requirement (ciphertext size and decryption time bounded by a fixed polynomial in the security parameter, independent of $|C|$).</p>
+<p>Standard PKE security is CCA2: the adversary gets a decryption oracle both before and after seeing the challenge ciphertext $ct^{*}$, with only $ct^{*}$ itself forbidden from being queried post-challenge. CCA2 is unattainable for FHE: given $ct^{*}$, an adversary can homomorphically evaluate an invertible function $f$, submit $f(ct^{*})$ to the decryption oracle (a ciphertext different from $ct^{*}$), and invert $f$ on the answer to recover the challenge message. Historically this made CCA1 security (decryption oracle only before the challenge) look like the best one could hope for.</p>
+<p>The paper surveys three tiers of prior work:</p>
+<ul>
+<li><strong>Weaker than CCA1.</strong> CPAD security [Li-Micciancio, LM21] restricts the oracle to ciphertexts encrypted or homomorphically derived by the challenger (relevant for approximate/erroneous FHE); it is implied by CPA security under perfect correctness. FuncCPA security [Akavia et al., AGHV22] lets the adversary query the oracle arbitrarily but returns encrypted decryption results; it was later shown to be implied by (weaker than) CCA1.</li>
+<li><strong>CCA1 security.</strong> Loftus et al. [LMSV11] adapt the Smart-Vercauteren CPA scheme using a lattice-based knowledge assumption for plaintext awareness (PA-1); however, the underlying CPA scheme was later attacked (sub-exponential time, but practical for suggested parameters). Boneh-Segev-Waters [BSW12] and Canetti-Raghuraman-Richelson-Vaikuntanathan [CRRV17] use the Naor-Yung double-encryption paradigm with a general ZK-SNARK, which forces either the random oracle model or non-falsifiable knowledge assumptions (general ZK-SNARKs are known to require one or the other in the standard model). Canetti et al. and Yasuda-Kitagawa-Tanaka also build CCA1-secure FHE from multi-identity IBFHE via the CHK transform and LWE, but the resulting ciphertext is not fully compact (grows polynomially in the number $l$ of evaluated ciphertexts); a fully compact version in [CRRV17] was later shown insecure, and the patch in [WWX18] appears to have a gap in its security proof, and in any case both rely on sub-exponentially secure indistinguishability obfuscation (iO).</li>
+<li><strong>Beyond CCA1.</strong> Manulis-Nguyen [MN24] define verified CCA (vCCA) security, which lets the adversary query the decryption oracle even post-challenge, rejecting only queries whose ciphertext is evaluated from the challenge ciphertext; checking this requires an extraction algorithm that recovers the input ciphertexts and circuit from any evaluated ciphertext. vCCA-secure FHE is built from CPA-secure FHE and ZK-SNARKs, again needing the random oracle model or non-falsifiable assumptions &mdash; and the authors argue this dependency looks essential, because the required extraction algorithm must pull unbounded information out of a compact ciphertext.</li>
+</ul>
+<p>This leaves an open question that motivates the paper: <em>can we get CCA1 security (or stronger) with compact ciphertexts from (circular-secure) LWE alone, in the standard model?</em></p>
+</section>
+<section><h2>Contributions and Results</h2>
+<p>The paper answers the motivating question affirmatively. It builds a CCA-secure FHE scheme from four building blocks, all instantiable from circular-secure LWE:</p>
+<ul>
+<li>A CPA-secure FHE scheme (from circular-secure LWE).</li>
+<li>A simulation-sound non-interactive zero-knowledge (NIZK) proof, obtained by applying Sahai's general transform [Sah99] to LWE-based NIZKs [PS19, Wat24] (plain LWE).</li>
+<li>A non-interactive index batch argument (BARG) for NP, from [CJJ21] (plain LWE).</li>
+<li>A predicate extractable commitment (PEC), the new primitive introduced in Section 3 of the paper, built from plain LWE.</li>
+</ul>
+<p>Instantiating all four from circular-secure LWE gives a CCA-secure FHE scheme whose security rests solely on circular-secure LWE &mdash; the same assumption already needed for ordinary (unbounded-depth) CPA-secure FHE.</p>
+<p>The achieved notion, <strong>input-verifiable CCA (IV-CCA) security</strong>, allows the adversary to query the decryption oracle both before and after seeing the challenge ciphertext $ct^{*}$. For a post-challenge query the adversary must additionally submit the input ciphertexts that were homomorphically evaluated to produce the queried ciphertext; the oracle answers only if those input ciphertexts do not include $ct^{*}$. Crucially, the adversary is not trusted to submit correct inputs: a public verification algorithm checks whether the submitted inputs really do evaluate to the queried ciphertext (using the same kind of check the decryption oracle performs internally).</p>
+<p>Relations to other notions (illustrated in the paper's Figure 1, redrawn here in words): vCCA security $\Rightarrow$ IV-CCA security (because vCCA's extraction algorithm can be repurposed as the IV-CCA verification algorithm), and IV-CCA security $\Rightarrow$ CCA1.5 security $\Rightarrow$ CCA1 security. IV-CCA is <em>strictly</em> stronger than CCA1/CCA1.5: if one takes an IV-CCA-secure scheme and replaces its verification algorithm with a constant-1 algorithm, the scheme remains CCA1/CCA1.5-secure (verification is not used to prove those weaker notions) but is no longer IV-CCA-secure, since the adversary can now submit an arbitrary $ct \neq ct^{*}$ together with $ct^{*}$ and have the (broken) verification always accept, thereby obtaining a decryption of $ct^{*}$. CCA2 remains unattainable for FHE, as explained above.</p>
+<p>Limitations acknowledged by the authors: the scheme is single-hop only (Section 1.3 discusses concrete technical barriers to extending it to multi-hop); evaluated ciphertexts carry a proof whose size grows poly-logarithmically in the size of the evaluated circuit, so the scheme is "less compact" than plain CPA-secure FHE (whose evaluation algorithm does not change ciphertext size at all) though it still meets the polynomial compactness bound required of FHE. A footnote records that a subsequent work by Brakerski, Farber Brodsky, Paneth, and Solomon (ePrint 2026/678) builds a multi-hop FHE scheme with CCA security using different techniques (mergeable SNARGs for trapdoor languages).</p>
+<h3>Comparison with prior approaches (paper's Table 1)</h3>
+<pre><code>Approach                          Security  Hop     |ctEval|-|ctenc|          Main assumptions
+FHE + PA-1 [LMSV11]               CCA1      Multi   0                         Knowledge assumption
+CHK transform [CRRV17,YKT18]      CCA1      Multi   poly(lambda, l)           LWE
+  (fully compact variant)         CCA1      Multi   0                         LWE + iO
+FHE + general ZK-SNARK            vCCA      Multi   poly(lambda, log l, log|C|) LWE + RO, or LWE + Knowledge
+  [BSW12,CRRV17,MN24]
+FHE + BARG + PEC (this work)      IV-CCA    Single  poly(lambda, log l, log|C|) LWE
+</code></pre>
+<p>Here $l$ is the number of input ciphertexts to an evaluation and $|C|$ is the size of the evaluated circuit; "Hop" records whether outputs of the evaluation algorithm can (multi-hop) or cannot (single-hop) be fed back into the evaluation algorithm; $\lambda$ is the security parameter.</p>
+</section>
+<section><h2>Technical Overview: From Naor-Yung to a Standard-Model Succinct Argument</h2>
+<p><strong>Starting point &mdash; Naor-Yung double encryption.</strong> Given a CPA-secure FHE scheme, the encryption algorithm encrypts the message twice under two independent public keys $pk_0, pk_1$, producing $ct_0, ct_1$, and attaches a NIZK proof $\sigma$ that $ct_0$ and $ct_1$ encrypt the same message. Decryption checks $\sigma$ and then decrypts (say) $ct_0$ with $sk_0$. Because both components are proved consistent, the reduction can safely switch which secret key it uses to answer decryption queries, which is what lets the simulator keep the ciphertexts under the "unused" key hidden and hence secure.</p>
+<p><strong>The compactness obstacle.</strong> To prove CCA security one must be able to answer decryption queries for both fresh ciphertexts (easy: their NIZK proof directly certifies validity from the encryption randomness) and <em>evaluated</em> ciphertexts. The natural proof that an evaluated ciphertext is valid is "it was produced by correctly evaluating a circuit on ciphertexts that themselves came with valid NIZK proofs" &mdash; but that statement's size depends on the whole evaluated circuit, so a generic NIZK proof for it would not be compact. Prior double-encryption-based CCA-secure FHE schemes [BSW12, CRRV17, MN24] solve this with a general ZK-SNARK, which is succinct but needs the random oracle model or non-falsifiable knowledge assumptions in the standard model (a consequence of the negative results of [GW11]).</p>
+<p><strong>Avoiding general ZK-SNARKs.</strong> Recent standard-model, standard-assumption succinct arguments exist, but only for restricted language classes: deterministic polynomial-time computation (class $P$) [CJJ21, KVZ21], batch NP [CJJ21, KLVW23, CGJ+23], and monotone-policy batch NP [BBK+23, NWW24, Goy24]. The statement needed here &mdash; "this ciphertext can be evaluated from some ciphertexts and circuit not known to the verifier" &mdash; is a complex non-deterministic statement, outside these restricted classes as they stand. The paper's key technical move is adapting batch-argument techniques for circuit satisfiability [CJJ21, BBK+23] to this setting.</p>
+<p><strong>First attempt: prove validity wire-by-wire via an index BARG.</strong> Model the evaluated circuit as $N$ wires, where wires $1,\dots,l$ are the input wires and each subsequent wire $i$ is the NAND of two earlier wires $L_i, R_i$ (with wire $i$'s layer $d_i = \max(d_{L_i}, d_{R_i}) + 1$, and input wires at layer $0$). Represent each wire $i$ by ciphertexts $(ct_{i,0}, ct_{i,1})$ under $pk_0, pk_1$. An index BARG can prove, per wire $i$, one of two indexed statements: (a) for $i \le l$, that $(ct_{i,0}, ct_{i,1}, d_i)$ has $d_i = 0$ and $ct_{i,0}, ct_{i,1}$ encrypt the same message (certified by a NIZK proof $\rho_i$); or (b) for $i > l$, that $ct_{i,0} = \mathrm{Eval}(pk_0, ct_{L_i,0}, ct_{R_i,0})$, $ct_{i,1} = \mathrm{Eval}(pk_1, ct_{L_i,1}, ct_{R_i,1})$, and the layers are consistent ($d_{L_i}, d_{R_i} < d_i$). Naively this needs all $N$ wires' data as part of the witness for each statement, which is compressed by committing all the wire data with a hash tree (as in [CJJ21]) and having each indexed statement only refer to a few hashed positions.</p>
+<p>The soundness argument for this naive approach uses a hybrid strategy: if a decrypted final ciphertext is inconsistent (i.e. invalid), one wants to trace the inconsistency down to an invalid input wire (layer 0), whose invalidity would contradict the completeness of the attached NIZK proof for that wire. The issue is that a normal collision-resistant hash used to build the tree lets you reconstruct and compare states only when the underlying computation is <em>deterministic</em>; here the "is this wire's ciphertext pair invalid" predicate is checked against a hidden threshold on the layer number, which is a non-deterministic aspect that a plain hash tree cannot support directly. The related primitive <em>predicate extractable hash for bit fixing</em> from [BBK+23] is close but too restrictive (it only checks fixed bit positions, not arbitrary predicates).</p>
+<p><strong>The paper's solution: predicate extractable commitment (PEC).</strong> Generalizing [BBK+23]'s idea, the authors design a vector commitment that, while committing a vector $(x_i)_{i \in [1,N]}$, also secretly checks a hidden predicate $P$ against each $x_i$ and, if some $x_i$ satisfies $P$, allows a trapdoor holder to <em>extract</em> the position $i$ from the (short) commitment. Security guarantees: (1) if extraction returns nothing, then (given a valid opening) the opened value cannot satisfy $P$; (2) if extraction returns position $i$, then (given a valid opening at $i$) the opened value must satisfy $P$ at position $i$.</p>
+<p>Using PEC instead of a plain hash tree, the evaluation algorithm commits the vector of $(ct_{i,0}, ct_{i,1}, d_i)_{i \in [1,N]}$ <em>twice</em>, under two independently generated PEC public keys $ck^{(1)}, ck^{(2)}$, producing $com^{(1)}, com^{(2)}$. The index BARG then proves, per wire $i$, essentially the same statements as before but referencing openings of $com^{(1)}$ and $com^{(2)}$ rather than a plain hash tree.</p>
+<p>Proof strategy (matching, in spirit, the soundness proof for the final construction in Appendix B): fix a layer threshold $h$ and define $P_h(ct_0, ct_1, d) = 1$ iff $d \le h$ and $\mathrm{Dec}(ct_0) \ne \mathrm{Dec}(ct_1)$ (i.e. this wire is invalid and at layer at most $h$). At "Hybrid $h$" the two PEC public keys are set up to secretly encode $P_h$ and $P_{h-1}$ respectively. If we can extract an index $j$ from $com^{(1)}$ (so wire $j$ is invalid with $d_j \le h$), the local soundness of the BARG at index $j$ certifies that wire $j$'s defining statement (b) holds, i.e. there exist input wires $j', $ with $d_{j'} < d_j \le h$, so $d_{j'} \le h-1$, and (crucially) at least one of the two input wires to $j$ must itself be invalid (since a valid evaluation of two valid wires gives a valid output wire, by evaluation correctness of the FHE). That invalid wire $j'$ satisfies $P_{h-1}$, so it is now extractable from $com^{(2)}$ (which encodes $P_{h-1}$). Switching the two PEC keys to encode $(P_{h-1}, P_{h-1})$ and then $(P_{h-1}, P_{h-2})$ &mdash; both changes undetectable because the PEC hides its embedded predicate &mdash; moves the argument to Hybrid $h-1$ with the same guarantee one layer down. Descending all the way to layer $0$ produces an invalid input wire, which contradicts the NIZK proof attached to that input ciphertext. (A technical wrinkle: the specific index $j$ to track must be fixed at the start of each hybrid, handled by guessing $j$ and checking the guess after extraction, at the cost of a polynomial reduction loss confined to the current hybrid.)</p>
+<p><strong>Achieving IV-CCA, not just CCA1.</strong> The wire-level argument above shows any queried evaluated ciphertext that is invalid must trace back to an invalid <em>input</em> ciphertext with a forged NIZK proof, which handles pre-challenge queries (and would already give CCA1). For post-challenge queries, IV-CCA additionally needs to detect and reject any evaluated ciphertext derived from the challenge ciphertext $ct^{*}$. This is done by having the evaluation algorithm commit <em>all</em> the input ciphertexts into a third commitment $com^{(3)}$ (using a deterministic-commit PEC, but here as a plain vector commitment with no predicate needed beyond binding) and proving via the BARG that each input ciphertext is indeed committed there. The public verification algorithm, given the adversary-supplied candidate inputs, recomputes a commitment $com'$ over them and checks $com' = com^{(3)}$: since PEC's commit algorithm is deterministic and binding, $com' = com^{(3)}$ if and only if the adversary supplied the true inputs (or found a binding break, which happens only with negligible probability).</p>
+</section>
+<section><h2>Preliminaries: CPA-secure FHE and Somewhere-Extractable Index BARG</h2>
+<h3>CPA-secure FHE (used as the underlying building block, Section 2.3)</h3>
+<p>An FHE scheme $\mathsf{HE} = (\mathsf{KeyGen}, \mathsf{Enc}, \mathsf{Dec}, \mathsf{Eval})$ has message space $\{0,1\}$ and evaluates a single NAND gate per call to $\mathsf{Eval}$; derived batch/circuit-evaluation algorithms $\mathsf{EncV}$, $\mathsf{DecV}$, $\mathsf{EvalC}$ encrypt/decrypt vectors and evaluate whole circuits gate by gate. The required properties are:</p>
+<ul>
+<li><strong>Standard correctness:</strong> $\Pr[(pk,sk)\leftarrow \mathsf{KeyGen}(1^{\lambda}), ct \leftarrow \mathsf{Enc}(pk,\mu) : \mathsf{Dec}(sk,ct) = \mu] = 1$ for all $\mu \in \{0,1\}$.</li>
+<li><strong>Evaluation correctness:</strong> decrypting the output of $\mathsf{Eval}$ on two ciphertexts, or of $\mathsf{EvalC}$ on a whole circuit applied to encrypted inputs, always yields the corresponding NAND/circuit output on the plaintexts, with probability $1$ (perfect correctness &mdash; the paper notes this can be achieved from the usual statistical-correctness LWE-based schemes, e.g. GSW13, by swapping the discrete Gaussian noise distribution for a truncated discrete Gaussian, which is statistically close but has an exactly bounded norm).</li>
+<li><strong>Strong evaluation correctness:</strong> $\Pr[\mathsf{Dec}(sk, \mathsf{Eval}(pk, ct_1, ct_2)) = \mathsf{Dec}(sk, ct_1) \barwedge \mathsf{Dec}(sk, ct_2)] = 1$ for <em>any</em> $ct_1, ct_2$ (not just honestly generated ones) &mdash; achievable by having $\mathsf{Eval}$ homomorphically evaluate the decrypt-then-NAND circuit on a public bootstrapping ciphertext $ct_{sk}$ that encrypts $sk$.</li>
+<li><strong>Compactness:</strong> $|\mathsf{Eval}(pk,ct_1,ct_2)| = |ct_1| = |ct_2|$ and decryption time is identical for all three ciphertexts.</li>
+<li><strong>IND-CPA security:</strong> the usual indistinguishability game, $\Pr[\mathcal{A}_2(ct^{*}, state) = b] \le 1/2 + \mathrm{negl}(\lambda)$ over $ct^{*} \leftarrow \mathsf{Enc}(pk, \mu^{*}_b)$.</li>
+</ul>
+<p>Existing LWE-based schemes such as GSW13 satisfy compactness and IND-CPA security under circular-secure LWE, and can be adapted (as above) to give perfect correctness and strong evaluation correctness. A <em>leveled</em> FHE scheme is one that only supports circuits up to an a-priori bounded depth $d$ fixed at key generation (no strong evaluation correctness required); leveled FHE follows from plain LWE.</p>
+<h3>Somewhere-extractable non-interactive index BARG (Section 2.4)</h3>
+<p>For a language $L = \{(C,\mathrm{ind}) : \exists w \in \{0,1\}^{W}, C(\mathrm{ind},w)=1\}$ where $C: \{0,1\}^{\lambda}\times\{0,1\}^{W}\to\{0,1\}$, an index BARG consists of $\mathsf{Setup}(1^{\lambda},1^{C},\mathrm{ind}) \to (crs, td)$, $\mathsf{Prove}(crs,N,C,w_1,\dots,w_N)\to\pi$, $\mathsf{Verify}(crs,N,C,\pi)\to b$, and $\mathsf{Extract}(td,N,C,\pi)\to w$, satisfying:</p>
+<ul>
+<li><strong>Completeness:</strong> if every witness $w_i$ satisfies $C(i,w_i)=1$, the proof verifies with probability $1$.</li>
+<li><strong>Succinctness:</strong> $|crs| \le \mathrm{poly}(\lambda, C)$, $|\pi| \le \mathrm{poly}(\lambda, C, \log N)$, and verification runs in $\mathrm{poly}(\lambda, C, \log N)$ &mdash; crucially independent of $N$ except logarithmically.</li>
+<li><strong>Index hiding:</strong> the crs does not reveal which index $\mathrm{ind}$ was embedded at setup, up to negligible advantage.</li>
+<li><strong>Somewhere argument of knowledge:</strong> for the index $\mathrm{ind}$ fixed at setup, if $\mathsf{Verify}$ accepts, then except with negligible probability the extracted witness $w = \mathsf{Extract}(td,N,C,\pi)$ satisfies $C(\mathrm{ind}, w) = 1$ whenever $\mathrm{ind} \in [1,N]$.</li>
+</ul>
+<p>Index BARGs for this language exist from plain LWE [CJJ21], but the base construction fixes the batch size $N$ at setup time. Section 2.4 gives a simple wrapper (reproduced in the Algorithms appendix) that removes this restriction, by preparing $\lambda$ parallel instances for every power-of-two batch size $2^{i}$, $i \in [1,\lambda]$, and padding any concrete instance up to the next power of two with trivially-satisfied dummy statements.</p>
+</section>
+<section><h2>Predicate Extractable Commitment (PEC): Definition</h2>
+<p>A predicate extractable commitment for a predicate family $\mathcal{F}$ over message space $\{0,1\}^{m}$ combines a succinct vector commitment with a hidden, extractable predicate check. It consists of $\mathsf{Setup}(1^{\lambda}, f) \to (crs, td)$ for a predicate circuit $f: \{0,1\}^{m} \to \{0,1\}$; a deterministic $\mathsf{Commit}(crs, N, x) \to (com, st)$ for a vector $x \in (\{0,1\}^{m})^{N}$; a deterministic $\mathsf{Open}(crs, N, st, j) \to \rho$; a deterministic $\mathsf{Verify}(crs, N, com, j, x, \rho) \to b$; and a deterministic $\mathsf{Extract}(td, N, com) \to (a, j) \in \{(0,0)\} \cup \{(1,j)\}_{j \in [1,N]}$.</p>
+<p>Required properties (Definitions 3.1&ndash;3.5):</p>
+<ul>
+<li><strong>Correctness:</strong> an honestly generated opening at position $j$ always verifies.</li>
+<li><strong>Succinctness:</strong> $|crs| \le \mathrm{poly}(\lambda, m, |f|)$ and $|com| + |\rho| \le \mathrm{poly}(\lambda, m, |f|, \log N)$, with matching verification time.</li>
+<li><strong>Binding:</strong> no PPT adversary can produce a commitment together with two valid openings $x \neq x'$ at the same position $j$, except with negligible probability.</li>
+<li><strong>Predicate hiding:</strong> for equal-size predicate circuits $f_0, f_1$, the crs generated for $f_0$ is indistinguishable from that generated for $f_1$.</li>
+<li><strong>Extractability</strong> (two-sided): given crs for predicate $f$, if an adversary produces $(N, com, j, x, \rho)$ with $\mathsf{Verify} = 1$, then (i) if $f(x) = 1$, $\mathsf{Extract}(td,N,com)$ cannot return $(0,0)$ except with negligible probability, and (ii) if $f(x)=0$, $\mathsf{Extract}(td,N,com)$ cannot return $(1,j)$ (i.e. flag exactly this position $j$) except with negligible probability.</li>
+</ul>
+<p>Intuitively: extraction returning "nothing" certifies (up to negligible error) that no committed-and-opened value satisfies $f$; extraction returning position $j$ certifies (up to negligible error) that the value opened at position $j$, if any, does satisfy $f$.</p>
+</section>
+<section><h2>Predicate Extractable Commitment: Construction</h2>
+<p>The construction (Section 3.2) uses a collision-resistant hash $H = (\mathsf{H.KeyGen}, \mathsf{H.Eval})$ with $k$-bit output, and a <em>leveled</em> FHE scheme $\mathsf{HE}$ with message space $\{0,1\}$ and ciphertext space $\{0,1\}^{c}$. The predicate $f$ is never revealed in the clear: it is encrypted under an FHE public key, and all the "does this leaf satisfy $f$" logic is evaluated <em>homomorphically</em> as part of building a Merkle-style hash tree over the committed vector.</p>
+<p>Two circuits drive the homomorphic tree construction (paraphrased from Figures 2 and 3 of the paper):</p>
+<pre><code>Circuit C0[hk, x, v]:                 // hardcoded: hash key hk, leaf value x, position v
+  input: f                            // the (homomorphically supplied) predicate
+  1. t = H.Eval(hk, x)
+  2. if f(x) == 0: output (0, 0, t)
+  3. output (1, v + 1, t)
+
+Circuit C1[hk, ctL, ctR, v]:          // hardcoded: hash key hk, two child ciphertexts, node label v
+  input: sk                          // the (homomorphically supplied) FHE secret key for this level
+  1. (bL, indL, tL) = HE.DecV(sk, ctL)
+  2. (bR, indR, tR) = HE.DecV(sk, ctR)
+  3. t = H.Eval(hk, tL || tR)
+  4. if bL == 1 and (v||0) is a prefix of (indL - 1): output (1, indL, t)
+  5. if bR == 1 and (v||1) is a prefix of (indR - 1): output (1, indR, t)
+  6. output (0, 0, t)
+</code></pre>
+<p>A node in the (conceptual) plaintext hash tree stores a hash of its children plus a "found position" value: a leaf stores its own index $i$ if $P(x_i)=1$, else $\bot$; an internal node propagates whichever child's found-position value has that child's label as a prefix (preferring the left child), or $\bot$ if neither does. $C_0$ implements the leaf logic; $C_1$ implements the internal-node propagation logic, and is evaluated homomorphically level by level. Because homomorphically evaluating $C_1$ needs the secret key of the level below as input, the scheme keeps a chain of leveled FHE key pairs $(pk_i, sk_i)_{i \in [0,\lambda]}$, with each level's secret key encrypted under the next level's public key ($c_i \leftarrow \mathsf{HE.EncV}(pk_i, sk_{i-1})$), so the tree can be walked upward homomorphically without ever exposing any $sk_i$ to the committer.</p>
+<p>The Setup, Commit, Open, Verify, Extract algorithms are given in full in the Algorithms appendix below. At a high level: <code>Setup</code> generates the key chain, encrypts $f$ under $pk_0$, and samples the hash key; <code>Commit</code> builds the tree bottom-up by repeatedly homomorphically evaluating $C_0$ (at the leaves) and $C_1$ (at internal nodes up to the root), producing one FHE ciphertext per node; the commitment is the ciphertext at the root. <code>Open</code> at position $j$ reveals the ciphertexts along the co-path from leaf $j$ to the root. <code>Verify</code> recomputes the path from the claimed leaf value $x_j$ using the same homomorphic $C_0$/$C_1$ evaluations and compares against the given root ciphertext. <code>Extract</code> simply decrypts the root ciphertext with the top-level secret key $sk_n$ (where $n = \lceil \log N \rceil$) to recover $(b, \mathrm{ind}, t)$, outputting $(b, \mathrm{ind})$ if $\mathrm{ind} \in [1,N]$ and $(0,0)$ otherwise.</p>
+<p><strong>Theorem 3.1.</strong> If $H$ is collision resistant and $\mathsf{HE}$ is a leveled FHE scheme with IND-CPA security, then this construction is a secure predicate extractable commitment. Sketch: binding and predicate hiding follow directly from collision resistance of $H$ and IND-CPA security of $\mathsf{HE}$. Extractability is argued by induction up the tree: if $f(x_j)=1$ then $C_0$ encodes $(1,j,*)$ at the leaf, and the prefix-matching logic in $C_1$ guarantees a valid position (either $j$ or possibly a different valid position, but never $\bot$) propagates all the way to the root, so extraction cannot return $(0,0)$; conversely if $f(x_j)=0$, the leaf encodes $(0,0,*)$ and the prefix check in $C_1$ specifically prevents an adversarially inserted "fake" $(1,j,*)$ value from surviving the climb to the root (because $j$'s binary prefix at each level does not match the label required by $C_1$'s check unless it genuinely came from the correct leaf), so the root can never encrypt $(1,j,*)$ when $f(x_j)=0$. Full details are in Appendix A of the source and are summarized structurally in the Algorithms appendix below.</p>
+<p><strong>Corollary 3.1.</strong> Assuming the standard LWE assumption (both the collision-resistant hash and leveled FHE are LWE-instantiable), there exists a secure predicate extractable commitment scheme.</p>
+<p><strong>A subtlety noted by the authors:</strong> a malicious opener could try to defeat the homomorphic tree logic by injecting an ill-formed FHE ciphertext (e.g. one with abnormally large noise) into an opening. This is neutralized using the bootstrapping technique: ill-formed ciphertexts get "refreshed" by homomorphically decrypting them with an encrypted copy of the secret key, which the construction obtains for free by using a chain of leveled key pairs (one per tree level) rather than a single pure/bootstrappable FHE key.</p>
+</section>
+<section><h2>IV-CCA Security: Formal Definition</h2>
+<p>An IV-CCA-secure FHE scheme with message space $\{0,1\}$ and ciphertext spaces $C$ (fresh) and $C'$ (evaluated) consists of $\mathsf{KeyGen}(1^{\lambda}) \to (pk,sk)$, $\mathsf{Enc}(pk,\mu)\to ct$, $\mathsf{Dec}(sk,ct)\to \mu \in \{0,1,\bot\}$ (now allowed to reject, unlike CPA-secure FHE), $\mathsf{Eval}(pk,C,ct)\to ct' \in C'$ (which now takes an arbitrary circuit $C:\{0,1\}^{l}\to\{0,1\}$ and $l$ ciphertexts directly, rather than a single NAND gate), and a new algorithm $\mathsf{Verify}(pk, ct, ct') \to b$ that checks whether $ct'$ is (claimed to be) the evaluation of $C$ on the vector $ct$.</p>
+<p><strong>Definition 4.1 (Standard correctness).</strong> For any $\mu \in \{0,1\}$,
+$$\Pr[(pk,sk)\leftarrow \mathsf{KeyGen}(1^{\lambda}), ct \leftarrow \mathsf{Enc}(pk,\mu) : \mathsf{Dec}(sk,ct)=\mu \wedge \mathsf{Verify}(pk,ct,ct)=1] = 1.$$</p>
+<p><strong>Definition 4.2 (Evaluation correctness).</strong> For any polynomial $l$, messages $\mu_1,\dots,\mu_l \in \{0,1\}$, and polynomial-size circuit $C:\{0,1\}^{l}\to\{0,1\}$,
+$$\Pr\Big[(pk,sk)\leftarrow\mathsf{KeyGen}(1^{\lambda});\ ct_i \leftarrow \mathsf{Enc}(pk,\mu_i)\ \forall i;\ ct' \leftarrow \mathsf{Eval}(pk,C,(ct_i)_i) : \mathsf{Dec}(sk,ct')=C(\mu_1,\dots,\mu_l) \wedge \mathsf{Verify}(pk,(ct_i)_i,ct')=1\Big]=1.$$</p>
+<p><strong>Definition 4.3 (Compactness).</strong> For any polynomials $l, N$ and any circuit $C$ with $N$ wires, both $|ct'|$ and the decryption time for $ct'$ are bounded by $\mathrm{poly}(\lambda, \log N, \log l)$ &mdash; independent of $|C|$ except through $\log N$.</p>
+<p><strong>Definition 4.4 (IV-CCA security).</strong> For any PPT adversary $\mathcal{A} = (\mathcal{A}_1, \mathcal{A}_2)$:
+$$\Pr\Big[(pk,sk)\leftarrow\mathsf{KeyGen}(1^{\lambda});\ (\mu_0^{*},\mu_1^{*}, state)\leftarrow \mathcal{A}_1^{D_1(\cdot)}(pk);\ b \xleftarrow{\$} \{0,1\};\ ct^{*}\leftarrow \mathsf{Enc}(pk,\mu_b^{*}) : \mathcal{A}_2^{D_2(\cdot,\cdot)}(ct^{*},state)=b\Big] \le \tfrac12 + \mathrm{negl}(\lambda)$$
+where oracle $D_1$ on input $ct \in C \cup C'$ returns $\mathsf{Dec}(sk,ct)$, and oracle $D_2$ on input $(\mathbf{ct}, ct') $ with $\mathbf{ct} \in C^{l}$ (some polynomial $l$) and $ct' \in C \cup C'$ proceeds as:</p>
+<pre><code>D2(ct_vec, ct'):
+  mu = Dec(sk, ct')
+  if mu == BOT: return BOT
+  if Verify(pk, ct_vec, ct') == 0 or ct* is in ct_vec: return TOP   // "reject / not permitted"
+  return mu
+</code></pre>
+<p>($\top$ denotes an explicit "not answered" signal distinct from $\bot$, meaning: this query was rejected specifically because it either failed verification or was traced back to the challenge ciphertext, not because the ciphertext itself was malformed.)</p>
+<p><strong>Remark 4.1.</strong> IV-CCA security implies standard CCA1 security (only pre-challenge queries) and CCA1.5 security [DDA13, MN24] (pre-challenge decryption queries, plus a post-challenge oracle that only reveals whether a queried ciphertext is valid or not). It is strictly stronger than both: replacing $\mathsf{Verify}$ with a constant-$1$ algorithm keeps CCA1/CCA1.5 security intact (since those notions never invoke $\mathsf{Verify}$) but breaks IV-CCA security, because the adversary can then submit $(ct, ct^{*})$ for any $ct \ne ct^{*}$ to $D_2$ and have the always-accepting $\mathsf{Verify}$ let the decryption of $ct^{*}$ through.</p>
+<p><strong>Remark 4.2 (differences from CPA-secure FHE).</strong> Relative to the CPA-secure FHE definition in Section 2.3, IV-CCA-secure FHE (i) adds the $\mathsf{Verify}$ algorithm; (ii) distinguishes fresh ciphertexts from evaluated ciphertexts, and restricts $\mathsf{Eval}$'s inputs to fresh ciphertexts only (single-hop); (iii) allows $\mathsf{Dec}$ to reject illegal ciphertexts with $\bot$; and (iv) allows the evaluated ciphertext size to grow poly-logarithmically in $N$ (wires) and $l$ (inputs), rather than staying exactly equal to the fresh ciphertext size &mdash; while still remaining bounded by a fixed polynomial $L(\lambda,\lambda,\lambda)$ since $l, N \le 2^{\lambda}$.</p>
+</section>
+<section><h2>IV-CCA-Secure FHE: The Construction</h2>
+<p>Section 4.2 assembles the final scheme from four sub-primitives: an FHE scheme $\mathsf{HE}$ (message space $\{0,1\}$, ciphertext space $\{0,1\}^{c}$, randomness space $R_{Enc}$) with strong evaluation correctness and IND-CPA security; a simulation-sound NIZK $\mathsf{ZK}$ for the "same plaintext under two keys" language
+$$L = \{(pk_0,pk_1,ct_0,ct_1) : \exists (\mu,r_0,r_1) \in \{0,1\}\times R_{Enc}\times R_{Enc},\ ct_0=\mathsf{HE.Enc}(pk_0,\mu;r_0),\ ct_1=\mathsf{HE.Enc}(pk_1,\mu;r_1)\};$$
+a predicate extractable commitment $\mathsf{PC}$ over message space $\{0,1\}^{m}$ (with $m = 2c+\lambda$) supporting a predicate family $\mathcal{F}$; and a somewhere-extractable index BARG $\mathsf{BI}$ (with dynamically choosable batch size) for a wire-correctness circuit $C_e$.</p>
+<p>Two auxiliary circuits are used as the predicate family for $\mathsf{PC}$ and as the statement circuit for $\mathsf{BI}$ (paraphrased from Figures 4 and 5):</p>
+<pre><code>Circuit Cc[sk0, sk1, level]:              // predicate used by PEC setups
+  input: (ct0, ct1, d)
+  1. if d &lt;= level and HE.Dec(sk0, ct0) != HE.Dec(sk1, ct1):
+       output 1
+  2. output 0
+  // Cd = a dummy circuit outputting 0 always, padded to the same size as Cc.
+  // F = {Cd} union {all instances of Cc}.
+
+Circuit Ce[pk0, pk1, crsZK, crsPC1, crsPC2, crsPC3, com1, com2, com3, l, N]:
+                                            // wire-correctness statement checked by the BARG
+  input: (ind, w)
+  parse w = (Cw=(ct0,ct1,d), sigma, rho1, rho2, rho3,
+             L, CL=(ctL0,ctL1,dL), rhoL1, rhoL2,
+             R, CR=(ctR0,ctR1,dR), rhoR1, rhoR2)
+  if ind &lt;= l:                              // input-wire statement
+    accept iff:
+      PC.Verify(crsPC1, N, com1, ind, Cw, rho1) == 1  and
+      PC.Verify(crsPC2, N, com2, ind, Cw, rho2) == 1  and
+      PC.Verify(crsPC3, l, com3, ind, Cw, rho3) == 1  and
+      ZK.Verify(crsZK, (pk0,pk1,ct0,ct1), sigma) == 1  and
+      d == 0
+  else:  // (l &lt; ind &lt;= N)                    // internal-wire (NAND gate) statement
+    accept iff:
+      PC.Verify(crsPC1, N, com1, ind, Cw, rho1) == 1  and
+      PC.Verify(crsPC2, N, com2, ind, Cw, rho2) == 1  and
+      PC.Verify(crsPC1, N, com1, L,  CL, rhoL1) == 1  and
+      PC.Verify(crsPC2, N, com2, L,  CL, rhoL2) == 1  and
+      PC.Verify(crsPC1, N, com1, R,  CR, rhoR1) == 1  and
+      PC.Verify(crsPC2, N, com2, R,  CR, rhoR2) == 1  and
+      ct0 == HE.Eval(pk0, ctL0, ctR0)  and
+      ct1 == HE.Eval(pk1, ctL1, ctR1)  and
+      dL &lt;= d - 1  and  dR &lt;= d - 1  and  d &gt;= 1
+</code></pre>
+<p>The full pseudocode for $\mathsf{KeyGen}$, $\mathsf{Enc}$, $\mathsf{Eval}$, $\mathsf{Dec}$, and $\mathsf{Verify}$ of the final FHE scheme is given in the Algorithms appendix below; in prose:</p>
+<ul>
+<li><strong>KeyGen</strong> samples two independent $\mathsf{HE}$ key pairs $(pk_0,sk_0), (pk_1,sk_1)$, a NIZK crs, three PEC crs's each set up for the dummy predicate $C_d$, and a BARG crs. The public key bundles everything except $sk_0$; the secret key is $sk_0$ plus the public key.</li>
+<li><strong>Enc</strong> is exactly Naor-Yung double encryption: encrypt $\mu$ under both $pk_0$ and $pk_1$ with fresh randomness $r_0,r_1$, and attach a NIZK proof $\sigma$ that both ciphertexts encrypt the same $\mu$. A fresh ciphertext is tagged $(0, ct_0, ct_1, \sigma)$.</li>
+<li><strong>Eval</strong>, given $l$ fresh ciphertexts and a circuit $C$ with $N$ wires: verifies each input ciphertext's NIZK proof (aborting to $\bot$ if any fails); evaluates the circuit gate-by-gate under both $pk_0$ and $pk_1$ in parallel, tracking each wire's layer $d_i$; commits the full vector of $(ct_{i,0},ct_{i,1},d_i)_{i\in[1,N]}$ twice (under the two PEC crs's, giving $com^{(1)}, com^{(2)}$) and commits just the $l$ input wires a third time (giving $com^{(3)}$); opens every wire in both of the first two commitments and every input wire in the third; assembles a witness $w_i$ per wire (input wires carry their NIZK proof and dummy placeholders for the "no children" fields; internal wires carry openings for themselves and both children, with a dummy NIZK-proof placeholder) and runs the BARG prover on $C_e$ over all $N$ witnesses. The evaluated ciphertext is tagged $(1, C_N, com^{(1)}, com^{(2)}, com^{(3)}, \rho^{(1)}_N, \rho^{(2)}_N, \Pi, l, N)$, i.e. just the final output wire's ciphertext pair and layer, the three commitments, openings of the output wire in the first two commitments, the BARG proof, and the bookkeeping values $l, N$.</li>
+<li><strong>Dec</strong>: for a fresh ciphertext, verify the NIZK proof and, if valid, decrypt $ct_0$ with $sk_0$ (else output $\bot$). For an evaluated ciphertext, check $N$ is a valid polynomial size, check $l, d \le N$, verify the BARG proof against $C_e$, verify that the output wire's ciphertext pair opens correctly at position $N$ in both $com^{(1)}$ and $com^{(2)}$, and if all checks pass, decrypt $ct_0$ with $sk_0$; otherwise output $\bot$.</li>
+<li><strong>Verify</strong>, given a candidate list of $L$ fresh input ciphertexts and a target ciphertext $ct'$: first checks every claimed input ciphertext's NIZK proof. If $ct'$ is itself a fresh ciphertext, it verifies only if $L=1$ and the single input equals $ct'$. If $ct'$ is an evaluated ciphertext, $\mathsf{Verify}$ independently recomputes a PEC commitment over the $L$ candidate inputs (using the third PEC crs) and accepts iff $L$ equals the recorded $l$ and the recomputed commitment equals $com^{(3)}$ recorded in $ct'$.</li>
+</ul>
+<p><strong>Theorem 4.1.</strong> If $\mathsf{HE}$ is a secure FHE scheme with IND-CPA security and strong evaluation correctness, $\mathsf{ZK}$ is a simulation-sound NIZK, $\mathsf{PC}$ is a secure predicate extractable commitment, and $\mathsf{BI}$ is a secure somewhere-extractable index BARG with dynamic batch size, then the above $\mathsf{FHE}$ scheme is a secure fully homomorphic encryption scheme with IV-CCA security.</p>
+<p>The correctness and compactness proofs (Appendix B, first part) are direct: completeness of $\mathsf{ZK}$, correctness of $\mathsf{PC}$, and completeness of $\mathsf{BI}$ combine to show a properly generated $ct'$ passes every check in $\mathsf{Dec}$ and $\mathsf{Verify}$, and evaluation correctness of $\mathsf{HE}$ then guarantees the decrypted value equals $C(\mu_1,\dots,\mu_l)$; compactness follows because $ct'$ consists of two $\mathsf{HE}$ ciphertexts, three PEC commitments, two PEC openings, and one BARG proof, each of which is bounded by $\mathrm{poly}(\lambda,\log N,\log l)$ due to the succinctness of $\mathsf{PC}$ and $\mathsf{BI}$.</p>
+<p><strong>Corollary 4.1.</strong> Assuming the circular-secure LWE assumption, there exist FHE schemes with IV-CCA security &mdash; since all four building blocks ($\mathsf{HE}$, $\mathsf{ZK}$, $\mathsf{PC}$, $\mathsf{BI}$) admit LWE-based instantiations, the last two from plain LWE and the first from circular-secure LWE (with $\mathsf{ZK}$ built from plain-LWE NIZKs via Sahai's simulation-soundness transform).</p>
+</section>
+<section><h2>Security Proof Structure (Appendix B)</h2>
+<p>The IV-CCA security proof follows the standard Naor-Yung game-hopping structure, instantiated for this construction as a sequence of games $\mathrm{Game}_0, \dots, \mathrm{Game}_7$ (the challenger answers pre-challenge queries via oracle $D_1$-style logic, issues the challenge ciphertext, then answers post-challenge queries via $D_2$-style logic including the verification/exclusion check):</p>
+<pre><code>Game 0: the real IV-CCA game exactly as in Definition 4.4.
+
+Game 1: same as Game 0, but the NIZK proof sigma* attached to the challenge
+        ciphertext is replaced by a simulated proof (crsZK, tdZK &lt;- ZK.S1;
+        sigma* &lt;- ZK.S2(crsZK, tdZK, (pk0,pk1,ct0*,ct1*))).
+
+Game 2: same as Game 1, but ct1* is now an encryption of 0 instead of mu_b*.
+
+Game 3: same as Game 2, but for every FRESH-ciphertext decryption query
+        (pre- or post-challenge), if the NIZK verifies yet
+        HE.Dec(sk0,ct0) != HE.Dec(sk1,ct1), the game aborts and outputs 2
+        (instead of answering the query).
+
+Game 4: same as Game 3, but the same abort-on-mismatch check (outputting 3
+        this time) is added for EVALUATED-ciphertext decryption queries,
+        checked after all the normal Verify/BI/PC checks pass.
+
+Game 5: same as Game 4, but every surviving decryption query is answered
+        using HE.Dec(sk1, ct1) instead of HE.Dec(sk0, ct0).
+
+Game 6: same as Game 5, but the abort conditions added in Games 3 and 4 are
+        removed again (queries are just answered, not aborted on mismatch).
+
+Game 7: same as Game 6, but ct0* is now an encryption of 0 instead of mu_b*.
+</code></pre>
+<p>Let $E_i$ denote the output of $\mathrm{Game}_i$ (values in $\{0,1\}$ normally, or $\{2,3\}$ if a game aborts early). The proof chains the following lemmas, each bounding $|\Pr[E_{i}=\cdot] - \Pr[E_{i+1}=\cdot]|$ by a negligible function (or showing equality):</p>
+<ul>
+<li><strong>Lemma B.1</strong> ($E_0$ vs $E_1$): from the zero-knowledge property of $\mathsf{ZK}$.</li>
+<li><strong>Lemma B.2</strong> ($E_1$ vs $E_2$): from IND-CPA security of $\mathsf{HE}$ (indistinguishability of $ct_1^{*}$ under $pk_1$).</li>
+<li><strong>Lemma B.3</strong> ($E_2$ vs $E_3$, $z\in\{1,2,3\}$): the two games differ only if some decryption query has a valid NIZK proof for a false statement (i.e. $HE.Dec(sk_0,ct_0)\ne HE.Dec(sk_1,ct_1)$ despite $\sigma$ verifying), which by simulation soundness of $\mathsf{ZK}$ happens with negligible probability &mdash; simulation soundness specifically rules this out even though the game now also produces one simulated proof ($\sigma^{*}$).</li>
+<li><strong>Lemma B.4</strong> ($E_3$ vs $E_4$): the technical core of the whole proof. Proved via a further sequence of hybrid games $\mathrm{Game}\ 3.i$ interpolating between Game 3 and Game 4 query-by-query (Claim B.1), and this is where the wire-by-wire tracing argument sketched in the Technical Overview is formalized: for each decryption query, the argument extracts an invalid wire from $com^{(1)}$ at a descending sequence of layer thresholds $M, M-1, \dots, 0$ by swapping the two PEC crs's predicates between $C_c[sk_0,sk_1,h]$ and $C_c[sk_0,sk_1,h-1]$ across a further nested set of hybrids ($\mathrm{Exp}_h$, $\mathrm{Exp}_{h,1}$ through $\mathrm{Exp}_{h,6}$; Claims B.2&ndash;B.7, proved in Appendices B.1.1&ndash;B.1.3), using predicate hiding of $\mathsf{PC}$ to swap predicates undetectably and extractability of $\mathsf{PC}$ plus somewhere-argument-of-knowledge of $\mathsf{BI}$ to certify that an invalid wire at layer $\le h$ implies an invalid child wire at layer $\le h-1$. The base case (Lemma B.12 / Appendix B.1.3, layer $0$) reduces the existence of an invalid input wire with a BARG-certified indexed statement to simulation soundness of $\mathsf{ZK}$, exactly closing the loop back to the same style of argument as Lemma B.3.</li>
+<li><strong>Lemma B.5</strong> ($E_4$ vs $E_5$): exact equality, not just closeness &mdash; in Games 4 and 5 every surviving query already satisfies $HE.Dec(sk_0,ct_0) = HE.Dec(sk_1,ct_1)$ (guaranteed by the Game-3/4 abort conditions), so switching which key answers the query changes nothing.</li>
+<li><strong>Lemma B.6</strong> ($E_5$ vs $E_6$): removing the abort conditions only changes the outcome when they would have triggered, which by Lemmas B.3&ndash;B.5 happens with negligible probability (since $\Pr[E_2\in\{2,3\}]=0$ exactly, as Game 2 has no abort conditions at all).</li>
+<li><strong>Lemma B.7</strong> ($E_6$ vs $E_7$): from IND-CPA security of $\mathsf{HE}$ (indistinguishability of $ct_0^{*}$ under $pk_0$, symmetric to Lemma B.2).</li>
+<li><strong>Lemma B.8</strong>: in Game 7, both $ct_0^{*}$ and $ct_1^{*}$ are independent of $b$, so $\Pr[E_7=1]=1/2$ exactly.</li>
+</ul>
+<p>Chaining Lemmas B.1&ndash;B.8 gives $\Pr[E_0=1] \le 1/2 + \mathrm{negl}(\lambda)$, i.e. Theorem 4.1's IV-CCA security bound. The net effect of the whole hop sequence mirrors the standard Naor-Yung argument: by the time both challenge components are fully randomized (Game 7) and the decryption oracle has been shown, via the layer-descent argument, to never need $sk_0$ in a way that would leak information about which key encrypts the challenge, the adversary's view is provably independent of $b$.</p>
+</section>
+<section><h2>Discussion and Open Problems (Section 1.3)</h2>
+<p><strong>CCA security vs. bootstrapping.</strong> Bootstrapping requires publishing an encryption $ct_{sk}$ of the FHE secret key, which was historically thought incompatible with even CCA1 security (an adversary might submit $ct_{sk}$, or something evaluated from it, to the decryption oracle to learn $sk$). The authors point out this concern does not apply to NIZK/succinct-argument-based constructions such as theirs: proofs are only attached to ciphertexts produced by the honest $\mathsf{Enc}$ algorithm, and $ct_{sk}$ itself has no valid proof, so it (or anything evaluated directly from it) is rejected by $\mathsf{Dec}$/the decryption oracle. Bootstrapped ciphertexts <em>can</em> still be decrypted: if bootstrapping is folded into every gate evaluation (homomorphically running "decrypt-then-NAND" on $ct_{sk}$), the result is a new ciphertext together with a fresh proof that it was evaluated from valid, proof-carrying inputs &mdash; so it is accepted by decryption, yet it never leaks anything about $sk$ because it was produced entirely via homomorphic evaluation.</p>
+<p><strong>Compactness in practice.</strong> Evaluating a circuit $C$ on $l$ ciphertexts yields a ciphertext whose size grows poly-logarithmically in $|C|$ and $l$ &mdash; strictly less compact than CPA-secure FHE schemes, whose $\mathsf{Eval}$ never changes ciphertext size at all. Still, since both $|C|$ and $l$ are themselves polynomial in $\lambda$ (safely $\le 2^{\lambda}$), the resulting bound $L(\lambda, \log|C|, \log l) \le L(\lambda, \lambda, \lambda)$ remains a fixed polynomial in $\lambda$, satisfying the formal compactness requirement.</p>
+<p><strong>Barriers to multi-hop.</strong> Extending the scheme to multi-hop (letting evaluation outputs feed back into further evaluations) runs into three concrete obstacles: (1) the BARG proof would need to be applied recursively across hops, and even with rate-1 batch arguments the proof size would grow polynomially in the number of hops $k$; (2) the security proof's guess-and-check trick (used to pin down the specific extracted index at each hybrid step) would introduce a reduction loss exponential in $k$ if applied across $k$ hops; (3) supporting the input-ciphertext verification needed for IV-CCA security across hops seems to require carrying forward all prior hops' commitments, again growing the ciphertext polynomially in $k$. The authors also flag that a contemporaneous paper [CHL+25] uncovers gaps in prior proofs of CCA security for multi-hop homomorphic encryption from succinct arguments, gaps that could plausibly recur if this construction were naively extended to multi-hop. They pose achieving multi-hop CCA-secure FHE with polylogarithmic-in-hop-count ciphertext size, from standard assumptions in the standard model, as an open problem &mdash; noting in a footnote that a subsequent paper (Brakerski, Farber Brodsky, Paneth, Solomon; ePrint 2026/678) has since built a multi-hop CCA-secure FHE scheme via a different technique (mergeable SNARGs for trapdoor languages).</p>
+<p><strong>Toward stronger CCA notions.</strong> IV-CCA security is intentionally weaker than vCCA security [MN24]: IV-CCA requires the adversary to <em>supply</em> the input ciphertexts for a post-challenge query (with public verification of correctness), whereas vCCA requires an extraction algorithm that can pull the input ciphertexts and circuit <em>out of</em> a compact evaluated ciphertext on its own. The authors argue implementing such a powerful extractor from standard assumptions in the standard model looks essentially impossible (it must recover unboundedly more information than a compact ciphertext could a-priori be assumed to contain, which is exactly the kind of extraction that forces general ZK-SNARK constructions into random-oracle or non-falsifiable-knowledge territory). They pose finding intermediate notions between IV-CCA and vCCA, realizable from standard LWE in the standard model, as a further open direction.</p>
+</section>
+<section><h2>Algorithms</h2>
+<p>This section collects every algorithm/construction given in the paper as self-contained pseudocode. Notation follows the source: $\lambda$ is the security parameter; $\mathsf{HE}$ denotes the (leveled or pure) FHE building block; $H$ is a collision-resistant hash; $c, k, m, F, d$ are the polynomial parameters defined in the text (ciphertext length, hash output length, PEC message length, predicate-circuit wire count, and homomorphic depth bound, respectively).</p>
+
+<h3>1. Index BARG with dynamically chosen batch size (Section 2.4)</h3>
+<p>Wraps a fixed-batch-size index BARG $\mathcal{BI}' = (\mathsf{Setup}', \mathsf{Prove}', \mathsf{Verify}', \mathsf{Extract}')$ into one that can pick $N$ after the crs is generated.</p>
+<pre><code>Setup(1^lambda, 1^C, ind):
+  for i in [1, lambda]:
+    (crs_i, td_i) &lt;- Setup'(1^lambda, 2^i, 1^C', min(ind, 2^i))
+    // C' = upper bound on the size of the padded circuit C' used below
+  output CRS = (crs_i)_{i=1..lambda}, TD = (td_i)_{i=1..lambda}
+
+Prove(CRS, N, C, w_1, ..., w_N):
+  n = ceil(log2(N))
+  define C'(i, w_i) = C(i, w_i) if 1 &lt;= i &lt;= N else 1
+  set w_i = 0^W for i in [N+1, 2^n]
+  output pi &lt;- Prove'(crs_n, C', w_1, ..., w_{2^n})
+
+Verify(CRS, N, C, pi):
+  if N is not polynomial in lambda: output 0
+  n = ceil(log2(N))
+  define C'(i, w_i) = C(i, w_i) if 1 &lt;= i &lt;= N else 1
+  output Verify'(crs_n, C', pi)
+
+Extract(TD, N, C, pi):
+  if N is not polynomial in lambda: output BOT
+  n = ceil(log2(N))
+  define C'(i, w_i) = C(i, w_i) if 1 &lt;= i &lt;= N else 1
+  output Extract'(td_n, C', pi)
+</code></pre>
+
+<h3>2. Auxiliary circuits for the predicate extractable commitment (Section 3.2, Figures 2-3)</h3>
+<pre><code>Circuit C0[hk, x, v]:                 // constants: hash key hk, leaf value x in {0,1}^m, position v
+  input: f
+  1. t = H.Eval(hk, x)
+  2. if f(x) == 0: output (0, 0, t)
+  3. output (1, v + 1, t)
+
+Circuit C1[hk, ctL, ctR, v]:           // constants: hash key hk, child ciphertexts ctL, ctR, node label v
+  input: sk
+  1. (bL, indL, tL) = HE.DecV(sk, ctL)
+  2. (bR, indR, tR) = HE.DecV(sk, ctR)
+  3. t = H.Eval(hk, tL || tR)
+  4. if bL == 1 and (v || 0) is a prefix of (indL - 1): output (1, indL, t)
+  5. if bR == 1 and (v || 1) is a prefix of (indR - 1): output (1, indR, t)
+  6. output (0, 0, t)
+</code></pre>
+
+<h3>3. Predicate extractable commitment PC = (Setup, Commit, Open, Verify, Extract) (Section 3.2)</h3>
+<pre><code>Setup(1^lambda, f):                    // f is the predicate circuit, f in F
+  for i in [0, lambda]: (pk_i, sk_i) &lt;- HE.KeyGen(1^lambda, 1^d)
+  for i in [1, lambda]: c_i &lt;- HE.EncV(pk_i, sk_{i-1})
+  c_f &lt;- HE.EncV(pk_0, f)
+  hk &lt;- H.KeyGen(1^lambda)
+  crs = ((pk_i)_{i=0..lambda}, (c_i)_{i=1..lambda}, c_f, hk)
+  td  = (sk_i)_{i=0..lambda}
+  output (crs, td)
+
+Commit(crs, N, x = (x_1, ..., x_N)):
+  n = ceil(log2(N))
+  for v in [0, N-1]:
+    ct_{0,v} = HE.EvalC(pk_0, C0[hk, x_{v+1}, v], c_f)
+  for v in [N, 2^n - 1]:
+    ct_{0,v} = HE.EncV(pk_0, 0^{1+lambda+k}; 0)          // padding
+  for i in [1, n-1]:
+    for v in {0,1}^{n-i}:
+      ct_{i,v} = HE.EvalC(pk_i, C1[hk, ct_{i-1,v||0}, ct_{i-1,v||1}, v], c_i)
+  ct_n = HE.EvalC(pk_n, C1[hk, ct_{n-1,0}, ct_{n-1,1}, EMPTY], c_n)
+  com = ct_n
+  st  = (ct_{i,v})_{i=0..n-1, v in {0,1}^{n-i}}
+  output (com, st)
+
+Open(crs, N, st, j):
+  if N not polynomial in lambda or j not in [1,N]: output BOT
+  n = ceil(log2(N)); u = j - 1; (u_1, ..., u_n) = binary(u)
+  for i in [0, n-1]:
+    u^(i)      = (u_1, ..., u_{n-i-1}, u_{n-i})
+    ubar^(i)   = (u_1, ..., u_{n-i-1}, 1 - u_{n-i})
+  output rho = (ct_{i, u^(i)}, ct_{i, ubar^(i)})_{i=0..n-1}
+
+Verify(crs, N, com, j, x, rho):
+  if N not polynomial in lambda or j not in [1,N]: output 0
+  parse com = ct_n, rho = (ct_i~, ct_i~~)_{i=0..n-1}      // "ct_i" and "ctbar_i" in the paper
+  n = ceil(log2(N)); u = j - 1; (u_1,...,u_n) = binary(u)
+  u^(i) = (u_1,...,u_{n-i-1},u_{n-i}) for i in [0,n-1]; u^(n) = EMPTY
+  if ct_0 != HE.EvalC(pk_0, C0[hk, x, u], c_f): output 0
+  for i in [1, n]:
+    ct_{i-1, u_{n-i+1}}     = ct_{i-1}~
+    ct_{i-1, 1-u_{n-i+1}}   = ct_{i-1}~~
+    if ct_i != HE.EvalC(pk_i, C1[hk, ct_{i-1,0}, ct_{i-1,1}, u^(i)], c_i): output 0
+  output 1
+
+Extract(td, N, com):
+  if N not polynomial in lambda: output (0, 0)
+  n = ceil(log2(N))
+  (b, ind, t) = HE.DecV(sk_n, com)
+  if b == 0 or ind not in [1, N]: output (0, 0)
+  output (b, ind)
+</code></pre>
+
+<h3>4. Auxiliary circuits for the FHE construction (Section 4.2, Figures 4-5)</h3>
+<pre><code>Circuit Cc[sk0, sk1, level]:               // predicate family member, used as PEC predicate
+  input: (ct0, ct1, d)
+  1. if d &lt;= level and HE.Dec(sk0, ct0) != HE.Dec(sk1, ct1): output 1
+  2. output 0
+  // Cd = dummy circuit, always outputs 0, padded to size of Cc.
+  // F = {Cd} union {all instances of Cc}.
+
+Circuit Ce[pk0, pk1, crsZK, crsPC1, crsPC2, crsPC3, com1, com2, com3, l, N]:
+  input: (ind, w)
+  parse w = (Cw = (ct0, ct1, d), sigma, rho1, rho2, rho3,
+             L, CL = (ctL0, ctL1, dL), rhoL1, rhoL2,
+             R, CR = (ctR0, ctR1, dR), rhoR1, rhoR2)
+  if ind &lt;= l:                                     // input-wire statement
+    accept iff:
+      PC.Verify(crsPC1, N, com1, ind, Cw, rho1) == 1  and
+      PC.Verify(crsPC2, N, com2, ind, Cw, rho2) == 1  and
+      PC.Verify(crsPC3, l, com3, ind, Cw, rho3) == 1  and
+      ZK.Verify(crsZK, (pk0, pk1, ct0, ct1), sigma) == 1  and
+      d == 0
+  else:  // l &lt; ind &lt;= N                           // internal (NAND-gate) wire statement
+    accept iff:
+      PC.Verify(crsPC1, N, com1, ind, Cw, rho1) == 1  and
+      PC.Verify(crsPC2, N, com2, ind, Cw, rho2) == 1  and
+      PC.Verify(crsPC1, N, com1, L,  CL, rhoL1) == 1  and
+      PC.Verify(crsPC2, N, com2, L,  CL, rhoL2) == 1  and
+      PC.Verify(crsPC1, N, com1, R,  CR, rhoR1) == 1  and
+      PC.Verify(crsPC2, N, com2, R,  CR, rhoR2) == 1  and
+      ct0 == HE.Eval(pk0, ctL0, ctR0)  and
+      ct1 == HE.Eval(pk1, ctL1, ctR1)  and
+      dL &lt;= d - 1  and  dR &lt;= d - 1  and  d &gt;= 1
+</code></pre>
+
+<h3>5. The IV-CCA-secure FHE scheme (Section 4.2)</h3>
+<pre><code>KeyGen(1^lambda):
+  (pk0, sk0) &lt;- HE.KeyGen(1^lambda)
+  (pk1, sk1) &lt;- HE.KeyGen(1^lambda)
+  crsZK &lt;- ZK.Setup(1^lambda)
+  (crsPC1, tdPC1) &lt;- PC.Setup(1^lambda, Cd)
+  (crsPC2, tdPC2) &lt;- PC.Setup(1^lambda, Cd)
+  (crsPC3, tdPC3) &lt;- PC.Setup(1^lambda, Cd)
+  (crsBI,  tdBI)  &lt;- BI.Setup(1^lambda, 1^C, 1)
+  PK = (pk0, pk1, crsZK, crsPC1, crsPC2, crsPC3, crsBI)
+  SK = (sk0, PK)
+  output (PK, SK)
+
+Enc(PK, mu):
+  r0, r1 &lt;-$ REnc
+  ct0 = HE.Enc(pk0, mu; r0)
+  ct1 = HE.Enc(pk1, mu; r1)
+  sigma &lt;- ZK.Prove(crsZK, (pk0, pk1, ct0, ct1), (mu, r0, r1))
+  output CT = (0, ct0, ct1, sigma)
+
+Eval(PK, C = (1^l, 1, (L_i, R_i)_{i=l+1..N}), CT_1, ..., CT_l):
+                                       // CT_i = (0, ct_{i,0}, ct_{i,1}, sigma_i)
+  for i in [1, l]:
+    if ZK.Verify(crsZK, (pk0, pk1, ct_{i,0}, ct_{i,1}), sigma_i) == 0: output BOT
+    d_i = 0
+    C_i = (ct_{i,0}, ct_{i,1}, d_i)
+  for i in [l+1, N]:
+    ct_{i,0} = HE.Eval(pk0, ct_{L_i,0}, ct_{R_i,0})
+    ct_{i,1} = HE.Eval(pk1, ct_{L_i,1}, ct_{R_i,1})
+    d_i = max(d_{L_i}, d_{R_i}) + 1
+    C_i = (ct_{i,0}, ct_{i,1}, d_i)
+  (com1, st1) = PC.Commit(crsPC1, N, (C_i)_{i=1..N})
+  (com2, st2) = PC.Commit(crsPC2, N, (C_i)_{i=1..N})
+  for i in [1, N]:
+    rho1_i = PC.Open(crsPC1, N, st1, i)
+    rho2_i = PC.Open(crsPC2, N, st2, i)
+  (com3, st3) = PC.Commit(crsPC3, l, (C_i)_{i=1..l})
+  for i in [1, l]:
+    rho3_i = PC.Open(crsPC3, l, st3, i)
+  ct_bot = 0^c, sigma_bot = 0^|sigma_1|, rho_bot = 0^|rho1_1|, rho'_bot = 0^|rho3_1|
+  for i in [1, l]:
+    w_i = (C_i, sigma_i, rho1_i, rho2_i, rho3_i,
+           0, (ct_bot, ct_bot, 0), rho_bot, rho_bot,
+           0, (ct_bot, ct_bot, 0), rho_bot, rho_bot)
+  for i in [l+1, N]:
+    w_i = (C_i, sigma_bot, rho1_i, rho2_i, rho'_bot,
+           L_i, C_{L_i}, rho1_{L_i}, rho2_{L_i},
+           R_i, C_{R_i}, rho1_{R_i}, rho2_{R_i})
+  P = Ce[pk0, pk1, crsZK, crsPC1, crsPC2, crsPC3, com1, com2, com3, l, N]
+  Pi &lt;- BI.Prove(crsBI, N, P, w_1, ..., w_N)
+  output CT = (1, C_N, com1, com2, com3, rho1_N, rho2_N, Pi, l, N)
+
+Dec(SK, CT):
+  if CT = (0, ct0, ct1, sigma):
+    if ZK.Verify(crsZK, (pk0, pk1, ct0, ct1), sigma) == 0: output BOT
+    output HE.Dec(sk0, ct0)
+  if CT = (1, C = (ct0, ct1, d), com1, com2, com3, rho1, rho2, Pi, l, N):
+    if N is not polynomial in lambda: output BOT
+    if l &gt; N or d &gt; N: output BOT
+    P = Ce[pk0, pk1, crsZK, crsPC1, crsPC2, crsPC3, com1, com2, com3, l, N]
+    if BI.Verify(crsBI, N, P, Pi) == 0: output BOT
+    if PC.Verify(crsPC1, N, com1, N, C, rho1) == 0: output BOT
+    if PC.Verify(crsPC2, N, com2, N, C, rho2) == 0: output BOT
+    output HE.Dec(sk0, ct0)
+
+Verify(PK, CT_1, ..., CT_L, CT):        // CT_i = (0, ct_{i,0}, ct_{i,1}, sigma_i)
+  for i in [1, L]:
+    if ZK.Verify(crsZK, (pk0, pk1, ct_{i,0}, ct_{i,1}), sigma_i) == 0: output 0
+  if CT = (0, ct0, ct1, sigma):
+    output 1 if (L == 1 and CT_1 == CT) else 0
+  if CT = (1, C = (ct0, ct1, d), com1, com2, com3, rho1, rho2, Pi, l, N):
+    (com, st) = PC.Commit(crsPC3, L, (ct_{i,0}, ct_{i,1}, 0)_{i=1..L})
+    output 1 if (L == l and com == com3) else 0
+</code></pre>
+
+<h3>6. High-level security game sequence used to prove Theorem 4.1 (Appendix B)</h3>
+<pre><code>// Games 0-7 as summarized in the "Security Proof Structure" section above;
+// reproduced here in compact form. Q denotes the (polynomial) number of
+// decryption queries the adversary makes; M denotes the maximum N submitted
+// in any evaluated-ciphertext query.
+
+Game 0:  the real IV-CCA game (Definition 4.4).
+Game 1:  sigma* is simulated via ZK.S1/ZK.S2 instead of honestly proved.
+Game 2:  ct1* = HE.Enc(pk1, 0) instead of HE.Enc(pk1, mu_b*).
+Game 3:  abort (output 2) on any fresh-ciphertext query with a valid NIZK
+         proof but HE.Dec(sk0,ct0) != HE.Dec(sk1,ct1).
+Game 4:  additionally abort (output 3) on any evaluated-ciphertext query
+         that passes all normal checks but has HE.Dec(sk0,ct0) != HE.Dec(sk1,ct1).
+         [Proved indistinguishable from Game 3 via Q nested hybrids Game 3.i,
+          each proved via a layer-descent argument over predicate extractable
+          commitments -- see below.]
+Game 5:  answer every surviving query with HE.Dec(sk1,ct1) instead of
+         HE.Dec(sk0,ct0)  [exactly equal to Game 4 by construction].
+Game 6:  remove the abort conditions added in Games 3-4.
+Game 7:  ct0* = HE.Enc(pk0, 0) instead of HE.Enc(pk0, mu_b*).
+
+// Layer-descent argument used for the Game-3-to-Game-4 hybrid step, on the
+// I*-th decryption query (an evaluated ciphertext with commitments com1, com2
+// under PEC crs's crsPC1, crsPC2):
+
+for h = M down to 1:
+  // invariant entering step h: an invalid wire is known extractable (via
+  // PC.Extract with the appropriate trapdoor) at some layer <= h
+  set crsPC1 to encode predicate Cc[sk0, sk1, h]      // via predicate hiding, undetectable
+  set crsPC2 to encode predicate Cc[sk0, sk1, h-1]    // via predicate hiding, undetectable
+  extract (a1, j) = PC.Extract(tdPC1, N, com1)
+  // by extractability of PC: if the final wire is invalid, a1 = 1 and wire j
+  // is invalid with layer d_j &lt;= h
+  use somewhere-argument-of-knowledge of BI at index j to obtain a witness
+    for Ce's internal-wire statement at j, certifying an invalid child wire
+    j' with layer d_j' &lt;= d_j - 1 &lt;= h - 1
+  extract (a2, j2) = PC.Extract(tdPC2, N, com2)
+  // by extractability of PC: a2 = 1 (the invalid child wire j' is now
+  // extractable, since it satisfies Cc[sk0, sk1, h-1])
+  // descend: h &lt;- h - 1
+// base case h = 0: the invalid wire is an INPUT wire; its NIZK proof sigma
+// must then be a valid proof of a false statement, contradicting the
+// simulation soundness of ZK (Lemma B.12 / Appendix B.1.3).
+</code></pre>
+</section>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/\bfig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+})();
+function rtSetupEquations(){
+  var prev=document.getElementById('rt-eqprev');
+  if(!prev){prev=document.createElement('div');prev.id='rt-eqprev';document.body.appendChild(prev);}
+  function showEq(html,e){prev.innerHTML=html;prev.style.display='block';var x=Math.min(e.clientX+20,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+20,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hideEq(){prev.style.display='none';}
+  var eqs=document.querySelectorAll('mjx-container[display="true"]'),htmlByNum={};
+  for(var i=0;i<eqs.length;i++){var n=i+1;eqs[i].id='eq'+n;htmlByNum[n]=eqs[i].outerHTML;}
+  if(!eqs.length)return;
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='script'||tg==='style')continue;
+    if(pn.closest&&pn.closest('mjx-container'))continue;
+    if(/\beq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!htmlByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#eq'+num;a.className='rt-eqref';a.textContent=m[0];
+      (function(h){a.addEventListener('mousemove',function(e){showEq(h,e);});a.addEventListener('mouseleave',hideEq);})(htmlByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+}
+window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],tags:'none'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},startup:{pageReady:function(){return MathJax.startup.defaultPageReady().then(function(){rtSetupEquations();});}}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>

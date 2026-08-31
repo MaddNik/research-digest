@@ -2,6 +2,18 @@
 # Regenerated from research-material; entries with a summaries/<slug>/
 # folder but no research-material source are preserved as-is.
 
+- slug: "fhe-chosen-ciphertext-security-lwe-2026-08-22"
+  title: "Fully Homomorphic Encryption with Chosen-Ciphertext Security from LWE"
+  url: "/summaries/fhe-chosen-ciphertext-security-lwe-2026-08-22/"
+  date: "2026-08-22"
+  category: "Fhe Cca Security"
+  pub: "2026"
+  publisher: "IACR ePrint 2026/1756 (major revision of a CRYPTO 2025 publication)"
+  meta_line: "IACR ePrint 2026/1756 (major revision of a CRYPTO 2025 publication)"
+  source_type: "PDF (text-layer)"
+  source_url: "https://eprint.iacr.org/2026/1756"
+  pdf: ""
+  tags: ["fully homomorphic encryption", "chosen-ciphertext security", "CCA security", "LWE", "Naor-Yung double encryption", "batch arguments", "BARG", "predicate extractable commitment", "NIZK", "standard model", "concepts"]
 - slug: "pqc-torus-ntru-kem-2026-08-14"
   title: "A Torus-Structured Generalisation of NTRU: the NTC Assumption, its Cryptanalysis, and a Compact KEM"
   url: "/summaries/pqc-torus-ntru-kem-2026-08-14/"
