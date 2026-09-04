@@ -1,0 +1,11 @@
+---
+title: "On the Mismatch between Neural-Discovered Differential-Linear Features and Long-Round Distinguisher Construction"
+date: 2026-09-04 08:21:00 +0200
+categories: [Cryptography]
+tags: [differential-neural-cryptanalysis, speck, siphash, differential-linear-attack]
+link: https://eprint.iacr.org/2026/1858
+byline: "Thomas Peyrin et al. (IACR ePrint 2026/1858, Sep 2 2026)"
+description: "Neural-network-discovered differential-linear masks are shown to help generate long-round distinguisher candidates for ARX ciphers like Speck and SipHash, but reliable recovery of the classically strongest mask remains unresolved."
+---
+
+Existing differential-neural cryptanalysis has not yet shown a clear round advantage over the strongest comparable classical analyses, but recent Fourier-based interpretability work suggests that features from differential-neural distinguishers can be read as classical differential-linear masks, raising the question of whether such neural-discovered masks can be useful candidates for finding longer-round differential-linear distinguishers of ARX ciphers. The authors introduce Conv1DFully, a modified network architecture for mask-level analysis, and show on Speck32/64 that its dominant differential-linear feature is preserved, while on SipHash the neural-extracted Fourier masks concentrate among the highest-correlation differential-linear approximations found by exhaustive search over a low-Hamming-weight mask space. Testing these masks on the known 18-round Speck128/128 distinguisher with a 5+8+5 decomposition, an 8-round difference-only differential-neural distinguisher repeatedly exposes masks with stronger local middle correlations than the classically selected mask, but after 5-round linear extensions these masks give weaker overall 18-round correlations. Imposing sparsity guidance recovers the classically useful intermediate mask in the first-layer candidate set in 9 of 30 independent runs, but this recovery is unstable and the neural decision rule still favors locally stronger features over the classically selected one, so the authors conclude neural-discovered masks can assist long-round candidate generation while reliable, long-round-aware prioritization remains an open problem.

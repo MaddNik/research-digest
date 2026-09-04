@@ -1,0 +1,11 @@
+---
+title: "On the Fault Injection Security of White-box Ciphers"
+date: 2026-09-04 08:27:00 +0200
+categories: [Hardware Security]
+tags: [white-box-cryptography, fault-injection, feistel-networks, spn]
+link: https://eprint.iacr.org/2026/1833
+byline: "Md Alamgir Alam et al. (IACR ePrint 2026/1833, Aug 29 2026)"
+description: "A formal study of stealth-preserving fault injection against table-based white-box ciphers finds Feistel-based designs SPACE and Galaxy are far more vulnerable than the SPN-based design WEM, and proposes a software fault-detection mechanism."
+---
+
+White-box security settings assume an adversary with full visibility and control of a software implementation, and while leakage-based attacks from a local passive attacker have been studied extensively, active adversaries who inject faults in a white-box setting have received little attention, especially for symmetric-key ciphers. This paper initiates a formal study of active data-only adversaries in the white-box setting who preserve the implementation's control flow but corrupt a bounded number of key-embedded lookup-table entries, enabling precise, repeatable manipulation of table values that operates entirely locally and is not constrained by network bandwidth or firewalls the way leakage attacks are. The authors formalize a new security notion for this stealth-preserving tampering adversary and show that even under this restriction the adversary can cryptographically weaken an implementation and make faulty ciphertexts much easier to decrypt, revealing a structural disparity in which Feistel-based white-box ciphers appear significantly more vulnerable to fault injection than SPN-based designs. Concretely, analyzing the SPN-based cipher WEM alongside the Feistel-based ciphers SPACE and Galaxy, they find WEM achieves high security under all tested adversarial models while SPACE and Galaxy can be attacked with a message-recovery probability of 2 to the minus 8 when the adversary can choose fault positions and values and corrupts up to one quarter of the implementation's table entries. The authors also propose a software-based fault detection mechanism that catches fault injections with high probability, strengthening resilience.

@@ -1,0 +1,11 @@
+---
+title: "Type-Directed, Secure-by-Construction Enclave Partitioning for LLVM"
+date: 2026-09-04 08:31:00 +0200
+categories: [Hardware Security]
+tags: [trusted-execution-environments, sgx, information-flow-control, enclave-partitioning]
+link: https://arxiv.org/abs/2609.02048
+byline: "Wesley B. Nuzzo et al. (arXiv:2609.02048, Sep 2 2026)"
+description: "SPLITR automatically and provably partitions LLVM IR programs into enclave and non-enclave components using a type-preserving compilation, scaling to OpenSSL and reducing SGX host-enclave transitions from 393 to 187 in one configuration."
+---
+
+Trusted Execution Environments such as Intel SGX provide hardware-supported isolation through enclaves, but they cannot by themselves enforce information-flow security, a problem made worse in LLVM-like low-level languages that allow unrestricted pointer manipulation and unstructured control flow, and using TEEs effectively normally requires manually partitioning applications into enclave and non-enclave components, a labor-intensive and error-prone process with little fine-grained control. The authors address this in three steps: formalizing SIR, an enclave-oblivious calculus based on LLVM IR with a permissive type system combining information-flow control with security-aware coarse-grained memory safety; extending it to SIREN, an enclave-aware calculus enforcing noninterference against stronger attackers who can observe arbitrary non-enclave memory; and developing a type-directed, type-preserving compilation from SIR to SIREN that automatically produces secure enclave-aware programs, removing the need for manual partitioning while still allowing fine-grained control over the host-enclave boundary. Implemented as a tool called SPLITR and evaluated on thirteen microbenchmarks and real-world workloads including applications from SGXGauge on Intel SGX hardware, the approach scales to OpenSSL, comprising 425,953 LLVM IR instructions, and supports multiple partitioning objectives that trade off enclave trusted-computing-base size, host-enclave transitions, and boundary data movement. For OpenSSL, optimizing for transitions reduces them from 393 to 187, and while runtime overhead is dominated by fixed enclave costs for short-running workloads, longer-running applications amortize these costs and approach native performance.
