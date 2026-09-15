@@ -2,6 +2,30 @@
 # Regenerated from research-material; entries with a summaries/<slug>/
 # folder but no research-material source are preserved as-is.
 
+- slug: "phat-photonic-accelerator-for-tfhe-2026-09-10"
+  title: "PHAT: PHotonic Accelerator for TFHE"
+  url: "/summaries/phat-photonic-accelerator-for-tfhe-2026-09-10/"
+  date: "2026-09-10"
+  category: "Fhe Photonic Accelerators"
+  pub: "September 2026"
+  publisher: "arXiv"
+  meta_line: "arXiv · September 2026"
+  source_type: "PDF (text-layer)"
+  source_url: "https://arxiv.org/abs/2609.11613"
+  pdf: ""
+  tags: ["FHE", "TFHE", "photonic computing", "processing-in-memory", "phase-change memory", "FFT", "bootstrapping", "hardware accelerator", "concepts"]
+- slug: "fpga-acceleration-fhe-adaptive-key-switching-2026-09-08"
+  title: "FPGA Acceleration of Fully Homomorphic Encryption with Adaptive Key Switching"
+  url: "/summaries/fpga-acceleration-fhe-adaptive-key-switching-2026-09-08/"
+  date: "2026-09-08"
+  category: "Fhe Adaptive Key Switching"
+  pub: "September 2026"
+  publisher: "arXiv"
+  meta_line: "arXiv · September 2026"
+  source_type: "PDF (text-layer)"
+  source_url: "https://arxiv.org/abs/2609.09423"
+  pdf: ""
+  tags: ["FHE", "FPGA", "CKKS", "key switching", "KLSS", "hybrid key switching", "hardware accelerator", "bootstrapping", "RNS", "NTT", "concepts"]
 - slug: "fhe-chosen-ciphertext-security-lwe-2026-08-22"
   title: "Fully Homomorphic Encryption with Chosen-Ciphertext Security from LWE"
   url: "/summaries/fhe-chosen-ciphertext-security-lwe-2026-08-22/"
