@@ -2,6 +2,18 @@
 # Regenerated from research-material; entries with a summaries/<slug>/
 # folder but no research-material source are preserved as-is.
 
+- slug: "ai-assisted-pqc-accelerator-deployed-silicon-2026-09-15"
+  title: "AI-Assisted Design of a Post-Quantum Cryptographic Accelerator: A Deployed-Silicon Case Study"
+  url: "/summaries/ai-assisted-pqc-accelerator-deployed-silicon-2026-09-15/"
+  date: "2026-09-15"
+  category: "Pqc Ai Hardware Accelerator"
+  pub: "September 2026"
+  publisher: "arXiv (cs.CR / cs.AR)"
+  meta_line: "arXiv (cs.CR / cs.AR) · September 2026"
+  source_type: "PDF (text-layer)"
+  source_url: "https://arxiv.org/abs/2609.04058"
+  pdf: ""
+  tags: ["post-quantum cryptography", "ML-KEM", "ML-DSA", "FPGA accelerator", "hardware security module", "LLM-assisted hardware design", "agentic AI", "verification methodology", "known-answer tests", "key custody", "concepts"]
 - slug: "phat-photonic-accelerator-for-tfhe-2026-09-10"
   title: "PHAT: PHotonic Accelerator for TFHE"
   url: "/summaries/phat-photonic-accelerator-for-tfhe-2026-09-10/"
