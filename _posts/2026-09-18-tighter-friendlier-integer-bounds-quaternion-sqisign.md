@@ -1,0 +1,11 @@
+---
+title: "Tighter and Friendlier Integer Bounds for Quaternion Algorithms - Application to SQIsign"
+date: 2026-09-18 08:10:00 +0200
+categories: [PQC]
+tags: [sqisign, isogeny-cryptography, quaternion-algebra, lattice-reduction]
+link: https://eprint.iacr.org/2026/2049
+byline: "Maciej Czuprynko et al. (IACR ePrint 2026/2049, Sep 15 2026)"
+description: "New integer-size bounds tighten the arithmetic layer of SQIsign, the most compact post-quantum signature candidate under NIST's additional signatures call, helping toward fixed-precision, constant-time implementations."
+---
+
+SQIsign, a candidate in NIST's call for additional post-quantum signature schemes, offers the smallest key and signature sizes of any candidate but relies on an intricate quaternion arithmetic layer represented by small-dimensional integer lattices whose intermediate values can grow much larger than the final outputs, complicating fixed-precision and constant-time implementation. The authors revisit the integer-size analysis of this arithmetic layer and show that all lattices arising in SQIsign satisfy a structural containment property allowing their canonical form to be computed with a modulus of half the bit length used in previous analyses. Exploiting the same property, they give a matrix inversion algorithm using only exact divisions whose intermediate integers stay bounded by twice the modulus, avoiding the cubic blow-up of standard inversion methods, and they show the triangular-form convention used in the SQIsign implementation reduces intermediate value sizes by a factor of O(p). They further show these lattices can be represented in dimension two over the Gaussian integers rather than dimension four over the integers, allowing the LLL algorithm to be replaced by the simpler Lagrange reduction, which has an iteration count bounded by the bit size of the longest input vector and provably outputs the shortest basis without floating-point arithmetic. Combining these results improves integer-size bounds for SQIsign key generation and for all signing subroutines outside of response quaternion sampling, and the authors provide an implementation in the GMP-based C reference implementation of SQIsign.
