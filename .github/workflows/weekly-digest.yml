@@ -1,0 +1,90 @@
+name: "Weekly digest"
+
+# Manual trigger only. The scheduled Friday run stays on the local cron entry
+# (automation/run-weekly.sh); this workflow is the "Force update" path linked
+# from the site topbar, for when the local machine was offline or a run died
+# before committing. Both paths run the same harness against the same prompt.
+#
+# Requires the repository secret OPENROUTER_API_KEY.
+on:
+  workflow_dispatch:
+    inputs:
+      max_cost_usd:
+        description: "Hard OpenRouter spend ceiling for this run, in USD"
+        required: false
+        default: "25"
+      model:
+        description: "OpenRouter model id"
+        required: false
+        default: "anthropic/claude-sonnet-5"
+
+permissions:
+  contents: write
+
+# Never let two dispatched digest runs overlap. This does not coordinate with
+# the local cron runner; the harness prompt pulls with rebase before pushing.
+concurrency:
+  group: weekly-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Run the digest harness
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          RUN_MODEL: ${{ inputs.model }}
+          RUN_MAX_COST: ${{ inputs.max_cost_usd }}
+        run: |
+          if [ -z "$OPENROUTER_API_KEY" ]; then
+            echo "FATAL: repository secret OPENROUTER_API_KEY is not set" >&2
+            exit 1
+          fi
+          # No iteration cap: spend is the only bound, matching run-weekly.sh.
+          python3 automation/openrouter_agent.py \
+            --prompt-file automation/local-run-prompt.md \
+            --var "REPO_ROOT=$GITHUB_WORKSPACE" \
+            --model "$RUN_MODEL" \
+            --max-iterations 0 \
+            --max-cost-usd "$RUN_MAX_COST" \
+            --debug-log "$RUNNER_TEMP/digest-trace.jsonl"
+
+      - name: Upload harness trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-trace
+          path: ${{ runner.temp }}/digest-trace.jsonl
+          if-no-files-found: ignore
+
+      - name: Report
+        if: always()
+        run: |
+          {
+            echo '### Weekly digest run'
+            echo ''
+            echo "Latest commit: $(git log -1 --oneline)"
+            echo ''
+            echo 'Uncommitted leftovers (empty means the run published cleanly):'
+            echo '```'
+            git status --porcelain
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -440,3 +440,8 @@ body.sm-open { overflow: hidden; }
 .sm-close { border: 0; background: transparent; font-size: 1.6rem; line-height: 1; cursor: pointer; color: var(--c-muted); }
 .sm-close:hover { color: var(--text-color); }
 .sm-frame { flex: 1; width: 100%; border: 0; background: #fff; }
+
+/* ── Topbar "Force update" link ───────────────────── */
+/* Anchor styled as one of the .rt-topbar icon buttons; see _includes/topbar.html. */
+.rt-topbar.rt-force-update       { color: var(--c-muted); text-decoration: none; }
+.rt-topbar.rt-force-update:hover { color: var(--c-accent); }

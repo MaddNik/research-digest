@@ -1,7 +1,7 @@
 You are producing this week's batch of "Research Tracker" papers and
 publishing them to a Jekyll/Chirpy GitHub Pages blog. You are running
-non-interactively (headless) in the local git checkout at
-`/home/nik/research-digest`, which is already authenticated to push to GitHub.
+non-interactively (headless) in the git checkout at
+`${REPO_ROOT}`, which is already authenticated to push to GitHub.
 Work entirely within this directory.
 
 Important style rules for everything you write: do NOT use em dashes, do NOT use

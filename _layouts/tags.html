@@ -29,7 +29,8 @@ layout: page
             {% assign c = 0 %}
             {% for x in bag %}{% if x == t %}{% assign c = c | plus: 1 %}{% endif %}{% endfor %}
             {% assign display = tag_names[t] | default: t %}
-            <a class="tag-tile" href="{{ t | slugify | url_encode | prepend: '/tags/' | append: '/' | relative_url }}">
+            <a class="tag-tile" href="{{ t | slugify | url_encode | prepend: '/tags/' | append: '/' | relative_url }}"
+               data-vf-title="{{ display | escape }}" data-vf-cat="{{ topic.name | escape }}">
               {{ display }}<span class="tag-tile-n">{{ c }}</span>
             </a>
           {% endfor %}
@@ -53,7 +54,8 @@ layout: page
     <div class="tag-tiles">
       {% for t in leftover %}
         {% assign display = tag_names[t] | default: t %}
-        <a class="tag-tile" href="{{ t | slugify | url_encode | prepend: '/tags/' | append: '/' | relative_url }}">
+        <a class="tag-tile" href="{{ t | slugify | url_encode | prepend: '/tags/' | append: '/' | relative_url }}"
+           data-vf-title="{{ display | escape }}" data-vf-cat="Other">
           {{ display }}<span class="tag-tile-n">{{ site.tags[t].size }}</span>
         </a>
       {% endfor %}

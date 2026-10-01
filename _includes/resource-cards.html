@@ -4,7 +4,8 @@
 {%- endcomment -%}
 <div class="paper-list flex-grow-1 px-xl-1">
   {% for r in include.items %}
-    <article class="card-wrapper card paper-card resource-card site-card" data-tags="{{ r.tags | join: ' ' }}">
+    <article class="card-wrapper card paper-card resource-card site-card" data-tags="{{ r.tags | join: ' ' }}"
+      data-vf-title="{{ r.name | escape }}" data-vf-date="{{ r.year }}" data-vf-cat="{{ r.kind | escape }}">
       <div class="card-body">
         <h2 class="site-card__title">
           {% if r.url and r.url != '' %}

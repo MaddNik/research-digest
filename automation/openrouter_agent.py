@@ -5,6 +5,10 @@ Claude subscription's usage window. Stdlib-only, no new pip dependency.
 
 Exit codes: 0 success, 1 API/config error, 2 hit --max-iterations without a
 natural stop, 3 hit --max-cost-usd without a natural stop.
+
+--max-iterations 0 disables the iteration cap entirely, leaving --max-cost-usd
+as the only bound on a run. The cost tracker is checked on every API response
+(see call_openrouter), so an uncapped loop still terminates on spend.
 """
 import argparse
 import html as html_mod
@@ -350,7 +354,10 @@ def run_agent_loop(system_prompt, user_prompt, model, max_iterations=MAX_ITERATI
             with open(debug_log, "a") as f:
                 f.write(json.dumps(entry) + "\n")
 
-    for _ in range(max_iterations):
+    # max_iterations <= 0 means unlimited; --max-cost-usd is then the only bound.
+    iteration = 0
+    while max_iterations <= 0 or iteration < max_iterations:
+        iteration += 1
         resp = call_openrouter(messages, model, tools=TOOLS_SCHEMA, tool_choice="auto", cost_tracker=cost_tracker)
         msg = resp["choices"][0]["message"]
         messages.append(msg)
@@ -460,7 +467,10 @@ def main():
     parser.add_argument("--system-prompt-file")
     parser.add_argument("--model", default=os.environ.get("OPENROUTER_MODEL", DEFAULT_MODEL))
     parser.add_argument("--var", action="append", default=[], metavar="KEY=VALUE")
-    parser.add_argument("--max-iterations", type=int, default=MAX_ITERATIONS)
+    parser.add_argument(
+        "--max-iterations", type=int, default=MAX_ITERATIONS,
+        help="Tool-calling iteration cap; 0 means unlimited, leaving --max-cost-usd as the only bound",
+    )
     parser.add_argument(
         "--max-cost-usd", type=float, default=MAX_COST_USD,
         help="Hard ceiling on real spend (OpenRouter's usage.cost) for this invocation, main loop + VERIFY combined",

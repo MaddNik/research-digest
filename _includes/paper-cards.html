@@ -8,7 +8,8 @@
   {% for post in include.posts %}
     {% assign cat = post.categories[0] %}
     {% assign cat_slug = cat | downcase | replace: ' ', '-' %}
-    <article class="card-wrapper card paper-card site-card" data-paper-id="{{ pfx }}pf-{{ forloop.index }}" data-category="{{ cat_slug }}" data-tags="{{ post.tags | join: ' ' }}">
+    <article class="card-wrapper card paper-card site-card" data-paper-id="{{ pfx }}pf-{{ forloop.index }}" data-category="{{ cat_slug }}" data-tags="{{ post.tags | join: ' ' }}"
+      data-vf-title="{{ post.title | escape }}" data-vf-date="{{ post.date | date_to_xmlschema }}" data-vf-cat="{{ cat | escape }}">
       <div class="card-body">
         <h2 class="site-card__title" data-target="{{ pfx }}pf-{{ forloop.index }}">{{ post.title }}</h2>
         <div class="site-card__meta">

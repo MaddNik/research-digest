@@ -39,10 +39,15 @@ fi
 
   git pull --rebase --autostash 2>&1 || echo "(pull failed, continuing)"
 
+  # No iteration cap: spend is the only bound, so a long-but-productive run
+  # finishes and commits instead of dying at iteration 40 with uncommitted
+  # posts on disk (which is what happened on 2026-09-25).
   python3 "$REPO/automation/openrouter_agent.py" \
     --prompt-file "$REPO/automation/local-run-prompt.md" \
+    --var "REPO_ROOT=$REPO" \
     --model "${OPENROUTER_MODEL:-anthropic/claude-sonnet-5}" \
-    --max-cost-usd "${OPENROUTER_MAX_COST_WEEKLY:-15}"
+    --max-iterations 0 \
+    --max-cost-usd "${OPENROUTER_MAX_COST_WEEKLY:-25}"
   # Rollback fallback (kept for one cycle, then delete): the previous
   # subscription-based invocation via Claude Code's CLI.
   # claude -p "$(cat "$REPO/automation/local-run-prompt.md")" \

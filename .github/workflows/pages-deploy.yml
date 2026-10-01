@@ -9,6 +9,15 @@ on:
       - README.md
       - LICENSE
 
+  # A push made by the Weekly digest workflow uses GITHUB_TOKEN, and GitHub
+  # does not raise a `push` event for those, so chain off that workflow's
+  # completion instead. Without this, a dispatched digest commits and the site
+  # never rebuilds.
+  workflow_run:
+    workflows: ["Weekly digest"]
+    types:
+      - completed
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -25,6 +34,10 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Only chain from a digest run that actually succeeded.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Checkout

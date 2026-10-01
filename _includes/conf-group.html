@@ -1,7 +1,8 @@
 {%- comment -%} Renders a list of conference cards. Argument: include.items {%- endcomment -%}
 <ul class="conf-list list-unstyled">
   {% for c in include.items %}
-    <li class="conf-card card-wrapper card site-card">
+    <li class="conf-card card-wrapper card site-card"
+        data-vf-title="{{ c.name | escape }}" data-vf-date="{{ c.start }}" data-vf-cat="{{ c.domain | escape }}">
       <div class="card-body">
         <h2 class="site-card__title">
           {% if c.url and c.url != '' %}

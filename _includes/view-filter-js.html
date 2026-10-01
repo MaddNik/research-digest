@@ -1,0 +1,330 @@
+{%- comment -%}
+  Site-wide view filter. Loaded once from _layouts/default.html, so it runs on
+  every page. It finds the page's card or tile list, inserts a control bar above
+  it, and offers:
+
+    Sort:     Default order, A to Z, Z to A, Newest first, Oldest first
+    Category: All, plus every distinct category present in the list
+
+  It reads data-vf-title / data-vf-date / data-vf-cat where the template sets
+  them (papers, resources, deep summaries, conferences, tags). On pages whose
+  markup comes from the theme gem and carries no such attributes (archives,
+  categories, individual tag pages), it falls back to reading the item's
+  heading or link text, its <time datetime>, and its category pill.
+
+  Controls that would do nothing are not rendered: the sort-by-time options
+  need at least two distinct parseable dates, and the category select needs at
+  least two distinct categories. That is what keeps the category control off a
+  single-topic page.
+
+  Hiding uses a class with !important rather than inline display, so it composes
+  with the existing per-page .topic-tile filters: an item is visible only when
+  neither control hides it.
+{%- endcomment -%}
+
+<style>
+  .vf-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    margin: .75rem 0 1.25rem;
+  }
+  .vf-bar label {
+    font-size: .72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--c-muted, #5C6670);
+    margin: 0;
+  }
+  .vf-bar select {
+    font-size: .82rem;
+    padding: .25rem 1.6rem .25rem .6rem;
+    border: 1px solid var(--c-border, rgba(128, 128, 128, .3));
+    border-radius: .35rem;
+    background-color: var(--c-surface-raised, transparent);
+    color: inherit;
+    cursor: pointer;
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                      linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 14px) 52%, calc(100% - 9px) 52%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+  }
+  .vf-bar select:focus {
+    outline: none;
+    border-color: var(--c-accent, #0C8C80);
+  }
+  .vf-count {
+    font-size: .76rem;
+    color: var(--c-muted, #5C6670);
+    margin-left: auto;
+  }
+  .vf-hide { display: none !important; }
+</style>
+
+<script>
+  (function () {
+    /* Container/item selector pairs, tried in order. The first pair that finds
+       at least two items on the page wins. Order matters: the more specific
+       page-owned lists come before the generic theme ones. */
+    var TARGETS = [
+      { c: '#summaries-content', i: '.conf-card' },
+      { c: '#resources-list',    i: '.res-card' },
+      { c: '.paper-list',        i: '.paper-card' },
+      { c: '.conf-list',         i: '.conf-card' },
+      { c: '.tag-tiles',         i: '.tag-tile' },
+      /* Theme-gem pages, markup taken from jekyll-theme-chirpy v7.5.0. */
+      { c: '#archives',          i: 'li' },
+      { c: '#page-tag',          i: 'ul.content > li' },
+      { c: '#page-category',     i: 'ul.content > li' },
+      { c: 'main',               i: '.card.categories' },
+      { c: '.rt-render',         i: '.card-wrapper' }
+    ];
+
+    function text(el) { return el ? (el.textContent || '').trim() : ''; }
+
+    /* The heading that introduces a group: the container's previous heading
+       sibling, or one level up when the container sits inside a wrapper. */
+    function headingFor(el) {
+      var prev = el.previousElementSibling;
+      if (prev && /^H[1-6]$/.test(prev.tagName)) return prev;
+      var parent = el.parentElement;
+      if (parent) {
+        var up = parent.previousElementSibling;
+        if (up && /^H[1-6]$/.test(up.tagName)) return up;
+      }
+      return null;
+    }
+
+    /* Title: explicit attribute, else the item's heading, else its first link. */
+    function itemTitle(el) {
+      var v = el.getAttribute('data-vf-title');
+      if (v) return v.trim();
+      var h = el.querySelector('h1, h2, h3, h4, .site-card__title, .res-name');
+      if (h) return text(h);
+      var a = el.querySelector('a');
+      if (a) return text(a);
+      return text(el).slice(0, 120);
+    }
+
+    /* Category: explicit attribute, else a category pill or folder link. */
+    function itemCategory(el) {
+      var v = el.getAttribute('data-vf-cat');
+      if (v !== null) return v.trim();
+      var pill = el.querySelector('.tag-pill, .res-kind');
+      if (pill) return text(pill);
+      return '';
+    }
+
+    /* Date: explicit attribute, else a <time datetime>, else a bare year.
+       Returns a millisecond timestamp, or null when nothing parses. */
+    function itemDate(el) {
+      var raw = el.getAttribute('data-vf-date');
+      if (!raw) {
+        /* Chirpy stamps dates as data-ts in unix seconds, on a <span class="date">
+           in archives and on the <time> emitted by _includes/datetime.html. */
+        var ts = el.querySelector('[data-ts]');
+        if (ts) {
+          var secs = parseInt(ts.getAttribute('data-ts'), 10);
+          if (!isNaN(secs)) return secs * 1000;
+        }
+        var t = el.querySelector('time');
+        if (t) raw = t.getAttribute('datetime') || text(t);
+      }
+      if (!raw) return null;
+      raw = String(raw).trim();
+      if (!raw) return null;
+      if (/^\d{4}$/.test(raw)) return Date.UTC(parseInt(raw, 10), 0, 1);
+      var ms = Date.parse(raw);
+      return isNaN(ms) ? null : ms;
+    }
+
+    /* Collect items anywhere under the matched containers, then group them by
+       their actual parent element. Sorting then happens inside each parent, so
+       year headings on archives and continent headings on conferences keep the
+       items that belong under them. */
+    function pickTarget() {
+      for (var k = 0; k < TARGETS.length; k++) {
+        var containers = Array.prototype.slice.call(document.querySelectorAll(TARGETS[k].c));
+        if (!containers.length) continue;
+        var byParent = [];
+        var total = 0;
+        containers.forEach(function (c) {
+          Array.prototype.forEach.call(c.querySelectorAll(TARGETS[k].i), function (el) {
+            var parent = el.parentElement;
+            if (!parent) return;
+            var g = null;
+            for (var j = 0; j < byParent.length; j++) {
+              if (byParent[j].container === parent) { g = byParent[j]; break; }
+            }
+            if (!g) { g = { container: parent, items: [] }; byParent.push(g); }
+            g.items.push(el);
+            total++;
+          });
+        });
+        if (total >= 2) return { groups: byParent, total: total };
+      }
+      return null;
+    }
+
+    function build(target) {
+      var all = [];
+      target.groups.forEach(function (g) {
+        g.items.forEach(function (el, idx) {
+          all.push({
+            el: el,
+            group: g,
+            order: idx,
+            title: itemTitle(el).toLowerCase(),
+            date: itemDate(el),
+            cat: itemCategory(el)
+          });
+        });
+      });
+
+      var dated = all.filter(function (r) { return r.date !== null; });
+      var distinctDates = {};
+      dated.forEach(function (r) { distinctDates[r.date] = 1; });
+      var canSortByTime = Object.keys(distinctDates).length >= 2;
+
+      var cats = [];
+      all.forEach(function (r) {
+        if (r.cat && cats.indexOf(r.cat) === -1) cats.push(r.cat);
+      });
+      cats.sort(function (a, b) { return a.localeCompare(b); });
+      var canFilterByCat = cats.length >= 2;
+
+      /* Nothing useful to offer on this page. */
+      if (!canSortByTime && !canFilterByCat && all.length < 2) return;
+
+      var bar = document.createElement('div');
+      bar.className = 'vf-bar';
+
+      var sortId = 'vf-sort';
+      var sortOptions = '<option value="default">Default order</option>'
+        + '<option value="az">A to Z</option>'
+        + '<option value="za">Z to A</option>';
+      if (canSortByTime) {
+        sortOptions += '<option value="new">Newest first</option>'
+          + '<option value="old">Oldest first</option>';
+      }
+
+      var html = '<label for="' + sortId + '">Sort</label>'
+        + '<select id="' + sortId + '">' + sortOptions + '</select>';
+
+      if (canFilterByCat) {
+        html += '<label for="vf-cat">Category</label><select id="vf-cat">'
+          + '<option value="">All categories</option>';
+        cats.forEach(function (c) {
+          var esc = c.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+          html += '<option value="' + esc + '">' + esc + '</option>';
+        });
+        html += '</select>';
+      }
+      html += '<span class="vf-count" aria-live="polite"></span>';
+      bar.innerHTML = html;
+
+      /* Place the bar above the list, after any existing topic-tile row. */
+      var first = target.groups[0].container;
+      var existing = document.querySelector('.topic-filter');
+      if (existing && (existing.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+        existing.parentNode.insertBefore(bar, existing.nextSibling);
+      } else {
+        first.parentNode.insertBefore(bar, first);
+      }
+
+      var sortSel = bar.querySelector('#' + sortId);
+      var catSel = bar.querySelector('#vf-cat');
+      var countEl = bar.querySelector('.vf-count');
+
+      function apply() {
+        var mode = sortSel.value;
+        var wanted = catSel ? catSel.value : '';
+
+        /* Only act on items still sitting in the container we found them in.
+           The Deep Summaries page moves archived cards out to its own panel,
+           and re-appending those would silently un-archive them. */
+        var live = all.filter(function (r) { return r.el.parentNode === r.group.container; });
+
+        /* Filter first, so the count reflects what the reader sees. */
+        var shown = 0;
+        live.forEach(function (r) {
+          var keep = !wanted || r.cat === wanted;
+          if (keep) { r.el.classList.remove('vf-hide'); shown++; }
+          else { r.el.classList.add('vf-hide'); }
+        });
+
+        /* Sort within each container, so grouped pages keep their headings. */
+        target.groups.forEach(function (g) {
+          var rows = live.filter(function (r) { return r.group === g; });
+          rows.sort(function (a, b) {
+            if (mode === 'az') return a.title.localeCompare(b.title, undefined, { numeric: true });
+            if (mode === 'za') return b.title.localeCompare(a.title, undefined, { numeric: true });
+            if (mode === 'new' || mode === 'old') {
+              /* Undated items sink to the bottom in either direction. */
+              if (a.date === null && b.date === null) return a.order - b.order;
+              if (a.date === null) return 1;
+              if (b.date === null) return -1;
+              return mode === 'new' ? b.date - a.date : a.date - b.date;
+            }
+            return a.order - b.order;
+          });
+          var frag = document.createDocumentFragment();
+          rows.forEach(function (r) { frag.appendChild(r.el); });
+          g.container.appendChild(frag);
+        });
+
+        /* A group whose items are all filtered out takes its heading and any
+           <details> wrapper down with it, so no empty section is left behind. */
+        target.groups.forEach(function (g) {
+          var any = live.some(function (r) {
+            return r.group === g && !r.el.classList.contains('vf-hide');
+          });
+          var blocks = [g.container];
+          var heading = headingFor(g.container);
+          if (heading) blocks.push(heading);
+          var wrapper = g.container.closest ? g.container.closest('details') : null;
+          if (wrapper) blocks.push(wrapper);
+          blocks.forEach(function (b) {
+            if (any) { b.classList.remove('vf-hide'); } else { b.classList.add('vf-hide'); }
+          });
+        });
+
+        countEl.textContent = shown === live.length
+          ? live.length + ' shown'
+          : shown + ' of ' + live.length + ' shown';
+      }
+
+      sortSel.addEventListener('change', apply);
+      if (catSel) catSel.addEventListener('change', apply);
+      apply();
+    }
+
+    function init() {
+      if (document.querySelector('.vf-bar')) return true;
+      var target = pickTarget();
+      if (!target) return false;
+      build(target);
+      return true;
+    }
+
+    function start() {
+      if (init()) return;
+      /* Some lists (the My Research bookmark lists) are rendered by script
+         after load. Watch briefly for them, then give up. */
+      if (typeof MutationObserver === 'undefined') return;
+      var obs = new MutationObserver(function () { if (init()) obs.disconnect(); });
+      obs.observe(document.body, { childList: true, subtree: true });
+      setTimeout(function () { obs.disconnect(); }, 5000);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start);
+    } else {
+      start();
+    }
+  })();
+</script>

@@ -56,6 +56,18 @@
     </div>
 
     <span class="rt-topbar-group">
+      {% if site.force_update.enabled %}
+        <a
+          class="rt-topbar rt-force-update"
+          href="{{ site.force_update.url }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="{{ site.force_update.label | default: 'Force update' }}"
+          title="{{ site.force_update.label | default: 'Force update' }}: opens the GitHub Actions page, then press Run workflow"
+        >
+          <i class="fas fa-rotate fa-fw rt-topbar-ic"></i>
+        </a>
+      {% endif %}
       <button type="button" class="rt-topbar rt-drop-trigger" data-rt-drop="toread" aria-label="To-Read" title="To-Read">
         <span class="rt-topbar-ic ic-plus">&#8853;</span><span class="rt-count" data-rt-count="toread" hidden></span>
       </button>

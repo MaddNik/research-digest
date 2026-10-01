@@ -26,7 +26,8 @@ layout: page
   <ul id="summaries-content" class="conf-list list-unstyled">
     {% for s in sums %}
       <li class="conf-card card-wrapper card site-card" data-cat="{{ s.category | slugify }}" data-tags="{{ s.tags | join: ' ' }}"
-          data-url="{{ s.url | relative_url }}" data-title="{{ s.title | escape }}" data-src="{{ s.source_url }}">
+          data-url="{{ s.url | relative_url }}" data-title="{{ s.title | escape }}" data-src="{{ s.source_url }}"
+          data-vf-title="{{ s.title | escape }}" data-vf-date="{{ s.date }}" data-vf-cat="{{ s.category | escape }}">
         <div class="card-body">
           <h2 class="site-card__title"><a class="summary-open" href="{{ s.url | relative_url }}">{{ s.title }}</a></h2>
           <div class="site-card__meta">
