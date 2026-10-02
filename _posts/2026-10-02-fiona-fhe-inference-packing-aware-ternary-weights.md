@@ -1,0 +1,11 @@
+---
+title: "Fiona: Accelerating FHE Inference with Packing-Aware Ternary Weights"
+date: 2026-10-02 08:23:00 +0200
+categories: [FHE]
+tags: [ternary-quantization, plaintext-ciphertext-multiplication, packing, bootstrapping-depth]
+link: https://arxiv.org/abs/2609.35352
+byline: "Yiteng Peng et al. (arXiv:2609.35352, Sep 28 2026)"
+description: "FIONA selectively ternarizes packed weight groups rather than entire layers, cutting plaintext-ciphertext multiplications by up to 79.5 percent with under 1 percent accuracy loss."
+---
+
+Fully homomorphic encryption allows neural network inference directly on encrypted inputs, but it stays orders of magnitude slower than plaintext inference, and applying the server's plaintext weights to encrypted activations through plaintext-ciphertext multiplication accounts for more than half of inference time in recent systems. Ternary quantization can in principle replace these multiplications with cheaper additions and subtractions, but the authors note that under packed execution a single plaintext-ciphertext multiplication applies a whole weight group fixed by the packing layout, so the saving only appears when every weight in that group shares the same ternary value, and ternarizing every group this way badly degrades accuracy. FIONA is an offline optimizer that selectively ternarizes weights within a given packing layout based on the estimated effect of ternary conversion on model performance, encouraging a shared ternary value within each weight group while keeping full-precision weights for sensitive groups, so ternarized and full-precision paths coexist within the same layer. It then compiles these hybrid operators exactly, applying common scaling factors once to accumulated inputs and reusing sums across outputs, and because weight ternarization can narrow the input range of downstream polynomials, FIONA also fits lower-degree polynomial replacements under a cumulative accuracy budget, cutting multiplicative depth and bootstrapping. On VGG11, ViT, and BERT, FIONA reduces plaintext-ciphertext multiplications by 53.4 to 79.5 percent and speeds up end-to-end encrypted inference by 2.38, 1.68, and 1.84 times respectively, with less than 1 percent accuracy loss across all three models.

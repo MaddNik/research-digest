@@ -1,0 +1,11 @@
+---
+title: "THEMIS: A Co-Designed System for Encrypted Transformer Inference"
+date: 2026-10-02 08:20:00 +0200
+categories: [FHE]
+tags: [ckks, transformer-inference, bootstrapping, matrix-multiplication]
+link: https://eprint.iacr.org/2026/2264
+byline: "Shihao Li et al. (IACR ePrint 2026/2264, Sep 29 2026)"
+description: "THEMIS co-designs every stage of CKKS-based encrypted Transformer inference against a shared modulus budget, serving BERT-base in about 400 seconds per input amortized on a CPU."
+---
+
+Secure Transformer inference can be made non-interactive under fully homomorphic encryption, but it remains extremely expensive, and the authors note that existing FHE-based systems optimize individual stages in isolation rather than against the CKKS level budget all of those stages actually share, so a local gain in one stage does not always translate into an end-to-end speedup. THEMIS is organized around two design principles, one that bounds how much multiplicative depth each kind of stage may spend and one that fixes where on the modulus chain each stage runs. It generalizes coefficient-encoded plaintext-ciphertext matrix multiplication to slot-encoded ciphertexts without format conversion, keeping the same accelerated coefficient-side backend and amortizing its near-fixed cost through multi-batch packing, and it introduces two attention ciphertext-ciphertext matrix multiplication kernels that combine the idle imaginary lane of each slot with baby-step giant-step accumulation and hoisting to issue far fewer key switches. For softmax, THEMIS conditions the first denominator with a calibrated row-wise offset and reserves high precision for the final normalization step alone, cutting the depth the reciprocal path consumes while keeping output precision. For a single stage, THEMIS accelerates plaintext-ciphertext matrix multiplication and the attention kernels by up to 21.66 and 23.02 times over recent systems MOAI and Euston, runs softmax 2.57 times faster than THOR at higher precision, and serves BERT-base on a CPU in 400.06 amortized seconds per input with GLUE accuracy comparable to plaintext, spending only 10.83 percent of that latency on stages around bootstrapping, the lowest share among the systems it compares against.

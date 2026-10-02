@@ -1,0 +1,11 @@
+---
+title: "One Unverified Coordinate Is Enough: Key Recovery from Faulty Fujisaki-Okamoto Rejection Checks in ML-KEM"
+date: 2026-10-02 08:36:00 +0200
+categories: [Hardware Security]
+tags: [ml-kem, fault-attack, fujisaki-okamoto, implicit-rejection]
+link: https://eprint.iacr.org/2026/2239
+byline: "Bhabani Sankar Das (IACR ePrint 2026/2239, Sep 27 2026)"
+description: "A single unverified ciphertext coordinate in a broken ML-KEM implicit-rejection check is enough to recover the secret key, matching real bugs already found in pqc_kyber, cosmian_kyber, and wolfSSL."
+---
+
+The Fujisaki-Okamoto transform makes ML-KEM IND-CCA secure by re-encrypting the decrypted message and returning an implicit-rejection value on any mismatch, but deployed implementations of ML-KEM and its predecessor Kyber have gotten this check wrong in practice, including a skipped conditional move in pqc_kyber and cosmian_kyber tracked as RUSTSEC-2026-0290 and -0288, and truncated ciphertext comparisons in wolfSSL tracked as CVE-2026-10097 and CVE-2026-6330. The author asks how little of the check needs to be broken before the key becomes recoverable, and shows that a single unverified ciphertext coordinate suffices: for a valid ciphertext the adversary already knows the encryption randomness, so sweeping an unverified v-coordinate over the compression grid measures the decryption noise there, a known short-coefficient linear form in the secret, and one bounded-error observation per message, solved by least squares, recovers the key. Under a stated regularity assumption, the paper proves that O(k n log(k n)) observations identify the key, and demonstrates full recovery from a single unverified coordinate on all three ML-KEM parameter sets using a few times 10 to the 5th power decapsulation queries against a simulated incomplete comparison built on the kyber-py implementation, with ML-KEM-1024 the cheapest to attack owing to its finer compression grid. The number of sessions needed falls inversely with the number of unverified coordinates, but the query cost per session does not, so one unverified coordinate costs as much as a leaked tail of fifty, and the skipped-conditional-move bug alone yields a complete plaintext-checking oracle in Theta(k n) queries.
