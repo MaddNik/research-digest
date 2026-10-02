@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-Key FHE Almost as Fast as Single-Key FHE</title>
+<style>
+:root{--bg:#F3F5F4;--surface:#FFFFFF;--ink:#161A1C;--muted:#5C6670;--line:#DBE0DE;--accent:#0C8C80}
+@media (prefers-color-scheme:dark){:root{--bg:#0B0F12;--surface:#111619;--ink:#E7EEEA;--muted:#95A2A1;--line:#1F282C;--accent:#2CD4BE}}
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.doc{max-width:820px;margin:40px auto;background:var(--surface);
+ padding:48px 56px;border:1px solid var(--line);border-radius:8px}
+header h1{margin:0 0 4px;font-size:28px;color:#fff}
+.meta{color:var(--muted);font-size:13px;margin:0 0 24px}
+section{margin:0 0 28px}
+section h2{font-size:20px;color:#fff;
+ border-bottom:1px solid var(--line);padding-bottom:6px}
+a{color:var(--accent)}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;line-height:1.5;margin:1rem 0}
+pre code{background:none;border:0;padding:0;border-radius:0;display:block;white-space:pre;font-size:13px}
+code{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:14px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;height:auto;background:#fff;padding:10px;
+ border:1px solid var(--line);border-radius:6px}
+.figcap{color:var(--muted);font-size:13px;margin:6px 0 0}
+.missing{color:var(--muted);font-style:italic;font-size:13px}
+@media (max-width:640px){.doc{margin:0;border-radius:0;padding:28px 20px}}
+</style>
+<style>
+#rt-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;padding:.6rem 1.1rem;background:var(--surface);border-bottom:1px solid var(--line);font:600 14px/1.4 system-ui,-apple-system,sans-serif}
+#rt-bar a{color:var(--accent);text-decoration:none}
+#rt-bar a:hover{text-decoration:underline}
+figure img{cursor:zoom-in}
+#rt-lightbox{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:2rem}
+#rt-lightbox img{max-width:95vw;max-height:95vh}
+#rt-figprev{display:none;position:fixed;z-index:100001;max-width:42vw;max-height:46vh;border:2px solid #666;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.7);pointer-events:none;background:#000}
+#rt-eqprev{display:none;position:fixed;z-index:100001;max-width:60vw;max-height:50vh;padding:8px 16px;border:2px solid #888;border-radius:6px;box-shadow:0 10px 36px rgba(0,0,0,.6);pointer-events:none;background:#fff;color:#111;overflow:auto}
+#rt-eqprev mjx-container,#rt-eqprev mjx-container *{color:#111!important}
+a.rt-figref,a.rt-eqref{color:var(--accent);text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+body{counter-reset:rt-eq}
+mjx-container[display="true"]{position:relative;padding-right:2.4em}
+mjx-container[display="true"]::after{counter-increment:rt-eq;content:"(" counter(rt-eq) ")";position:absolute;right:.2em;top:50%;transform:translateY(-50%);color:#999;font-size:.8em}
+</style>
+</head>
+<body><div id="rt-bar"><a href="/research-digest/summaries/">&#8592; Back to Deep Summaries</a><a href="https://eprint.iacr.org/2026/2195" target="_blank" rel="noopener noreferrer">Full text &#8599;</a></div><main class="doc">
+<header><h1>Multi-Key FHE Almost as Fast as Single-Key FHE</h1><p class="meta">IACR ePrint Archive, Paper 2026/2195 &middot; <a href="https://eprint.iacr.org/2026/2195" target="_blank" rel="noopener noreferrer">full view &#8599;</a></p></header>
+<section><h2>Overview and Problem Statement</h2><p>This paper, by Abtin Afshar and Rishab Goyal (University of Wisconsin-Madison), addresses a long-standing open question in multi-key fully homomorphic encryption (MKFHE). MKFHE extends ordinary FHE by letting users generate keys and encrypt independently; an evaluator can later pick a set of $N$ users, compute jointly on their ciphertexts, and produce an output that those users can jointly decrypt. Applications include round-optimal multiparty computation, multi-key homomorphic secret sharing, communication-preserving MPC compilers, threshold cryptography, and privacy-preserving distributed machine learning.</p>
+<p><strong>The concatenation barrier.</strong> Every prior MKFHE scheme accommodates independently generated keys by expanding each ciphertext under the concatenation $\hat{t} = (t_1,\ldots,t_N)$ of the participating users' secret keys, and then evaluating circuits in this $N$-times-larger dimension. Because the key grows linearly with $N$, so does ciphertext size and per-gate cost: GSW-based schemes (Clear-McGoldrick, Mukherjee-Wichs) use $nN \times mN$ matrices with $O(nm^2N^3)$ field operations per multiplication; BFV-based schemes (CDKS) use $N+1$ ring elements with $O(N^2)$ work per multiplication. Lopez-Alt, Tromer and Vaikuntanathan, who introduced MKFHE, explicitly asked for a scheme where all algorithms are independent of $N$. More than a decade later, no MKFHE scheme had achieved even a sub-linear dependence on $N$ for homomorphic evaluation.</p>
+<p>A recent related work by the same authors, Afshar-Goyal (CRYPTO 2026, ePrint 2026/1683), designed an MKFHE scheme with evaluated ciphertexts of size $\ell + \mathrm{poly}(\lambda, d, \log N)$ for an $\ell$-bit output, using succinct oblivious tensor evaluation. However, that scheme is a compression wrapper applied only <em>after</em> evaluation finishes: the evaluator's working dimension, running time, and working space during evaluation still scale polynomially with $N$ for every gate.</p>
+<p>This paper asks: <em>can multi-key homomorphic evaluation have the same per-gate cost as single-key evaluation</em>, with every evaluated ciphertext, every gate, and the decryptable output independent of $N$, while users still generate keys and encrypt independently and the participating set is chosen only after encryption? The paper answers this affirmatively.</p></section>
+<section><h2>Main Idea: Sum Instead of Concatenation</h2><p>The key structural change is to replace the concatenated key $\hat{t}=(t_1,\ldots,t_N)$ with a <strong>virtual key</strong> that is the <em>sum</em> of the participating users' secrets, $\tilde{s} = \sum_{i=1}^N s_i$, $\tilde{t} = (-\tilde{s}^\top, 1)^\top$. The construction inserts a public, deterministic, non-interactive preprocessing phase between encryption and evaluation, consisting of two new algorithms:</p>
+<ul>
+<li><strong>Key aggregation (KeyAgg):</strong> combines the selected users' public keys into a preparation key $\mathsf{PrepKey}$ and an evaluation key $\mathsf{EvalKey}$. This is a one-time cost per participating set, reused across all inputs and circuits for that set.</li>
+<li><strong>Ciphertext preparation (CTPrep):</strong> uses $\mathsf{PrepKey}$ to convert one independently-generated fresh ciphertext (encrypted before the participating set was even chosen) into a short single-key ciphertext under the virtual key $\tilde t$ (or $\tilde\sigma$ in the ring case).</li>
+</ul>
+<p>After preparation, every wire ciphertext is an ordinary single-key ciphertext under the common virtual key, so evaluation runs with completely ordinary single-key homomorphic gate operations, independent of $N$. The only place where cost scales with $N$ is the public preprocessing phase (key aggregation and ciphertext preparation), which happens once per user set and is never repeated during circuit evaluation. Both KeyAgg and CTPrep are deterministic, require no secret keys, and can be run by an untrusted evaluator using only published material.</p>
+<p>Two concrete instantiations are given:</p>
+<ul>
+<li><strong>GSW-based, over $\mathbb{Z}_q$, from standard LWE</strong> (Section 4): converts expanded Mukherjee-Wichs (MW) ciphertexts into ordinary $n\times m$ GSW matrices. GSW multiplication needs no evaluation key, so the challenge is purely in ciphertext preparation.</li>
+<li><strong>BFV-based, over cyclotomic rings, from circular Ring-LWE</strong> (Section 5): converts each input into an ordinary two-ring-element BFV ciphertext. Here BFV multiplication requires relinearization under the virtual secret, which is the harder technical problem since the square of a sum of secrets contains cross terms that no single user can compute from its own secret alone.</li>
+</ul>
+<p>Both constructions retain single-round distributed decryption with statistically simulatable partial decryptions (the standard smudging technique), at the cost of published key material that still grows with $N$. As a proof of concept, the ring-based construction is implemented in Go; for 32 users its multiplication is $275.13\times$ faster than CDKS and $45.50\times$ faster than KKLSS, with ciphertexts $16.5\times$ smaller than both.</p></section>
+<section><h2>Formal Efficiency Notions: Full Succinctness and Optimal Evaluation</h2><p>The paper formalizes the syntax of an MKFHE scheme with the standard algorithms $\mathsf{Setup}, \mathsf{KeyGen}, \mathsf{Enc}, \mathsf{Dec}$, plus the two new public algorithms $\mathsf{KeyAgg}$ and $\mathsf{CTPrep}$ inserted between encryption and evaluation:</p>
+<ul>
+<li>$\mathsf{Setup}(1^\lambda, 1^d, 1^N) \to \mathsf{PP}$: security parameter, circuit-depth bound, and number of users.</li>
+<li>$\mathsf{KeyGen}(\mathsf{PP}, i) \to (\mathsf{PK}_i, \mathsf{SK}_i)$.</li>
+<li>$\mathsf{Enc}(\mathsf{PP}, \mathsf{PK}_i, \mu) \to \mathsf{CT}$.</li>
+<li>$\mathsf{KeyAgg}(\mathsf{PP}, (\mathsf{PK}_i)_{i\in[N]}) \to (\mathsf{PrepKey}, \mathsf{EvalKey})$: public, deterministic.</li>
+<li>$\mathsf{CTPrep}(\mathsf{PP}, \mathsf{PrepKey}, \mathsf{CT}) \to \mathsf{CT}^{\mathrm{prep}}$: public, deterministic.</li>
+<li>$\mathsf{Eval}(\mathsf{PP}, \mathsf{EvalKey}, C, (\mathsf{CT}^{\mathrm{prep}}_i)_{i\in[N]}) \to \mathsf{CT}_C$.</li>
+<li>$\mathsf{Dec}(\mathsf{PP}, (\mathsf{SK}_i)_{i\in[N]}, \mathsf{CT}_C) \to \mu$.</li>
+</ul>
+<p>The usual requirements of correctness, semantic security, and compactness ($|\mathsf{CT}_C| \le \mathrm{poly}(\lambda, d, N, |C(\cdot)|)$) are imposed, plus two sharper efficiency definitions:</p>
+<p><strong>Definition (Full Succinctness).</strong> The evaluated ciphertext size satisfies $|\mathsf{CT}_C| \le \mathrm{poly}(\lambda, d, \log N, |C((\mu_i)_{i\in[N]})|)$, i.e. only logarithmic, not polynomial, dependence on $N$.</p>
+<p><strong>Definition (Optimal Evaluation).</strong> There is a fixed polynomial such that $|\mathsf{EvalKey}|$ and the running time of <em>each</em> gate are bounded by $\mathrm{poly}(\lambda, d, \log N)$, and total evaluation time is bounded by $|C| \cdot \mathrm{poly}(\lambda, d, \log N)$. Crucially, the time spent on key aggregation and ciphertext preparation may still grow polynomially in $N$, only per-gate evaluation cost must be essentially independent of $N$.</p>
+<p>The paper's main theorems show that both the GSW-based and BFV-based constructions achieve full succinctness and optimal evaluation. The paper also formalizes a <strong>dynamic choice of users</strong> remark: setup fixes only a maximum $N_{\max}$; users generate keys and encrypt before any participating set $S\subseteq [N_{\max}]$ or circuit is chosen, and aggregation/preparation are later restricted to $S$ with its members relabeled.</p>
+<p>Single-round distributed decryption is captured by two further algorithms, $\mathsf{PartDec}$ and $\mathsf{FinDec}$, satisfying correctness of partial decryption and a simulatability property: each party's partial decryption share is statistically close to a value produced by a simulator that does not use that party's secret key, given the final output. This is achieved via the standard smudging technique (adding large uniform noise that statistically drowns the small decryption error).</p></section>
+<section><h2>Technical Overview: From GSW to the Virtual Key</h2><p><strong>The GSW relation.</strong> A single-key GSW ciphertext of a bit $\mu$ is a matrix $C \in \mathbb{Z}_q^{n\times m}$ satisfying, for the augmented secret key $t=(-s^\top,1)^\top$ and public gadget matrix $G=[I_n\otimes g^\top \mid 0]$ built from $g=(1,2,\ldots,2^{\log q -1})^\top$:</p>
+<p>$$t^\top C = \mu\, t^\top G + e^\top$$</p>
+<p>where $e$ is a short error vector. Because $G$ admits a public bounded decomposition $G^{-1}$ with $GG^{-1}(x)=x$, the bit encoded in $C$ behaves like an approximate eigenvalue under eigenvector $t$, and $C_1+C_2$ and $C_1 G^{-1}(C_2)$ homomorphically add and multiply, with no evaluation key at all.</p>
+<p>Reading the relation column by column: for the column aligned with $2^\alpha e_k$ in $G$, its phase is $t^\top c_{k,\alpha} \approx \mu 2^\alpha t_k$, which equals $-\mu 2^\alpha s_k$ for $k<n$ and $\mu 2^\alpha$ for $k=n$ (the constant coordinate, since $t_n=1$, carries the message).</p>
+<p><strong>The Mukherjee-Wichs (MW) expansion.</strong> In the multi-key setting, each user $i$ independently encrypts with its own secret $s_i$. A fresh ciphertext contains a GSW matrix $C$ plus auxiliary encryptions $U$ of its own randomness, which support public expansion to a matrix $\hat C \in \mathbb{Z}_q^{nN\times mN}$ satisfying</p>
+<p>$$\hat t^\top \hat C \approx \mu\, \hat t^\top \hat G_N, \qquad \hat t = (t_1^\top,\ldots,t_N^\top)^\top, \qquad \hat G_N = I_N \otimes G.$$</p>
+<p>$\hat C$ has $N$ block rows (one per user's key) and $N$ column groups (one per user who encrypted), so its size grows as $N^2$ and multiplication grows as $N^3$. This concatenation is identified as the structural root cause of every cost that scales with $N$ in prior MKFHE.</p>
+<p><strong>Replacing concatenation with a sum.</strong> The paper's target relation is, for the virtual key $\tilde t = (-\tilde s^\top, 1)^\top$ with $\tilde s = \sum_{i=1}^N s_i$:</p>
+<p>$$\tilde t^\top \mathsf{CT} \approx \mu\, \tilde t^\top G.$$</p>
+<p>Since this is exactly the single-key GSW relation with $t$ replaced by $\tilde t$, any ciphertext satisfying it is an ordinary GSW ciphertext and evaluates at single-key dimension with no evaluation key. The virtual key $\tilde t$ is never reconstructed by any algorithm and is not known to any single user; it exists only implicitly as the sum of the chosen users' secrets.</p>
+<p>Preparation (CTPrep) composes three public operations on one fresh input $(U, C)$:</p>
+<ol>
+<li><strong>Expand:</strong> ordinary MW expansion, $(U,C) \to \hat C \in \mathbb{Z}_q^{nN \times mN}$, under the concatenated key $\hat t$. No gate is ever applied to $\hat C$; it is only a stepping stone.</li>
+<li><strong>Compress rows:</strong> shorten every column of $\hat C$ from $nN$ to $n$ coordinates while preserving its phase, changing the key on the left from $\hat t$ to $\tilde t$, yielding $Z \in \mathbb{Z}_q^{n\times mN}$.</li>
+<li><strong>Reduce columns:</strong> fold the $N$ user-indexed column groups into the single group that $G$ prescribes, changing the encoded values on the right, yielding $\mathsf{CT} \in \mathbb{Z}_q^{n\times m}$.</li>
+</ol>
+<p>In the actual Section 4 construction these last two steps are applied in reverse order (select/sum columns first, then compress) to reduce both work and accumulated error, since only $m$ compressions are then needed instead of $mN$.</p></section>
+<section><h2>Vector Compression: the Core Cryptographic Gadget</h2><p>The crux of the construction is a way to shrink an $nN$-coordinate column (phased under the concatenated key $\hat t$) down to an $n$-coordinate column phased (approximately) under the virtual key $\tilde t$, using only public material.</p>
+<p><strong>Naive masking and its cancellation.</strong> For an expanded column $c\in\mathbb{Z}_q^{nN}$ with user blocks $c_j\in\mathbb{Z}_q^n$, its phase is</p>
+<p>$$\hat t^\top c = \sum_j c_{j,n} - \sum_{j,k<n} s_{j,k} c_{j,k}.$$</p>
+<p>The first sum is public; the second involves every user's secret coordinates, none of which the evaluator knows. Fix a common public mask $a_{j,k} \in \mathbb{Z}_q^{n-1}$. Each user $i$ publishes</p>
+<p>$$w_{i,j,k} = \langle s_i, a_{j,k}\rangle + \delta_{i,j} s_{i,k} + \varepsilon_{i,j,k},$$</p>
+<p>where $\delta_{i,j}$ is the Kronecker delta and $\varepsilon_{i,j,k}$ is a small error. Summing over all $i$:</p>
+<p>$$W_{j,k} = \sum_i w_{i,j,k} = \langle \tilde s, a_{j,k}\rangle + s_{j,k} + \varepsilon_{j,k}, \qquad \tilde t^\top \begin{pmatrix}a_{j,k}\\ W_{j,k}\end{pmatrix} = s_{j,k} + \varepsilon_{j,k}.$$</p>
+<p>Each user contributes its share of the mask, while only user $j$ inserts the secret coordinate being encoded; summing cancels the mask under the virtual key, even though no user knew the virtual secret when publishing its contribution. A naive version of this (without digit decomposition) fails: ciphertext coefficients $c_{j,k}$ can be as large as $q$, so multiplying by them can amplify even a tiny encoding error $\varepsilon_{j,k}$ past the decryption margin.</p>
+<p><strong>Controlling error via gadget decomposition.</strong> The fix publishes encodings of $2^\alpha s_{j,k}$ for each power of two $\alpha$ separately, using an independent mask per power: $K_{j,k,\alpha}$ with phase $\tilde t^\top K_{j,k,\alpha} = 2^\alpha s_{j,k} + \varepsilon_{j,k,\alpha}$. Writing $c_{j,k} = \sum_\alpha 2^\alpha \beta_{j,k,\alpha} \pmod q$ in binary digits $\beta_{j,k,\alpha}$,</p>
+<p>$$\mathrm{Compress}(c) = \begin{pmatrix}0_{n-1}\\ \sum_j c_{j,n}\end{pmatrix} - \sum_{j,k<n,\alpha} \beta_{j,k,\alpha} K_{j,k,\alpha}.$$</p>
+<p>Now each aggregated error term $\varepsilon_{j,k,\alpha}$ is multiplied by only $0$ or $1$ (the digit $\beta_{j,k,\alpha}$), controlling error growth to a sum of at most $N(n-1)\log q$ bounded terms rather than a sum weighted by arbitrary ring elements up to $q$. This compression is independent of the plaintext: it applies equally to an expanded column, a sum of such columns, or a decryption vector.</p>
+<p><strong>Lemma (Ciphertext compression, formalized in Section 4.1).</strong> For every $c \in \mathbb{Z}_q^{nN}$,</p>
+<p>$$\tilde t^\top \mathrm{Compress}(c) = \hat t^\top c - \sum_{j,k,\alpha} \beta_{j,k,\alpha}\varepsilon_{j,k,\alpha},$$</p>
+<p>with the added compression error bounded by $N^2(n-1)\log q\, B_{\mathrm{cmp}}$, and running time (after preprocessing) $O(Nn^2\log q)$.</p>
+<p><strong>Column reduction.</strong> After compression, the matrix still has $N$ column groups, one per user, each still phased by that user's individual secret coordinate $s_{j,k}$ rather than the summed $\tilde s_k$. Adding columns at the same $(k,\alpha)$ position across all $N$ users adds their phases: $\tilde t^\top(z_{1,k,\alpha}+\cdots+z_{N,k,\alpha}) \approx -\mu 2^\alpha(s_{1,k}+\cdots+s_{N,k}) = -\mu 2^\alpha \tilde s_k$, exactly the needed value. For the constant coordinate $k=n$ (where every group already carries phase $\mu 2^\alpha$, since every augmented key ends in $1$), only one group's column is kept and the rest are discarded (summing all $N$ would overshoot to $N\mu 2^\alpha$). This gives the prepared ciphertext $\mathsf{CT}=Y$ satisfying the target GSW relation under $\tilde t$.</p></section>
+<section><h2>Section 4: Fast GSW-Based MKFHE from Plain LWE</h2><p>Construction 4.2 formalizes the full scheme over $\mathbb{Z}_q$ for an odd prime $q$, $\Delta=(q-1)/2$, gadget $G=G_{n,m}$, secrets $s_i \in \mathbb{Z}_q^{n-1}$.</p>
+<p><strong>Setup:</strong> samples the common MW matrix $B \leftarrow \mathbb{Z}_q^{(n-1)\times m}$ and, for every $j\in[N]$, $k\in[n-1]$, $\alpha\in\{0,\ldots,\log q -1\}$, independent uniform masks $a_{j,k,\alpha} \in \mathbb{Z}_q^{n-1}$.</p>
+<p><strong>KeyGen($i$):</strong> samples $s_i \leftarrow \mathbb{Z}_q^{n-1}$, error $e_i\leftarrow\chi^m$, and compression errors $\varepsilon_{i,j,k,\alpha}\leftarrow\chi_{\mathrm{cmp}}$; forms the MW key pair $\mathrm{pk}_i = A_i=[B; b_i^\top]$ with $b_i=B^\top s_i + e_i$, $\mathrm{sk}_i = t_i=(-s_i^\top,1)^\top$; and publishes the compression entries $w_{i,j,k,\alpha} = \langle s_i, a_{j,k,\alpha}\rangle + \delta_{i,j}2^\alpha s_{i,k} + \varepsilon_{i,j,k,\alpha}$.</p>
+<p><strong>Enc:</strong> ordinary MW encryption producing $(U,C)$.</p>
+<p><strong>KeyAgg:</strong> sums $W_{j,k,\alpha} = \sum_i w_{i,j,k,\alpha}$ to form compression key $CK$; outputs $\mathsf{PrepKey}=((\mathrm{pk}_j)_j, CK)$ and empty $\mathsf{EvalKey}=\bot$ (GSW needs no evaluation key).</p>
+<p><strong>CTPrep:</strong> runs MW public expansion using $U$ and the public keys to get $\hat C$, applies the public column-selection matrix $H$ to get $Y=\hat C H \in \mathbb{Z}_q^{nN\times m}$, then column-wise compresses: $\mathsf{CT}^{\mathrm{prep}} = \mathrm{Compress}^{\mathrm{col}}(Y) \in \mathbb{Z}_q^{n\times m}$.</p>
+<p><strong>Eval:</strong> ordinary GSW evaluation of circuit $C$ on prepared ciphertexts.</p>
+<p><strong>Dec:</strong> each party reconstructs $\tilde s=\sum_i s_i$, $\tilde t = (-\tilde s^\top,1)^\top$, computes $c_{\mathrm{out}} = \mathsf{CT}_C G^{-1}(\Delta e_n)$, $z=\tilde t^\top c_{\mathrm{out}}$, and outputs $\mu = \lceil z\rfloor_2$ (rounding to nearest multiple of $\Delta$).</p>
+<p><strong>Computing without materializing the full expansion.</strong> A crucial efficiency point: a fresh MW expansion consists of $N$ diagonal copies of the same $n\times m$ matrix $C$ and only $N-1$ correction blocks $X_j$ in the owner's block row (all other blocks are zero). The construction computes these $O(N)$ nonzero blocks one at a time, accumulates only the columns selected by $H$, and compresses them, without ever materializing the full $nN\times mN$ matrix $\hat C$. This makes preparation <strong>linear</strong> rather than quadratic in $N$ for the indexed variant.</p>
+<p><strong>Theorem 1.1 (informal).</strong> Assuming LWE, there is a leveled MKFHE where every prepared or evaluated ciphertext is an $n\times m$ matrix over $\mathbb{Z}_q$. Homomorphic addition costs $O(nm)$ field operations, homomorphic multiplication costs $O(nm^2)$ field operations, and no evaluation key is required. In the <em>indexed</em> variant, key aggregation costs $O(N^2 n)$ and ciphertext preparation costs $O(Nnm^2)$ field operations. In the <em>unindexed</em> variant (Appendix C transformation), these costs become $O(N^2n^2m^2)$ and $O(n^2m^2)$ respectively. Here $n-1$ is the LWE dimension and $m = n\lceil \log_2 q\rceil + 2\lambda$.</p>
+<p><strong>Parameter settings.</strong> Take $n = \lceil(\lambda+d+\log(N+1))^2\rceil$, $\chi$ the truncated discrete Gaussian with bound $B_\chi = n\sqrt\lambda$, $\chi_{\mathrm{cmp}}=\chi$, $m=n\log q + 2\lambda$. MW's fresh expansion has error at most $B_{\mathrm{MW}}=(m^4+m)B_\chi$; the preparation error is bounded by $B_{\mathrm{in}}(N) = NB_{\mathrm{MW}} + N^2(n-1)\log q\, B_\chi$; ordinary GSW evaluation increases this by a factor of at most $m+1$ per level, so $q$ must satisfy $(\log q)(m+1)^d B_{\mathrm{in}}(N) < q/4 - 1/2$, achievable with $\log q = O((d+1)\log(\lambda+d+\log(N+1)) + \log(N+1))$. Security assumes $\mathrm{LWE}_{n-1,q,\chi}$ with $m+N(n-1)\log q$ samples per secret.</p>
+<p><strong>Security.</strong> The public keys now also contain the compression entries $w_{i,j,k,\alpha}$, which are linear key-dependent messages (KDM) of the secret $s_i$. The paper proves security of this linear-KDM structure directly from ordinary LWE via a public-mask translation in the style of affine-KDM security (Applebaum-Cash-Peikert-Sahai), without any extra circular-security assumption: given LWE challenge samples under the challenge user's secret, the reduction can publicly shift the masks so that the challenge samples exactly realize the compression entries. Together with the leftover hash lemma (used, as in MW, on the GSW encryptions of randomness and on the message-bearing matrix), this establishes full semantic security, which is preserved after public preparation and evaluation since those are public computations.</p>
+<p><strong>Distributed decryption (Section 4.5).</strong> Using a larger modulus $q$ with error bound $B_{\mathrm{dec}} = (\log q)(m+1)^d B_{\mathrm{in}}(N)$ and smudging bound $B_{\mathrm{sm}}$ chosen so that $B_{\mathrm{dec}}/B_{\mathrm{sm}} = \mathrm{negl}(\lambda)$ and $B_{\mathrm{dec}} + NB_{\mathrm{sm}} < q/4-1/2$: each party computes $c_{\mathrm{out}}=\mathsf{CT}_C G^{-1}(\Delta e_n) = (u^\top,v)^\top$, sets $\gamma_i = \delta_{i,1}v - \langle s_i,u\rangle$, samples smudging noise $e^{\mathrm{sm}}_i$ uniformly in $[-B_{\mathrm{sm}},B_{\mathrm{sm}}]$, and outputs $p_i = \gamma_i + e_i^{\mathrm{sm}} \pmod q$. Final decryption rounds $\sum_i p_i$. Simulatability follows because the real share differs from a simulated one only by the small decoding error $\varepsilon$, which is statistically drowned by the smudging noise (distance $B_{\mathrm{dec}}/(2B_{\mathrm{sm}}+1) = \mathrm{negl}(\lambda)$).</p></section>
+<section><h2>Section 5: Fast BFV-Based MKFHE from Ring-LWE</h2><p>Over rings $R_q = \mathbb{Z}_q[X]/(X^n+1)$ with $n$ a power of two, messages in $R_t$, $\Delta=(q-1)/t$, a BFV ciphertext is a pair $(c_0,c_1)$ with phase $c_0+c_1 s \approx \Delta\mu$. CDKS expands this to a vector $(c_0,\ldots,c_N)$ under the concatenated key $(1,s_1,\ldots,s_N)$. Because a BFV ciphertext already represents the message through a <em>single</em> phase (not a matrix of phases as in GSW), expansion simply inserts zeros at the non-owner positions; there is no analogue of GSW's column-reduction step, so preparation over rings is actually simpler than over fields.</p>
+<p><strong>Compression over the ring.</strong> Each user independently samples a compression secret $\sigma_i$ (distinct from its BFV secret $s_i$); the virtual secret is $\tilde\sigma = \sum_i \sigma_i$. With a gadget $(h,g)$ of length $k$ and uniform masks $a_j \in R_q^k$, users publish $w_{i,j} = \sigma_i a_j + \delta_{i,j} s_i g + e_{i,j}$; aggregation gives $W_j = \sum_i w_{i,j} = \tilde\sigma a_j + s_j g + E_j$. For a source column $c=(c_0,\ldots,c_N)$, compression computes $u = \sum_j \langle h(c_j), a_j\rangle$, $v = c_0 + \sum_j \langle h(c_j), W_j\rangle$, yielding a pair $(v,-u)$ with phase $v - u\tilde\sigma \approx c_0 + \sum_j c_j s_j$: an ordinary two-element BFV pair under the virtual secret $\tilde\sigma$.</p>
+<p><strong>The new obstacle: relinearization.</strong> Addition of prepared pairs is trivially componentwise. Multiplication is not free in BFV (unlike GSW) because it needs secret-dependent public material (a relinearization key). Scaling and rounding the product of two phases under $\tilde\sigma$ leaves</p>
+<p>$$(c_0+c_1\tilde\sigma)(c_0'+c_1'\tilde\sigma) \rightsquigarrow T_0 + T_1\tilde\sigma + T_2\tilde\sigma^2,$$</p>
+<p>and relinearization must replace $T_2\tilde\sigma^2$ with a term linear in $\tilde\sigma$. The square $\tilde\sigma^2 = \left(\sum_i\sigma_i\right)^2$ contains cross terms, e.g. for two users $(\sigma_1+\sigma_2)^2 = \sigma_1^2 + 2\sigma_1\sigma_2 + \sigma_2^2$. No single user can compute the cross term $\sigma_1\sigma_2$ from its own secret, so simply summing ordinary per-user relinearization keys is not merely lossy, it is wrong.</p>
+<p><strong>Aggregating masked relinearization keys.</strong> The fix reuses the masked representation from CDKS, specialized to a single secret $\sigma$ with an auxiliary secret $r$ and common public masks $a,u\in R_q^k$:</p>
+<p>$$B \approx -\sigma a, \qquad D \approx -ra + \sigma g, \qquad V \approx -\sigma u - rg.$$</p>
+<p>Each secret appears only to degree one, multiplied by public coefficients, so these equations are (a) satisfiable by each user from its own secret alone, (b) linear in that secret, so summing per-user contributions yields the same equations for the summed secrets, and (c) sufficient at gate time to manufacture the needed quadratic term. User $i$ publishes $b_i=-\sigma_i a + e_{B,i}$, $d_i=-r_i a + \sigma_i g + e_{D,i}$, $v_i = -\sigma_i u - r_i g + e_{V,i}$ using a freshly sampled $r_i$; summing gives $(B,D,V)$ satisfying the above for $(\sigma,r)=(\tilde\sigma,\tilde r)$, $\tilde r=\sum_i r_i$. Crucially, the mask $u$ is <em>common</em> across users (unlike plain CDKS, which samples $u$ per user), which is exactly what makes the per-user contributions $\sigma_i u$ add up to $\tilde\sigma u$.</p>
+<p><strong>Compact multiplication (FastMult).</strong> Given $(B,D,V)$ and two prepared ciphertexts, compute the tensor $(T_0,T_1,T_2)$ by scaling and rounding (as in ordinary BFV), decompose $z=h(T_2)$, compute $x=\langle z,B\rangle \approx -\sigma\langle z,a\rangle$, and output the pair</p>
+<p>$$\big(\langle h(x), V\rangle,\ \langle z, D\rangle + \langle h(x), u\rangle\big),$$</p>
+<p>which has phase $\approx \sigma^2 T_2$ (the $D$ term supplies $\sigma^2 T_2$ together with a mask in $r$; the $V$/$u$ term supplies the opposite mask, canceling it). Adding $T_0$ and $T_1$ to the two components yields a new ordinary BFV pair encrypting the product, ready for the next gate.</p>
+<p><strong>Theorem 1.2 (informal).</strong> Assuming circular Ring-LWE, there is a leveled MKFHE where every prepared or evaluated ciphertext consists of two elements of $R_q$. Homomorphic addition and multiplication both cost $O(1)$ ring operations (more precisely $O(k)=O(\log q)$ with binary gadgets). In both indexed and unindexed variants, key aggregation costs $O(N^2)$ and ciphertext preparation costs $O(1)$ ring operations.</p>
+<p><strong>Construction 5.1 (summary of algorithms).</strong> Setup fixes gadgets $(h_c,g_c)$ and $(h,g)$ and uniform masks $a_j$ (for compression) and $a,u$ (for relinearization). KeyGen samples $s_i,\sigma_i,r_i\leftarrow\chi$, forms the ordinary BFV public key $(b_i,a_i)$ with $b_i=-a_i s_i + e_{\mathrm{pk},i}$, the compression entries $w_{i,j}$, and the masked relinearization vectors. Enc is ordinary BFV encryption. KeyAgg sums the $w_{i,j}$ into $CK=\mathsf{PrepKey}$ and the masked vectors into $(B,D,V)=\mathsf{EvalKey}$. CTPrep applies Compress to the owner's zero-padded column, computing only the owner's terms. Eval runs FastMult at multiplication gates and componentwise addition at addition gates. Dec sums the $\sigma_i$ to get $\tilde\sigma$ and rounds $\frac{t}{q}[c_0+c_1\tilde\sigma]_q$.</p>
+<p><strong>Error analysis.</strong> With $\delta_R=n$ (the ring expansion factor), $B_s=NB_\chi$, $B_{ek}=NB_e$, preparation/relinearization error bounds are $B_{\mathrm{in}}(N)=2\delta_R B_\chi B_e + B_e + Nk_c\delta_R B_c B_e$ and $B_{\mathrm{rlin}}(N) = 2k\delta_R^2 B_h B_s B_{ek} + k\delta_R B_h B_{ek}$. For a depth bound $d$, setting $\alpha=\delta_R t(2H+4)$, $\beta = H^2+\delta_R t(H+2)+B_{\mathrm{rlin}}(N)$ with $H=\delta_R(1+B_s)$, the noise recurrence $E_{h+1} = \max\{2E_h+1, \alpha E_h+\beta\}$ must stay below $q/(2t)-1/2$ at depth $d$, giving a closed form $E_d = \alpha^d E_0 + \beta(\alpha^d-1)/(\alpha-1)$ and a modulus choice $\log q = O((d+1)\log(2+n+t+N+B_\chi+B_e+d))$.</p>
+<p><strong>Security.</strong> As in CDKS, the construction assumes circular security of Ring-LWE: the challenge user's compression entries and masked relinearization vectors are jointly indistinguishable from uniform given the public masks and other honestly generated keys. After this replacement, ordinary BFV semantic security under Ring-LWE hides the message, and this is preserved through public KeyAgg, CTPrep, Eval.</p>
+<p><strong>Distributed decryption (Section 5.5).</strong> Analogous to the field case: $\mathrm{PartDec}$ computes $\gamma_i = \delta_{i,1}c_0 + c_1\sigma_i$ plus uniform smudging noise with coefficients in $[-B_{\mathrm{sm}},B_{\mathrm{sm}}]$, chosen so $nE_d/B_{\mathrm{sm}} = \mathrm{negl}(\lambda)$ and $E_d + NB_{\mathrm{sm}} < q/(2t)-1/2$; $\mathrm{FinDec}$ rounds $\sum_i p_i$. This uses one ring element per user per output polynomial.</p></section>
+<section><h2>Asymptotic Comparison Table</h2><p>Table 1 of the paper compares, metric by metric, the best prior state of the art (across different papers, not necessarily co-occurring in one scheme) against this work's indexed and unindexed variants. Costs are per plaintext bit (fields) or per plaintext polynomial (rings), suppressing factors polynomial in $\log q$.</p>
+<table border="1" cellpadding="4">
+<tr><th>Efficiency metric</th><th>Fields SotA</th><th>Fields: Indexed (this work)</th><th>Fields: Unindexed (this work)</th><th>Rings SotA</th><th>Rings: Indexed (this work)</th><th>Rings: Unindexed (this work)</th></tr>
+<tr><td>Addition (time)</td><td>$Nn^2$</td><td>$nm$</td><td>$nm$</td><td>$N$</td><td>$1$</td><td>$1$</td></tr>
+<tr><td>Multiplication (time)</td><td>$N^2n^3$</td><td>$nm^2$</td><td>$nm^2$</td><td>$N$</td><td>$1$</td><td>$1$</td></tr>
+<tr><td>Key aggregation (time)</td><td>&mdash;</td><td>$N^2n$</td><td>$N^2n^2m^2$</td><td>&mdash;</td><td>$N^2$</td><td>$N^2$</td></tr>
+<tr><td>Ciphertext preparation (time)</td><td>$n$</td><td>$Nnm^2$</td><td>$n^2m^2$</td><td>$1$</td><td>$1$</td><td>$1$</td></tr>
+<tr><td>Ciphertext on a wire (size)</td><td>$Nn$</td><td>$nm$</td><td>$nm$</td><td>$N$</td><td>$1$</td><td>$1$</td></tr>
+<tr><td>Decryptable payload (size)</td><td>$n$</td><td>$n$</td><td>$n$</td><td>$N$</td><td>$1$</td><td>$1$</td></tr>
+<tr><td>Fresh ciphertext (size)</td><td>$n$</td><td>$nm^3$</td><td>$n$</td><td>$1$</td><td>$1$</td><td>$1$</td></tr>
+<tr><td>Evaluation key (size)</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>$N$</td><td>$1$</td><td>$1$</td></tr>
+<tr><td>Preparation key (size)</td><td>&mdash;</td><td>$Nm$</td><td>$Nn^2m$</td><td>&mdash;</td><td>$N$</td><td>$N$</td></tr>
+<tr><td>Public key per user (size)</td><td>$m$</td><td>$Nn+m$</td><td>$N^2n+Nn^2m^3$</td><td>$1$</td><td>$N$</td><td>$N^2$</td></tr>
+<tr><td>Setup material (size)</td><td>&mdash;</td><td>$Nn^2$</td><td>$Nn^2$</td><td>&mdash;</td><td>$N$</td><td>$N$</td></tr>
+</table>
+<p>The clear pattern: per-gate running time, wire ciphertext size, and decryptable payload all become independent of $N$ (constants $nm$, $nm^2$ over fields; $O(1)$ over rings), matching single-key costs. The price is paid entirely in the preprocessing phase (key aggregation, preparation key, and per-user public key), which remain polynomial (often quadratic) in $N$, though this work can be reused across all circuits and inputs for a fixed user set.</p>
+<p>These improvements build on a chain of prior optimizations the paper surveys: over fields, Brakerski-Perlman reduces wire ciphertexts from $N^2nm$ to $Nn$ and fresh ciphertexts from $nm^3$ to $n$; Afshar-Goyal (the companion CRYPTO 2026 paper) reduces payload size from $Nn$ to $n$; over rings, KKLSS and a follow-up (Zhou-Huang-Wang) reduce multiplication from $N^2$ to $N$, and a no-CRS construction removes setup material. This paper is the first to make the <em>per-gate</em> cost itself independent of $N$ rather than merely reducing specific components.</p></section>
+<section><h2>Removing User Indices (Appendix C)</h2><p>The main constructions assign each user a fixed index at key generation, which the standard MKFHE notion does not require. Appendix C gives a generic transformation (Construction C.1) from an indexed to an unindexed MKFHE scheme, at the cost of larger keys and fresh ciphertexts:</p>
+<ul>
+<li>Each user samples $N$ independent secrets $s_i^{(1)},\ldots,s_i^{(N)}$ (one per candidate rank position) and publishes the corresponding public keys and compression entries for every candidate position $\ell$.</li>
+<li>Fresh encryption encrypts the same message under all $N$ candidate keys.</li>
+<li>Once a participating set is chosen, members are ranked (e.g. lexicographically), and each user's key material/ciphertext for its assigned rank is used; the virtual key is the sum of the selected secrets.</li>
+</ul>
+<p>This increases fresh ciphertext size and per-user published material by a factor of $N$, while leaving prepared ciphertexts, gate costs, and decryption unchanged. A refinement using key switching (via a generic PKE scheme whose decryption circuit is evaluated homomorphically) makes encryption produce a single small fresh ciphertext again, at the cost of larger keys, and moves the heavy work from ciphertext preparation into key aggregation (which can be amortized across inputs for a fixed user set).</p>
+<p><strong>Theorem C.2 / Corollary C.3.</strong> Assuming an indexed leveled MKFHE with full succinctness and optimal evaluation (and, for Corollary C.3, assuming LWE or circular Ring-LWE for the two concrete constructions), the unindexed transformation preserves full succinctness and optimal evaluation.</p>
+<p>The transformation works in three conceptual steps for each input ciphertext $\mathsf{ct}^*_i$ encrypted under a generic PKE's public key $\mathrm{pk}^*$: (1) at key generation, the source secret $s_i^*$ is itself encrypted under every candidate indexed key, producing bundles $\mathrm{bk}_i^{(\ell)}$; (2) key aggregation prepares the bundle for the canonically assigned position $i$, obtaining $\widehat{\mathrm{bk}}_i$ under the aggregate (virtual) key; (3) ciphertext preparation homomorphically evaluates the PKE decryption circuit $D_{\mathsf{ct}^*_i}$ on $\widehat{\mathrm{bk}}_i$, which both decrypts $\mathsf{ct}^*_i$ and lands the result directly in the aggregate evaluation domain, requiring no further preparation step.</p>
+<p>Over fields, this increases each user's public key from $O(Nn+m)$ to $O(N^2n + Nn^2m^3)$, key aggregation from $O(N^2n)$ to $O(N^2n^2m^2)$, and the preparation key from $O(Nm)$ to $O(Nn^2m)$, while fresh ciphertext size falls from $O(nm^3)$ to $O(n)$ and per-input preparation (now evaluating source decryption) changes from $O(Nnm^2)$ to $O(n^2m^2)$. Over rings, if a compatible source PKE exists with $O(1)$-size keys/ciphertexts and $O(1)$-round decryption circuits (not instantiated in the paper), only the public-key entry changes, from $O(N)$ to $O(N^2)$. A further optimization expands a single PRG seed into all $N$ indexed KeyGen random tapes, so a user's secret key collapses to just that seed.</p></section>
+<section><h2>Implementation and Experimental Evaluation (Appendix B)</h2><p>The ring-based construction (Construction 5.1) was implemented in Go 1.26.4 using the Lattigo v2.3.0 lattice library ('Fast CDKS' in the paper's naming), and compared against the authors' own implementation of CDKS, the existing KKLSS implementation, and Lattigo's single-key BFV.</p>
+<p><strong>Parameters.</strong> Ring degree $n=2^{14}$, plaintext modulus $t=65537$, a 348-bit ciphertext modulus $q$ built from six 58-bit primes each congruent to $1 \bmod 2nt$. Secrets are uniform ternary; Gaussian errors have standard deviation $3.2$ and truncation bound $B_e=48$. Relinearization uses the CDKS residue gadget with $k=6$ centered digits, $B_h<257$ (CRT-projector gadget entries, so decomposition is only centering/copying residues). Compression splits each centered residue into two signed base-$2^{29}$ pieces, giving $k_c=12$, $B_c=2^{29}-1$. An auxiliary 420-bit residue basis is used for exact rounding, with guarded CRT conversion. CDKS's comparator implements the symmetric-pair and diagonal-key optimizations from the original CDKS paper, combining $c_ic_j'+c_jc_i'$ before rounding for $i<j$, giving $N(N-1)/2$ off-diagonal terms plus $N$ diagonal terms. KKLSS retains its original PN14QP439 parameters (319-bit ciphertext modulus, 439-bit key modulus). Experiments ran on an Apple M3, 8 cores, 24 GB RAM, macOS 15.7.3, single thread on AC power, median of 15 repetitions after 3 warmups, interleaved measurement order, 14 GiB memory cap.</p>
+<p><strong>Measured results (Table 2).</strong></p>
+<table border="1" cellpadding="4">
+<tr><th>$N$</th><th>Ours |CT| (MB)</th><th>Ours $T_{\mathrm{Mult}}$ (ms)</th><th>CDKS |CT| (MB)</th><th>CDKS $T_{\mathrm{Mult}}$ (ms)</th><th>KKLSS |CT| (MB)</th><th>KKLSS $T_{\mathrm{Mult}}$ (ms)</th><th>BFV |CT| (MB)</th><th>BFV $T_{\mathrm{Mult}}$ (ms)</th></tr>
+<tr><td>2</td><td>1.6</td><td>29</td><td>2.4</td><td>54</td><td>2.4</td><td>89</td><td>1.6</td><td>21</td></tr>
+<tr><td>4</td><td>1.6</td><td>30</td><td>3.9</td><td>168</td><td>3.9</td><td>174</td><td>1.6</td><td>22</td></tr>
+<tr><td>8</td><td>1.6</td><td>30</td><td>7.1</td><td>564</td><td>7.1</td><td>336</td><td>1.6</td><td>21</td></tr>
+<tr><td>16</td><td>1.6</td><td>30</td><td>13.4</td><td>2102</td><td>13.4</td><td>665</td><td>1.6</td><td>21</td></tr>
+<tr><td>32</td><td>1.6</td><td>30</td><td>26.0</td><td>8180</td><td>26.0</td><td>1353</td><td>1.6</td><td>21</td></tr>
+</table>
+<p>After preparation, multiplication time for the new construction stays essentially flat (29.48 to 30.19 ms across $N\in\{2,4,8,16,32\}$), while CDKS and KKLSS grow with $N$. At $N=32$: the new construction's multiplication is $275.13\times$ faster than CDKS and $45.50\times$ faster than KKLSS, and takes about $1.39\times$ the time of single-key BFV. Ciphertexts (1.6 MB, two ring elements, identical to single-key BFV) are $16.5\times$ smaller than CDKS/KKLSS ($N+1$ ring elements, growing to 26.0 MB at $N=32$).</p>
+<p><strong>Preparation cost (paid once per user set and reused).</strong> Measured median preparation times, which aggregate already-generated public keys, prepare $2N$ fresh input ciphertexts and sum them into two operands, were 53.47, 110.38, 233.32, 513.41, and 1240.63 ms for $N=2,4,8,16,32$ respectively.</p>
+<p><strong>Key material cost.</strong> At $N=32$, all user public keys together occupy 10.17 GB, while the aggregated keys occupy 316.15 MB (excluding metadata and working space). This quantifies the tradeoff: the new scheme accepts large, quadratic-in-$N$ public/preparation material in exchange for removing all per-gate dependence on $N$. The authors note they did not instantiate statistically simulatable distributed decryption or its larger required parameters in the implementation, and every output slot was verified for correctness across all executions.</p></section>
+<section><h2>Related Work and Open Problems</h2><p><strong>Lineage.</strong> MKFHE began with Lopez-Alt, Tromer, Vaikuntanathan's NTRU-based construction for an a-priori bounded number of keys, followed by LWE-based schemes with quadratic expanded ciphertexts (Clear-McGoldrick; Mukherjee-Wichs). Subsequent work achieved multi-hop evaluation without bootstrapping (Peikert-Shiehian), linear ciphertext length via branching programs (Brakerski-Perlman), and batched multi-hop evaluation over rings (Chen-Zhang-Wang). CDKS and KKLSS gave practical ring-based evaluation. Other lines studied distributed setup (Brakerski-Halevi-Polychroniadou), plain-model constructions (Ananth-Jain-Jin-Malavolta; a no-CRS construction cited as MPS26), and circuit privacy against maliciously generated keys (Chongchitmate-Ostrovsky). DHRW's additive-function-sharing spooky encryption produces individually-keyed ciphertexts whose plaintexts sum to a function output, a related but distinct primitive.</p>
+<p><strong>Closest prior work: Afshar-Goyal (AG26).</strong> Obtains evaluated ciphertexts of size $\ell + \mathrm{poly}(\lambda)$ under plain LWE by compressing the decryption information of an already-expanded ciphertext, using succinct oblivious tensor evaluation (Abram-Malavolta-Roy, STOC 2025). That compressed object supports plaintext recovery but does not itself satisfy the GSW relation or the BFV relation, and evaluation still runs in the expanded $N$-dependent dimension; only the final output is compressed. The present work instead preserves the GSW/BFV relations throughout and evaluates at single-key dimension from the start, at the price of $O(N)$ compression entries published per user. AG26's route is specific to plain LWE (no known ring analogue of succinct oblivious tensor evaluation), whereas the present work covers both fields and rings.</p>
+<p><strong>Summed keys elsewhere.</strong> Summed secret keys already appear in threshold/multiparty HE when the party set is fixed <em>before</em> encryption (e.g. Asharov-Jain-Lopez-Alt-Tromer-Vaikuntanathan-Wichs; Boneh et al.; Mouchet et al.; Kim-Lee-Seo-Wang). Multi-key TFHE reduces per-gate cost from quadratic to quasi-linear in $N$ (Chen-Chillotti-Song; Kwak-Min-Seo; Akin-Klemsa-Onen; recent follow-ups). In particular, Akin-Klemsa-Onen use a summed ring key with a concatenated LWE key and joint precomputation for a <em>fixed</em> party set, while bootstrapping remains linear in $N$, a different tradeoff point. Other compact schemes rely on interactive key generation, user-generated key-switching material per joint key, or two non-colluding servers. This paper's key aggregation uses only already-published material and a participating set chosen strictly after encryption, which is the harder setting MKFHE was originally defined for.</p>
+<p><strong>Open problems explicitly flagged by the authors:</strong></p>
+<ul>
+<li><strong>Shrinking public material.</strong> In the indexed variants, each user must publish $N(n-1)\log q$ (fields) or $N\log q$ (rings) compression/relinearization entries, quadratic in $N$ overall even though the <em>working</em> material after aggregation is linear. AG26 achieves $\mathrm{poly}(\lambda)$ keys at the cost of $\mathrm{poly}(N)$ per-gate cost; this paper does the opposite. Achieving both simultaneously (small keys <em>and</em> $N$-independent per-gate cost) is identified as the natural next target.</li>
+<li><strong>Multi-hop preparation.</strong> Prepared wires are closed under the gate algorithms but not under the arrival of a <em>new</em> user: adding a party to an already-prepared wire requires returning to the original (unprepared) inputs. A multi-hop version of preparation that avoids this is left open.</li>
+<li><strong>Malicious key generation.</strong> The security analysis assumes honestly generated keys; a treatment surviving maliciously generated keys is left open.</li>
+</ul></section>
+<section><h2>Algorithms</h2><p>The following listings collect the algorithmic content of the paper's two main constructions and the compression/relinearization subroutines they depend on.</p>
+<pre><code>
+# --- Column compression over fields (Section 4.1) ---
+# Public: masks a[j,k,alpha] in Z_q^(n-1), for j in [N], k in [n-1], alpha in [0, log q)
+# User i publishes (as part of PK_i):
+#   w[i,j,k,alpha] = <s_i, a[j,k,alpha]> + delta(i,j) * 2^alpha * s[i,k] + eps[i,j,k,alpha]
+
+function KeyAgg_Compression(public_keys):
+    for j in [N], k in [n-1], alpha in [0, log q):
+        W[j,k,alpha] = sum_i w[i,j,k,alpha]      # O(N^2 n log q) additions
+    return CK = (W[j,k,alpha])
+
+function Compress(c):                             # c in Z_q^{nN}, blocks c_j in Z_q^n
+    u_part = 0_{n-1}
+    v_part = sum_j c[j,n]
+    for j in [N], k in [n-1]:
+        beta = g_inverse(c[j,k])                 # binary digits, length log q
+        for alpha in range(log q):
+            u_part -= beta[alpha] * a[j,k,alpha]
+            v_part -= beta[alpha] * W[j,k,alpha]
+    return (u_part, v_part)                       # in Z_q^n, phase ~= that of hat(t)^T c
+
+# --- GSW-based MKFHE (Construction 4.2) ---
+
+function Setup(lambda, d, N):
+    choose q, n, m, chi, B_chi, chi_cmp, B_cmp
+    sample B <- Z_q^{(n-1) x m}
+    for j in [N], k in [n-1], alpha in [0, log q):
+        sample a[j,k,alpha] <- Z_q^{n-1}
+    return PP = (q, n, m, chi, B, d, N, chi_cmp, B_cmp, a[*])
+
+function KeyGen(PP, i):
+    sample s_i <- Z_q^{n-1}, e_i <- chi^m
+    for j,k,alpha: sample eps[i,j,k,alpha] <- chi_cmp
+    b_i = B^T s_i + e_i
+    pk_i = A_i = [B ; b_i^T]            # MW public key
+    sk_i = t_i = (-s_i^T, 1)^T
+    for j,k,alpha:
+        w[i,j,k,alpha] = <s_i, a[j,k,alpha]> + delta(i,j) * 2^alpha * s_i[k] + eps[i,j,k,alpha]
+    return PK_i = (i, pk_i, w[i,*,*,*]), SK_i = (i, t_i)
+
+function Enc(PP, PK_i, mu):
+    (U, C) = MW_Encrypt(pk_i, mu)        # ordinary Mukherjee-Wichs fresh encryption
+    return CT = (i, U, C)
+
+function KeyAgg(PP, {PK_i}):
+    CK = KeyAgg_Compression({PK_i})      # as above
+    PrepKey = ({pk_j}, CK)
+    EvalKey = empty                      # GSW needs no evaluation key
+    return (PrepKey, EvalKey)
+
+function CTPrep(PP, PrepKey, CT):
+    (U, C) = CT.material
+    hat_C = MW_Expand(U, C, {pk_j})      # compute only nonzero blocks: N diagonal
+                                          # copies of C, N-1 correction blocks X_j
+    Y = hat_C * H                        # public column-selection: sum k<n columns
+                                          # over j, keep one copy for k=n
+    CT_prep = Compress_columnwise(Y)     # apply Compress to every column of Y
+    return CT_prep                        # in Z_q^{n x m}
+
+function Eval(PP, EvalKey, C, {CT_prep_i}):
+    return GSW_Evaluate(C, {CT_prep_i})  # ordinary CT1+CT2 and CT1 * G^{-1}(CT2)
+
+function Dec(PP, {SK_i}, CT_C):
+    s_tilde = sum_i s_i
+    t_tilde = (-s_tilde^T, 1)^T
+    c_out = CT_C * G_inverse(Delta * e_n)
+    z = t_tilde^T * c_out
+    return round_to_nearest_multiple(z, 2)   # ceil(z)_2
+
+function PartDec(PP, CT_C, {PK_j}, i, SK_i):
+    c_out = CT_C * G_inverse(Delta * e_n) = (u^T, v)^T
+    gamma_i = (i == 1 ? v : 0) - <s_i, u>
+    sample e_sm_i uniformly in [-B_sm, B_sm]
+    return p_i = gamma_i + e_sm_i   (mod q)
+
+function FinDec({p_i}):
+    return round_to_nearest_multiple(sum_i p_i, 2)
+
+# --- Ring compression (Section 5.1) ---
+
+function KeyAgg_RingCompression(public_keys):
+    for j in [N]:
+        W[j] = sum_i w[i,j]           # w[i,j] = sigma_i*a_j + delta(i,j)*s_i*g_c + e[i,j]
+    return CK = (W[j])
+
+function Compress_ring(c):             # c = (c_0, c_1, ..., c_N), zero-padded for fresh CT
+    u = sum_j <h_c(c_j), a_j>
+    v = c_0 + sum_j <h_c(c_j), W[j]>
+    return (v, -u)                      # BFV pair under virtual secret sigma_tilde
+
+# --- Masked relinearization key aggregation (Section 5.2) ---
+# Each user i samples auxiliary r_i, uses common masks a, u:
+#   b_i = -sigma_i * a + e_{B,i}
+#   d_i = -r_i * a + sigma_i * g + e_{D,i}
+#   v_i = -sigma_i * u - r_i * g + e_{V,i}
+
+function KeyAgg_Relin(public_keys):
+    B = sum_i b_i
+    D = sum_i d_i
+    V = sum_i v_i
+    return EvalKey = (B, D, V)
+
+function FastMult(PP, (B, D, V), ct, ct_prime):
+    (T0, T1, T2) = Tensor_ScaleRound(ct, ct_prime)   # ordinary BFV tensor, scale by t/q
+    z = h(T2)
+    x = <z, B>   (mod q)
+    c0_star = T0 + <h(x), V>          (mod q)
+    c1_star = T1 + <z, D> + <h(x), u>  (mod q)
+    return (c0_star, c1_star)
+
+# --- BFV-based MKFHE (Construction 5.1) ---
+
+function Setup(lambda, d, N):
+    choose n, t, q, chi, D_e, B_chi, B_e
+    fix gadgets (h_c, g_c) length k_c, and (h, g) length k
+    sample a_j <- R_q^{k_c} for j in [N]; sample a, u <- R_q^k
+    return PP
+
+function KeyGen(PP, i):
+    sample s_i, sigma_i, r_i <- chi; sample a_i <- R_q, e_pk_i <- D_e
+    sample e[i,j] <- D_e^{k_c} for j in [N]; sample e_{B,i}, e_{D,i}, e_{V,i} <- D_e^k
+    b_i = -a_i * s_i + e_pk_i                          # ordinary BFV public key (b_i, a_i)
+    for j in [N]: w[i,j] = sigma_i * a_j + delta(i,j) * s_i * g_c + e[i,j]
+    compute b_i_relin, d_i, v_i via Eqs. (31)-(33)
+    return PK_i, SK_i = (i, s_i, sigma_i)
+
+function Enc(PP, PK_i, mu):
+    sample z <- chi; e0, e1 <- D_e
+    c0 = b_i * z + e0 + Delta * mu
+    c1 = a_i * z + e1
+    return CT = (i, c0, c1)
+
+function KeyAgg(PP, {PK_i}):
+    CK = KeyAgg_RingCompression({PK_i})
+    EvalKey = KeyAgg_Relin({PK_i})
+    return PrepKey = CK, EvalKey
+
+function CTPrep(PP, PrepKey, CT):
+    (j, c0, c1) = CT
+    CT_prep = Compress_ring( zero_padded_column(c0, c1, owner=j) )  # only owner terms needed
+    return CT_prep                       # (v, -u) in R_q^2
+
+function Eval(PP, EvalKey, C, {CT_prep_i}):
+    for each gate in C (topological order):
+        if gate is addition: result = componentwise_add(inputs)
+        if gate is multiplication: result = FastMult(PP, EvalKey, inputs[0], inputs[1])
+    return CT_C
+
+function Dec(PP, {SK_i}, CT_C):
+    (c0, c1) = CT_C
+    sigma_tilde = sum_i sigma_i
+    return round( (t/q) * [c0 + c1 * sigma_tilde]_q )  (mod t)
+
+function PartDec_ring(PP, CT_C, {PK_j}, i, SK_i):
+    (c0, c1) = CT_C
+    gamma_i = (i == 1 ? c0 : 0) + c1 * sigma_i
+    sample e_sm_i with coefficients uniform in [-B_sm, B_sm]
+    return p_i = gamma_i + e_sm_i   (mod q)
+
+function FinDec_ring({p_i}):
+    return round_coefficientwise( (t/q) * [sum_i p_i]_q )  (mod t)
+</code></pre>
+<p>In addition to these main-body constructions, Appendix C gives a generic transformation (Construction C.1) from indexed to unindexed MKFHE, summarized as pseudocode below.</p>
+<pre><code>
+# --- Removing user indices (Appendix C, Construction C.1) ---
+# Given: indMKFHE, an indexed MKFHE scheme; PKE, a semantically secure encryption
+# scheme whose decryption circuit D_{ct*}(s) = PKE.Dec(s, ct*) is supported.
+
+function Setup(lambda, d, N):
+    D = depth bound for (PKE decryption) followed by (depth-d evaluation)
+    pp = indMKFHE.Setup(lambda, D, N)
+    return PP = (pp, d, N)
+
+function KeyGen(PP):
+    (pk_star, s_star) = PKE.KeyGen(lambda)
+    for ell in [N]:
+        (pk_ell, sk_ell) = indMKFHE.KeyGen(pp, ell)
+        bk_ell = indMKFHE.Enc(pp, pk_ell, s_star)     # encrypt source secret under every candidate key
+    return PK = (pk_star, {(pk_ell, bk_ell)}), SK = {sk_ell}
+
+function Enc(PP, PK, mu):
+    return PKE.Enc(pk_star, mu)
+
+function KeyAgg(PP, {PK_i}):
+    # canonical ordering assigns position i to user i
+    (prep, eval) = indMKFHE.KeyAgg(pp, {pk_i^(i)})
+    for i in [N]:
+        hat_bk_i = indMKFHE.CTPrep(pp, prep, bk_i^(i))
+    return PrepKey = ({hat_bk_i}, eval), EvalKey = eval
+
+function CTPrep(PP, PrepKey, (i, CT)):
+    ct_star = CT
+    return indMKFHE.Eval(pp, eval, D_{ct_star}, hat_bk_i)   # homomorphically decrypt ct_star
+
+function Eval(PP, EvalKey, C, {CT_prep_i}):
+    return indMKFHE.Eval(pp, EvalKey, C, {CT_prep_i})
+
+function Dec(PP, {SK_i}, CT_C):
+    return indMKFHE.Dec(pp, {sk_i^(i)}, CT_C)
+</code></pre></section>
+</main>
+<script>
+(function(){
+  var bar=document.getElementById('rt-bar');
+  if(bar && window.self!==window.top){bar.style.display='none';}
+  var lb=document.createElement('div');lb.id='rt-lightbox';lb.innerHTML='<img alt="">';document.body.appendChild(lb);
+  lb.addEventListener('click',function(){lb.style.display='none';});
+  var prev=document.createElement('img');prev.id='rt-figprev';prev.alt='';document.body.appendChild(prev);
+  function showPrev(src,e){prev.src=src;prev.style.display='block';var x=Math.min(e.clientX+24,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+24,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hidePrev(){prev.style.display='none';}
+  var figs=document.querySelectorAll('figure'),srcByNum={};
+  for(var i=0;i<figs.length;i++){
+    var fig=figs[i],img=fig.querySelector('img');if(!img)continue;
+    var num=i+1;fig.id='fig'+num;srcByNum[num]=img.src;
+    var cap=fig.querySelector('figcaption');
+    if(!cap){cap=document.createElement('figcaption');cap.style.opacity='.7';cap.style.fontSize='.85em';cap.style.marginTop='.3em';cap.textContent='Figure '+num;fig.appendChild(cap);}
+    else if(!/^\s*fig/i.test(cap.textContent)){cap.textContent='Figure '+num+': '+cap.textContent;}
+    (function(s){
+      img.addEventListener('click',function(){lb.firstChild.src=s;lb.style.display='flex';});
+    })(img.src);
+  }
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='figcaption'||tg==='script'||tg==='style')continue;
+    if(/\bfig(?:ure|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(fig(?:ure|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!srcByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#fig'+num;a.className='rt-figref';a.textContent=m[0];
+      (function(s){a.addEventListener('mousemove',function(e){showPrev(s,e);});a.addEventListener('mouseleave',hidePrev);})(srcByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+})();
+function rtSetupEquations(){
+  var prev=document.getElementById('rt-eqprev');
+  if(!prev){prev=document.createElement('div');prev.id='rt-eqprev';document.body.appendChild(prev);}
+  function showEq(html,e){prev.innerHTML=html;prev.style.display='block';var x=Math.min(e.clientX+20,window.innerWidth-prev.offsetWidth-12);var y=Math.min(e.clientY+20,window.innerHeight-prev.offsetHeight-12);prev.style.left=Math.max(8,x)+'px';prev.style.top=Math.max(8,y)+'px';}
+  function hideEq(){prev.style.display='none';}
+  var eqs=document.querySelectorAll('mjx-container[display="true"]'),htmlByNum={};
+  for(var i=0;i<eqs.length;i++){var n=i+1;eqs[i].id='eq'+n;htmlByNum[n]=eqs[i].outerHTML;}
+  if(!eqs.length)return;
+  var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],nd;
+  while(nd=walker.nextNode()){
+    var pn=nd.parentNode;if(!pn)continue;var tg=pn.nodeName.toLowerCase();
+    if(tg==='a'||tg==='pre'||tg==='code'||tg==='script'||tg==='style')continue;
+    if(pn.closest&&pn.closest('mjx-container'))continue;
+    if(/\beq(?:uation|\.)?\s*\d+/i.test(nd.nodeValue))nodes.push(nd);
+  }
+  nodes.forEach(function(node){
+    var txt=node.nodeValue,re=/\b(eq(?:uation|\.)?\s*)(\d+)/gi,frag=document.createDocumentFragment(),last=0,m,used=false;
+    while(m=re.exec(txt)){
+      var num=parseInt(m[2],10);if(!htmlByNum[num])continue;
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var a=document.createElement('a');a.href='#eq'+num;a.className='rt-eqref';a.textContent=m[0];
+      (function(h){a.addEventListener('mousemove',function(e){showEq(h,e);});a.addEventListener('mouseleave',hideEq);})(htmlByNum[num]);
+      frag.appendChild(a);last=m.index+m[0].length;used=true;
+    }
+    if(used){if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));node.parentNode.replaceChild(frag,node);}
+  });
+}
+window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],tags:'none'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},startup:{pageReady:function(){return MathJax.startup.defaultPageReady().then(function(){rtSetupEquations();});}}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</body></html>

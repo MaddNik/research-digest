@@ -2,6 +2,18 @@
 # Regenerated from research-material; entries with a summaries/<slug>/
 # folder but no research-material source are preserved as-is.
 
+- slug: "multi-key-fhe-almost-as-fast-as-single-key-fhe-2026-09-26"
+  title: "Multi-Key FHE Almost as Fast as Single-Key FHE"
+  url: "/summaries/multi-key-fhe-almost-as-fast-as-single-key-fhe-2026-09-26/"
+  date: "2026-09-26"
+  category: "Fhe Multikey"
+  pub: "2026"
+  publisher: "IACR ePrint Archive, Paper 2026/2195"
+  meta_line: "IACR ePrint Archive, Paper 2026/2195"
+  source_type: "PDF (text-layer)"
+  source_url: "https://eprint.iacr.org/2026/2195"
+  pdf: ""
+  tags: ["FHE", "multi-key FHE", "GSW", "BFV", "LWE", "Ring-LWE", "homomorphic encryption", "threshold decryption", "lattice cryptography", "concepts"]
 - slug: "ai-assisted-pqc-accelerator-deployed-silicon-2026-09-15"
   title: "AI-Assisted Design of a Post-Quantum Cryptographic Accelerator: A Deployed-Silicon Case Study"
   url: "/summaries/ai-assisted-pqc-accelerator-deployed-silicon-2026-09-15/"
