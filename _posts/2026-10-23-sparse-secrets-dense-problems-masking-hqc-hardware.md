@@ -1,0 +1,11 @@
+---
+title: "Sparse Secrets, Dense Problems: Efficiently Masking HQC in Hardware"
+date: 2026-10-23 08:31:00 +0200
+categories: [Hardware Security]
+tags: [hqc, hardware-masking, fpga, side-channel-countermeasure]
+link: https://eprint.iacr.org/2026/2509
+byline: "Fabian Buschkowski et al. (IACR ePrint 2026/2509, Oct 17 2026)"
+description: "The first fully masked hardware implementation of the HQC code-based KEM adds only 3 percent more clock cycles than an unprotected multiplier and shows no signs of first-order leakage after one million traces, while identifying a residual horizontal side-channel risk."
+---
+
+HQC was recently selected by NIST as a code-based alternative to ML-KEM and is undergoing standardization, but while multiple timing and power side-channel attacks against HQC have been presented, masking has so far only been studied for software implementations. This work closes that gap by proposing a novel masking technique for the sparse-dense vector multiplication at the core of all HQC operations, securely exploiting operand sparsity using a mixed Boolean and arithmetic masking technique whose first-order security the authors prove in the transition- and glitch-robust probing model, along with PINI-composability. The configurable, highly parallelizable masked multiplier takes only 3 percent more clock cycles than a previous unprotected HQC multiplier and needs only 81 bits of randomness per cycle regardless of parallelism, though like previous Rotate-and-Add constructions it remains vulnerable to profiled horizontal side-channel attacks that recover support indices within plus or minus 8 positions from 200 traces on an FPGA implementation despite TVLA showing no leakage after 10 million traces; the authors mitigate this with efficient hiding countermeasures adding only 1.7 percent latency. Combined with masked fixed-weight samplers and a masked decoder, the result is, to the authors' knowledge, the first fully masked hardware implementation of HQC supporting first-order masked key generation, encapsulation, and decapsulation, with masked key generation faster than a previous unprotected design on an Artix-7 FPGA and no signs of first-order leakage after one million traces across all modules.

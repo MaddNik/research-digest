@@ -1,0 +1,11 @@
+---
+title: "Secure Compilation of Probabilistic Side-Channel Countermeasures"
+date: 2026-10-23 08:35:00 +0200
+categories: [Hardware Security]
+tags: [secure-compilation, masking, formal-verification, side-channel]
+link: https://eprint.iacr.org/2026/2510
+byline: "Gilles Barthe et al. (IACR ePrint 2026/2510, Oct 17 2026, IEEE S&P 2027)"
+description: "A new leakage-model-agnostic compilation framework proves that the Jasmin compiler's core pipeline preserves probabilistic side-channel security notions like d-NI and d-SNI without needing probabilistic reasoning about distributions, and is used to build an open-source arbitrary-order masked gadget library."
+---
+
+Probabilistic countermeasures are a common way to protect programs against side-channel attacks, but they are hard to implement correctly and are routinely broken by compilers, and directly proving that a compiler preserves probabilistic side-channel security would normally require reasoning about perfect simulatability of distributions, a technique usually reserved for high-assurance cryptography tools like EasyCrypt and outside the scope of standard compiler correctness proofs. This paper presents a language- and leakage-model-agnostic framework for provably secure compilation of probabilistic side-channel security notions, whose main contribution is a deterministic leakage-preservation relation that implies preservation of probabilistic security notions including d-NI and d-SNI for masking and cryptographic constant-time, reducing the proof obligation to a per-pass simulation argument on deterministic traces rather than probabilistic reasoning. Using the Rocq proof assistant, the authors prove that a model of the core pipeline and several optimizing passes of the Jasmin compiler preserve security in the value-probing model with glitches, and show how to harden against transition leakage with lightweight source-level annotations. On top of this framework they build libmasking, an open-source library of arbitrary-order masked gadgets written in Jasmin that compiles securely to ARM and RISC-V assembly, provides C language bindings, and is benchmarked on real hardware, moving toward programming environments where masked code can be written or generated, verified at the source level, optimized, and compiled without breaking security.

@@ -1,0 +1,11 @@
+---
+title: "Structural cryptanalysis of classic McEliece: Assessment of claims, costs and evidence"
+date: 2026-10-23 08:14:00 +0200
+categories: [PQC]
+tags: [classic-mceliece, code-based-cryptography, cryptanalysis, goppa-codes]
+link: https://arxiv.org/abs/2610.31196
+byline: "Ramses Fernandez (arXiv:2610.31196, Oct 22 2026)"
+description: "A critical, version-aware assessment of the last two years of structural attacks on Classic McEliece finds that conditional key-recovery cost estimates remain far below the targeted security levels for the four larger parameter sets, with no demonstrated attack yet."
+---
+
+Over the last two years, classical structural attacks on McEliece with binary Goppa codes have progressed further at Classic McEliece parameters than in the previous four decades, including a subexponential and then a quasi-polynomial distinguisher, key recoveries for public challenges with brute-force labels up to 254, and conditional key-recovery cost estimates of roughly 2 to the power 89 to 2 to the power 128 per run of a large sparse linear-algebra computation. In September 2026 the German BSI advised against new deployments of the scheme, prompting this version-aware critical assessment. The paper separates proved distinguishers, conditional cost estimates, and actual recoveries, analyzing in detail Saarinen's HOVER algorithm and his recovery of the TII-254 challenge alongside Weis's cost study of Holdout/Hermite key recovery, and comparing other proposed key-recovery routes and the objections raised against them. The analysis finds the cost model to be the main quantitative uncertainty, with about thirty bits of spread between the cheapest and most expensive model for the same computation, and concludes that for the four larger parameter sets every model considered leaves the conditional estimates far below the targeted security levels, with structural estimates generally lower than Grover-accelerated information-set decoding, while for mceliece348864 the gap to the target is comparable to the spread between models. The author emphasizes that none of this constitutes a demonstrated attack, since the underlying heuristics have been tested only on instances tens of thousands to hundreds of thousands of times smaller than the target, and closes with open questions.
