@@ -1,0 +1,11 @@
+---
+title: "HARE: Fast Read Disturbance Threshold Profiling in Modern DRAM Chips via Reduced Timing Constraints"
+date: 2026-11-13 08:34:00 +0200
+categories: [Hardware Security]
+tags: [rowhammer, dram, read-disturbance, profiling]
+link: https://arxiv.org/abs/2611.15469
+byline: "F. Nisa Bostanci et al. (arXiv:2611.15469, Nov 11 2026)"
+description: "HARE profiles the RowHammer-style read disturbance threshold of real DDR4 chips up to 31.2 percent faster than the standard RowHammer profiler by intentionally reducing DRAM command timing constraints during profiling."
+---
+
+Modern DRAM chips are vulnerable to read disturbance, which shows up as bitflips in a victim row physically near an aggressor row that is activated repeatedly, and state-of-the-art mitigations rely on accurate, exhaustive profiling of the read disturbance threshold, the minimum number of aggressor activations needed to induce the first bitflip. Because this threshold changes significantly and unpredictably over time, online profilers must dynamically adjust a mitigation's configuration, but profiling is costly, taking hundreds of seconds for a 16-bank DDR4 module, since measuring a single row's threshold requires many activations and each row can have a different threshold. The authors introduce HARE, an online threshold profiling technique that intentionally exacerbates read disturbance to profile a DRAM module quickly, by reducing the timing constraints between consecutive DRAM commands during profiling, which both directly shortens the profiling command sequence and causes the first bitflip to occur at a smaller activation count than with the conventional RowHammer sequence. Characterizing 180 real DDR4 chips from four major manufacturers, the authors find that HARE measures a row's threshold 31.2 percent faster than the standard RowHammer profiler and a module's minimum threshold with an average reduction of 21.7 percent, that HARE flips more than 95 percent of the cells the RowHammer pattern flips, and that HARE preserves the threshold ranking of rows well enough to let a small set of rows be exhaustively reprofiled to improve the minimum threshold estimate, with end-to-end evaluations showing performance improvements over the RowHammer profiler.

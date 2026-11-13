@@ -1,0 +1,11 @@
+---
+title: "A New Class of PRFs and Efficient VRFs from Isogeny-based Group Actions"
+date: 2026-11-13 08:12:00 +0200
+categories: [PQC]
+tags: [isogeny-cryptography, group-actions, verifiable-random-functions, csidh]
+link: https://eprint.iacr.org/2026/2856
+byline: "Junbo Yang et al. (IACR ePrint 2026/2856, Nov 10 2026, ASIACRYPT 2026)"
+description: "The authors break the security of prior polynomial-in-exponent pseudorandom functions from isogeny group actions, including CSIDH-512 and SCALLOP-based parameter choices, then design a new, repaired construction with much shorter verifiable random function proofs."
+---
+
+Polynomial-in-exponent pseudorandom functions based on group actions have recently emerged as a promising framework for post-quantum cryptography, offering compact keys and efficient verifiability, but the security of these constructions over composite-order class groups was poorly understood. Prior work suggested that security is governed by the largest prime factor of the group order; the authors show this intuition is flawed, presenting two generic attacks that demonstrate the effective security is instead determined by the smallest prime factor, making existing parameter choices such as CSIDH-512 and SCALLOP-based settings insecure, with their enhanced attack achieving near-certain success at a cost on the order of the square root of that smallest prime factor. To fix this, they introduce a "restrict-then-expand" design paradigm and formalize a general class of multivariate polynomial pseudorandom functions from group actions that eliminate the exploitable structure through restricted input domains and recover expressiveness through a provably secure expansion technique. These constructions unify and generalize existing designs, including Naor-Reingold-style and polynomial-style pseudorandom functions, while achieving security in a generic group action model for arbitrary composite-order groups. Built on this framework, the authors obtain new verifiable random functions from group actions that, at a proof-soundness level close to 128 bits, require 320 group-action evaluations for proof generation or verification, compared with roughly 69,000 to 109,500 evaluations in prior work, while keeping keys and proofs short.
